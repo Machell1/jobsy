@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FreeToolBox - Free Online Tools for Developers and Everyone</title>
-  <meta name="description" content="Free browser-based tools: word counter, JSON formatter, password generator, Base64 encoder, color picker, and more. No signup, no data sent to servers.">
-  <meta name="keywords" content="free online tools, word counter, json formatter, password generator, base64 encoder, color picker, developer tools">
+  <title>AIToolsHub - Find the Best AI Tools for Every Task</title>
+  <meta name="description" content="Discover the best AI tools for writing, coding, image generation, video, productivity, and more. Honest reviews, pricing comparisons, and alternatives.">
+  <meta name="keywords" content="best AI tools, AI tools directory, AI writing tools, AI image generators, AI coding tools, AI productivity tools">
   <link rel="canonical" href="https://machell1.github.io/skills-introduction-to-github/">
-  <meta property="og:title" content="FreeToolBox - Free Online Tools">
-  <meta property="og:description" content="Free browser-based tools for developers and everyone. No signup required.">
+  <meta property="og:title" content="AIToolsHub - Find the Best AI Tools">
+  <meta property="og:description" content="Curated directory of the best AI tools. Reviews, pricing, and alternatives.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://machell1.github.io/skills-introduction-to-github/">
   <meta name="twitter:card" content="summary_large_image">
@@ -17,89 +17,115 @@
   {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "name": "FreeToolBox",
+    "name": "AIToolsHub",
     "url": "https://machell1.github.io/skills-introduction-to-github/",
-    "description": "Free browser-based tools for developers and everyone.",
-    "potentialAction": {
-      "@type": "SearchAction",
-      "target": "https://machell1.github.io/skills-introduction-to-github/?q={search_term_string}",
-      "query-input": "required name=search_term_string"
-    }
+    "description": "Curated directory of the best AI tools with reviews, pricing, and alternatives."
   }
   </script>
 </head>
 <body>
   <section class="hero">
     <div class="container">
-      <h1>Free Online Tools</h1>
-      <p>Fast, free browser-based utilities. No signup, no data sent to servers. Everything runs in your browser.</p>
+      <h1>Find the Best AI Tools</h1>
+      <p>Curated directory of 18+ AI tools with honest reviews, pricing breakdowns, and alternatives. Updated for 2026.</p>
+      <div class="hero-search">
+        <input type="text" id="hero-search" placeholder="Search AI tools..." aria-label="Search AI tools">
+      </div>
+      <div class="hero-stats">
+        <div><span class="hero-stat-num">18+</span> Tools Reviewed</div>
+        <div><span class="hero-stat-num">9</span> Categories</div>
+        <div><span class="hero-stat-num">100%</span> Free to Browse</div>
+      </div>
     </div>
   </section>
 
   <main>
     <div class="container">
-      <div class="ad-slot ad-slot-leaderboard" data-ad-format="horizontal" data-ad-slot="hero-leaderboard"></div>
-
-      <div class="tool-grid" id="tool-grid">
-        <a href="tools/word-counter.html" class="tool-card">
-          <div class="tool-card-icon">&#9997;</div>
-          <h3>Word Counter</h3>
-          <p>Count words, characters, sentences, and paragraphs instantly.</p>
-        </a>
-        <a href="tools/json-formatter.html" class="tool-card">
-          <div class="tool-card-icon">&#123;&#125;</div>
-          <h3>JSON Formatter</h3>
-          <p>Format, validate, and minify JSON data with syntax highlighting.</p>
-        </a>
-        <a href="tools/password-generator.html" class="tool-card">
-          <div class="tool-card-icon">&#128274;</div>
-          <h3>Password Generator</h3>
-          <p>Generate strong, random passwords with customizable options.</p>
-        </a>
-        <a href="tools/base64-encoder.html" class="tool-card">
-          <div class="tool-card-icon">&#128260;</div>
-          <h3>Base64 Encoder</h3>
-          <p>Encode and decode text or files to and from Base64.</p>
-        </a>
-        <a href="tools/color-picker.html" class="tool-card">
-          <div class="tool-card-icon">&#127912;</div>
-          <h3>Color Picker</h3>
-          <p>Pick colors and convert between HEX, RGB, and HSL formats.</p>
-        </a>
-
-        <div class="ad-slot" data-ad-format="fluid" data-ad-slot="in-feed"></div>
-
-        <a href="tools/lorem-ipsum-generator.html" class="tool-card">
-          <div class="tool-card-icon">&#128196;</div>
-          <h3>Lorem Ipsum Generator</h3>
-          <p>Generate placeholder text in paragraphs, sentences, or words.</p>
-        </a>
-        <a href="tools/case-converter.html" class="tool-card">
-          <div class="tool-card-icon">&#128289;</div>
-          <h3>Case Converter</h3>
-          <p>Convert text to uppercase, lowercase, title case, and more.</p>
-        </a>
-        <a href="tools/markdown-preview.html" class="tool-card">
-          <div class="tool-card-icon">&#128221;</div>
-          <h3>Markdown Preview</h3>
-          <p>Write Markdown and see a live HTML preview side by side.</p>
-        </a>
-        <a href="tools/qr-code-generator.html" class="tool-card">
-          <div class="tool-card-icon">&#9638;</div>
-          <h3>QR Code Generator</h3>
-          <p>Generate QR codes from any text or URL. Download as PNG.</p>
-        </a>
-        <a href="tools/unit-converter.html" class="tool-card">
-          <div class="tool-card-icon">&#128207;</div>
-          <h3>Unit Converter</h3>
-          <p>Convert between units of length, weight, temperature, and more.</p>
-        </a>
+      <!-- Category Pills -->
+      <div class="category-bar">
+        <a href="#all" class="category-pill active" data-filter="all">All Tools</a>
+        <a href="#chatbots" class="category-pill" data-filter="chatbots">&#129302; Chatbots</a>
+        <a href="#writing" class="category-pill" data-filter="writing">&#128221; Writing</a>
+        <a href="#image" class="category-pill" data-filter="image">&#127912; Image</a>
+        <a href="#video" class="category-pill" data-filter="video">&#127910; Video</a>
+        <a href="#coding" class="category-pill" data-filter="coding">&#128187; Coding</a>
+        <a href="#productivity" class="category-pill" data-filter="productivity">&#9889; Productivity</a>
+        <a href="#design" class="category-pill" data-filter="design">&#127928; Design</a>
+        <a href="#audio" class="category-pill" data-filter="audio">&#127911; Audio</a>
+        <a href="#marketing" class="category-pill" data-filter="marketing">&#128200; Marketing</a>
       </div>
 
-      <div class="ad-slot ad-slot-leaderboard" data-ad-format="horizontal" data-ad-slot="bottom-leaderboard"></div>
+      <div class="ad-slot" data-ad-format="horizontal" data-ad-slot="home-top"></div>
+
+      <!-- Tool Grid -->
+      <div class="tool-grid" id="tool-grid"></div>
+
+      <!-- Featured Banner -->
+      <div class="featured-banner">
+        <div class="featured-banner-text">
+          <h2>Looking for AI Coding Tools?</h2>
+          <p>Compare GitHub Copilot, Cursor, and other AI coding assistants to find the best fit for your workflow.</p>
+        </div>
+        <a href="categories/coding.html" class="btn btn-white btn-lg">View AI Coding Tools &rarr;</a>
+      </div>
+
+      <div class="ad-slot" data-ad-format="horizontal" data-ad-slot="home-mid"></div>
+
+      <!-- Category Cards -->
+      <div class="section-heading">
+        <h2>Browse by Category</h2>
+      </div>
+      <div class="tool-grid" id="category-grid"></div>
+
+      <!-- Newsletter -->
+      <div class="newsletter">
+        <h2>Stay Updated on AI Tools</h2>
+        <p>Get weekly updates on new AI tools, price changes, and exclusive deals.</p>
+        <div class="newsletter-form">
+          <input type="email" placeholder="Enter your email" aria-label="Email for newsletter">
+          <button class="btn btn-primary">Subscribe</button>
+        </div>
+        <p class="text-sm text-muted mt-1">Free. No spam. Unsubscribe anytime.</p>
+      </div>
+
+      <div class="ad-slot" data-ad-format="horizontal" data-ad-slot="home-bottom"></div>
     </div>
   </main>
 
   <script src="js/common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Render all tool cards
+      const grid = document.getElementById('tool-grid');
+      grid.innerHTML = TOOLS.map(t => toolCardHTML(t, '')).join('');
+
+      // Render category cards
+      const catGrid = document.getElementById('category-grid');
+      catGrid.innerHTML = CATEGORIES.map(c => `
+        <a href="categories/${c.slug}.html" class="tool-card">
+          <div class="tool-card-header">
+            <div class="tool-card-icon">${c.icon}</div>
+            <h3>${c.name}</h3>
+          </div>
+          <p>${c.desc}</p>
+          <div class="tool-card-footer">
+            <span class="tool-card-category">${TOOLS.filter(t => t.category === c.slug).length} tools</span>
+          </div>
+        </a>
+      `).join('');
+
+      // Category filter
+      document.querySelectorAll('.category-pill').forEach(pill => {
+        pill.addEventListener('click', e => {
+          e.preventDefault();
+          document.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          const filter = pill.dataset.filter;
+          const filtered = filter === 'all' ? TOOLS : TOOLS.filter(t => t.category === filter);
+          renderToolGrid(filtered, '');
+        });
+      });
+    });
+  </script>
 </body>
 </html>
