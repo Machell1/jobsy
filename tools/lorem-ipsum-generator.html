@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Free Lorem Ipsum Generator Online | FreeToolBox</title>
+  <meta name="description" content="Generate lorem ipsum placeholder text by paragraphs, sentences, or words. Free online tool. No signup required.">
+  <link rel="canonical" href="https://machell1.github.io/skills-introduction-to-github/tools/lorem-ipsum-generator.html">
+  <meta property="og:title" content="Free Lorem Ipsum Generator | FreeToolBox">
+  <meta property="og:description" content="Generate placeholder text instantly. Free, no signup.">
+  <meta property="og:type" content="website">
+  <link rel="stylesheet" href="../css/style.css">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"WebApplication","name":"Lorem Ipsum Generator","url":"https://machell1.github.io/skills-introduction-to-github/tools/lorem-ipsum-generator.html","applicationCategory":"UtilityApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Generate placeholder text in paragraphs, sentences, or words."}
+  </script>
+</head>
+<body>
+  <main>
+    <div class="container">
+      <div class="breadcrumbs"><a href="../index.html">Home</a> <span>&rsaquo;</span> Lorem Ipsum Generator</div>
+      <div class="tool-page">
+        <h1>Free Lorem Ipsum Generator</h1>
+        <div class="tool-interface">
+          <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-end">
+            <div>
+              <label for="gen-type">Generate</label>
+              <select id="gen-type">
+                <option value="paragraphs">Paragraphs</option>
+                <option value="sentences">Sentences</option>
+                <option value="words">Words</option>
+              </select>
+            </div>
+            <div>
+              <label for="gen-count">Count</label>
+              <input type="number" id="gen-count" value="3" min="1" max="100" style="width:80px">
+            </div>
+            <div class="checkbox-group" style="align-self:center">
+              <label><input type="checkbox" id="gen-lorem" checked> Start with "Lorem ipsum..."</label>
+            </div>
+            <button class="btn btn-primary" id="generate-btn">Generate</button>
+          </div>
+          <textarea id="lorem-output" rows="10" readonly class="mt-2"></textarea>
+          <div class="btn-group">
+            <button class="btn btn-secondary" id="copy-btn">Copy Text</button>
+          </div>
+        </div>
+        <div class="ad-slot ad-slot-leaderboard" data-ad-format="horizontal" data-ad-slot="tool-mid"></div>
+        <div class="content-section">
+          <h2>How to Use This Lorem Ipsum Generator</h2>
+          <p>Select whether you want to generate paragraphs, sentences, or individual words. Set the count and click "Generate". Check the "Start with Lorem ipsum" box to begin with the classic opening phrase.</p>
+          <p>Lorem Ipsum is the industry-standard placeholder text used by designers and developers since the 1500s. It provides a natural-looking text distribution without being distracting, making it ideal for mockups, wireframes, and layout testing.</p>
+          <p>Copy the generated text with one click and paste it into your design tool, website, or document. The text is generated fresh each time you click the button.</p>
+        </div>
+        <div class="related-tools" id="related-tools"></div>
+        <div class="ad-slot ad-slot-leaderboard" data-ad-format="horizontal" data-ad-slot="tool-bottom"></div>
+      </div>
+    </div>
+  </main>
+  <script src="../js/common.js"></script>
+  <script src="../js/tools/lorem-ipsum.js"></script>
+</body>
+</html>

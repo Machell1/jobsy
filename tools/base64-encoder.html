@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Free Base64 Encoder & Decoder Online | FreeToolBox</title>
+  <meta name="description" content="Encode and decode text to Base64 online. Supports Unicode text and file drag-and-drop. Free, no signup required.">
+  <link rel="canonical" href="https://machell1.github.io/skills-introduction-to-github/tools/base64-encoder.html">
+  <meta property="og:title" content="Free Base64 Encoder & Decoder | FreeToolBox">
+  <meta property="og:description" content="Encode and decode Base64 instantly. Free, no signup.">
+  <meta property="og:type" content="website">
+  <link rel="stylesheet" href="../css/style.css">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"WebApplication","name":"Base64 Encoder/Decoder","url":"https://machell1.github.io/skills-introduction-to-github/tools/base64-encoder.html","applicationCategory":"UtilityApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Encode and decode text or files to and from Base64."}
+  </script>
+</head>
+<body>
+  <main>
+    <div class="container">
+      <div class="breadcrumbs"><a href="../index.html">Home</a> <span>&rsaquo;</span> Base64 Encoder</div>
+      <div class="tool-page">
+        <h1>Free Online Base64 Encoder & Decoder</h1>
+        <div class="tool-interface">
+          <div class="tool-row">
+            <div>
+              <label for="b64-input">Input Text</label>
+              <textarea id="b64-input" rows="8" placeholder="Type or paste text here..."></textarea>
+            </div>
+            <div>
+              <label for="b64-output">Output</label>
+              <textarea id="b64-output" rows="8" placeholder="Result will appear here..." readonly></textarea>
+            </div>
+          </div>
+          <p id="error-msg" style="color:var(--danger);font-size:0.875rem;min-height:1.25rem"></p>
+          <div class="btn-group">
+            <button class="btn btn-primary" id="encode-btn">Encode</button>
+            <button class="btn btn-primary" id="decode-btn">Decode</button>
+            <button class="btn btn-secondary" id="swap-btn">Swap</button>
+            <button class="btn btn-secondary" id="copy-btn">Copy Output</button>
+            <button class="btn btn-secondary" id="clear-btn">Clear</button>
+          </div>
+          <div id="drop-zone" style="border:2px dashed var(--border);border-radius:var(--radius);padding:1.5rem;text-align:center;color:var(--text-light);margin-top:1rem;transition:border-color 0.2s">
+            Drag & drop a file here to encode it as Base64
+          </div>
+        </div>
+        <div class="ad-slot ad-slot-leaderboard" data-ad-format="horizontal" data-ad-slot="tool-mid"></div>
+        <div class="content-section">
+          <h2>How to Use This Base64 Encoder</h2>
+          <p>Enter your text in the input area and click "Encode" to convert it to Base64 format. To reverse the process, paste a Base64 string and click "Decode". The "Swap" button lets you quickly move the output back to the input for chaining operations.</p>
+          <p>You can also drag and drop any file onto the drop zone to get its Base64 representation. This is useful for embedding small images, fonts, or other binary data directly in HTML or CSS files.</p>
+          <p>This tool fully supports Unicode text, including emojis and characters from any language. All encoding and decoding happens in your browser.</p>
+        </div>
+        <div class="related-tools" id="related-tools"></div>
+        <div class="ad-slot ad-slot-leaderboard" data-ad-format="horizontal" data-ad-slot="tool-bottom"></div>
+      </div>
+    </div>
+  </main>
+  <script src="../js/common.js"></script>
+  <script src="../js/tools/base64-encoder.js"></script>
+</body>
+</html>

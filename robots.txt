@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://machell1.github.io/skills-introduction-to-github/sitemap.xml
