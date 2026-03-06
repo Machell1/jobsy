@@ -1,13 +1,25 @@
-# Sample product ASINs to track
-# Add your own Amazon product URLs or ASINs (one per line)
+# Sample product URLs to track
+# Add your own product URLs (one per line, any supported site)
 # Lines starting with # are ignored
 #
-# Popular categories for deal hunting:
-# - Electronics (headphones, tablets, monitors)
-# - Home & Kitchen (robot vacuums, air fryers)
-# - Tech accessories (chargers, cables, cases)
+# Supported sites:
+# - Amazon (amazon.com)
+# - Best Buy (bestbuy.com)
+# - Walmart (walmart.com)
+# - Target (target.com)
 
-# Example ASINs (replace with real products you want to track):
-# B09V3KXJPB
-# B0BSHF7WHW
-# B0C8QJ6VK2
+# === Amazon Examples ===
+# https://www.amazon.com/dp/B09V3KXJPB
+# https://www.amazon.com/dp/B0BSHF7WHW
+
+# === Best Buy Examples ===
+# https://www.bestbuy.com/site/apple-airpods-pro-2nd-generation/4900964.p
+# https://www.bestbuy.com/site/samsung-65-class-cu8000-crystal-uhd-4k/6536964.p
+
+# === Walmart Examples ===
+# https://www.walmart.com/ip/Apple-AirPods-Pro-2nd-Generation/1752657021
+# https://www.walmart.com/ip/PlayStation-5-Console/363472942
+
+# === Target Examples ===
+# https://www.target.com/p/apple-ipad-10-9-inch/-/A-87710636
+# https://www.target.com/p/dyson-v8-cordless-vacuum/-/A-86098792

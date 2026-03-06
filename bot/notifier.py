@@ -1,16 +1,29 @@
-"""Telegram notification system for deal alerts."""
+"""Telegram notification system for deal alerts across multiple sites."""
 
 import asyncio
 from telegram import Bot
 from telegram.constants import ParseMode
 from config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHANNEL_ID
 
+SITE_LABELS = {
+    "amazon": "Amazon",
+    "bestbuy": "Best Buy",
+    "walmart": "Walmart",
+    "target": "Target",
+    "slickdeals": "Slickdeals",
+    "dealnews": "DealNews",
+}
+
+
+def _site_label(site):
+    return SITE_LABELS.get(site, site.title() if site else "Store")
+
 
 def format_deal_message(product, old_price, new_price, drop_percent):
-    """Format a deal alert message for Telegram."""
+    """Format a price drop alert message."""
     savings = old_price - new_price
+    site = _site_label(product.get("site", ""))
 
-    # Price drop severity emoji
     if drop_percent >= 50:
         fire = "🔥🔥🔥"
     elif drop_percent >= 30:
@@ -18,10 +31,13 @@ def format_deal_message(product, old_price, new_price, drop_percent):
     else:
         fire = "🔥"
 
+    buy_url = product.get("affiliate_url") or product.get("url", "#")
+
     message = (
         f"{fire} <b>PRICE DROP ALERT</b> {fire}\n"
         f"\n"
         f"<b>{product['title']}</b>\n"
+        f"🏪 {site}\n"
         f"\n"
         f"💰 <s>${old_price:.2f}</s> → <b>${new_price:.2f}</b>\n"
         f"📉 Save ${savings:.2f} ({drop_percent:.0f}% off)\n"
@@ -32,7 +48,7 @@ def format_deal_message(product, old_price, new_price, drop_percent):
 
     message += (
         f"\n"
-        f'<a href="{product["affiliate_url"]}">🛒 Buy Now on Amazon</a>\n'
+        f'<a href="{buy_url}">🛒 Buy Now on {site}</a>\n'
         f"\n"
         f"<i>Prices may change. Act fast!</i>"
     )
@@ -43,15 +59,49 @@ def format_deal_message(product, old_price, new_price, drop_percent):
 def format_new_product_message(product):
     """Format a message for when a new product is added to tracking."""
     price_str = f"${product['price']:.2f}" if product.get("price") else "Price unavailable"
+    site = _site_label(product.get("site", ""))
+    buy_url = product.get("affiliate_url") or product.get("url", "#")
 
     message = (
         f"📌 <b>Now Tracking</b>\n"
         f"\n"
         f"<b>{product['title']}</b>\n"
+        f"🏪 {site}\n"
         f"💰 Current price: <b>{price_str}</b>\n"
         f"\n"
-        f'<a href="{product["affiliate_url"]}">View on Amazon</a>'
+        f'<a href="{buy_url}">View on {site}</a>'
     )
+
+    return message
+
+
+def format_aggregator_deal(deal):
+    """Format a deal found by an aggregator (Slickdeals, DealNews)."""
+    title = deal.get("title", "Deal")
+    price = deal.get("price")
+    original_price = deal.get("original_price")
+    store = deal.get("store", "")
+    source = _site_label(deal.get("site", ""))
+    url = deal.get("url", "#")
+
+    message = f"🏷️ <b>HOT DEAL</b>\n\n"
+    message += f"<b>{title}</b>\n"
+
+    if store:
+        message += f"🏪 {store}\n"
+
+    if price and original_price and original_price > price:
+        savings = original_price - price
+        pct = (savings / original_price) * 100
+        message += f"💰 <s>${original_price:.2f}</s> → <b>${price:.2f}</b> ({pct:.0f}% off)\n"
+    elif price:
+        message += f"💰 <b>${price:.2f}</b>\n"
+
+    if deal.get("score"):
+        message += f"👍 Score: {deal['score']}\n"
+
+    message += f"\n<a href=\"{url}\">🛒 Get This Deal</a>\n"
+    message += f"\n<i>via {source}</i>"
 
     return message
 
@@ -78,7 +128,7 @@ async def _send_message(text):
 
 
 def send_deal_alert(product, old_price, new_price, drop_percent):
-    """Send a deal alert to the Telegram channel."""
+    """Send a price drop alert to the Telegram channel."""
     message = format_deal_message(product, old_price, new_price, drop_percent)
     return asyncio.run(_send_message(message))
 
@@ -86,6 +136,12 @@ def send_deal_alert(product, old_price, new_price, drop_percent):
 def send_tracking_notification(product):
     """Send a notification that a new product is being tracked."""
     message = format_new_product_message(product)
+    return asyncio.run(_send_message(message))
+
+
+def send_aggregator_deal(deal):
+    """Send a deal found by an aggregator."""
+    message = format_aggregator_deal(deal)
     return asyncio.run(_send_message(message))
 
 

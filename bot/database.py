@@ -1,4 +1,4 @@
-"""SQLite database for tracking products and price history."""
+"""SQLite database for tracking products and price history across multiple sites."""
 
 import sqlite3
 from datetime import datetime
@@ -19,9 +19,11 @@ def init_db():
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS products (
-            asin TEXT PRIMARY KEY,
+            product_id TEXT PRIMARY KEY,
+            site TEXT NOT NULL DEFAULT 'amazon',
             title TEXT NOT NULL,
             url TEXT NOT NULL,
+            affiliate_url TEXT,
             image_url TEXT,
             current_price REAL,
             lowest_price REAL,
@@ -35,30 +37,60 @@ def init_db():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS price_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            asin TEXT NOT NULL,
+            product_id TEXT NOT NULL,
             price REAL NOT NULL,
             recorded_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (asin) REFERENCES products(asin)
+            FOREIGN KEY (product_id) REFERENCES products(product_id)
         )
     """)
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS alerts_sent (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            asin TEXT NOT NULL,
+            product_id TEXT NOT NULL,
             old_price REAL,
             new_price REAL,
             drop_percent REAL,
             sent_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (asin) REFERENCES products(asin)
+            FOREIGN KEY (product_id) REFERENCES products(product_id)
         )
     """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS aggregator_deals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source TEXT NOT NULL,
+            title TEXT NOT NULL,
+            price REAL,
+            original_price REAL,
+            store TEXT,
+            url TEXT NOT NULL,
+            found_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            notified INTEGER DEFAULT 0
+        )
+    """)
+
+    # Migrate old 'asin' column if upgrading from v1
+    try:
+        cursor.execute("SELECT product_id FROM products LIMIT 1")
+    except sqlite3.OperationalError:
+        # Old schema with 'asin' column - migrate
+        try:
+            cursor.execute("ALTER TABLE products RENAME COLUMN asin TO product_id")
+            cursor.execute("ALTER TABLE products ADD COLUMN site TEXT NOT NULL DEFAULT 'amazon'")
+            cursor.execute("ALTER TABLE products ADD COLUMN affiliate_url TEXT")
+            cursor.execute("ALTER TABLE price_history RENAME COLUMN asin TO product_id")
+            cursor.execute("ALTER TABLE alerts_sent RENAME COLUMN asin TO product_id")
+            print("[DB] Migrated database to multi-site schema.")
+        except sqlite3.OperationalError:
+            pass
 
     conn.commit()
     conn.close()
 
 
-def add_product(asin, title, url, image_url=None, price=None):
+def add_product(product_id, title, url, site="amazon", affiliate_url=None,
+                image_url=None, price=None):
     """Add a product to track."""
     conn = get_connection()
     cursor = conn.cursor()
@@ -66,27 +98,32 @@ def add_product(asin, title, url, image_url=None, price=None):
 
     cursor.execute("""
         INSERT OR REPLACE INTO products
-        (asin, title, url, image_url, current_price, lowest_price, highest_price, last_checked)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, (asin, title, url, image_url, price, price, price, now))
+        (product_id, site, title, url, affiliate_url, image_url,
+         current_price, lowest_price, highest_price, last_checked)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (product_id, site, title, url, affiliate_url, image_url,
+          price, price, price, now))
 
     if price is not None:
         cursor.execute("""
-            INSERT INTO price_history (asin, price, recorded_at)
+            INSERT INTO price_history (product_id, price, recorded_at)
             VALUES (?, ?, ?)
-        """, (asin, price, now))
+        """, (product_id, price, now))
 
     conn.commit()
     conn.close()
 
 
-def update_price(asin, new_price):
+def update_price(product_id, new_price):
     """Update price for a product and record history. Returns (old_price, new_price) or None."""
     conn = get_connection()
     cursor = conn.cursor()
     now = datetime.utcnow().isoformat()
 
-    cursor.execute("SELECT current_price, lowest_price, highest_price FROM products WHERE asin = ?", (asin,))
+    cursor.execute(
+        "SELECT current_price, lowest_price, highest_price FROM products WHERE product_id = ?",
+        (product_id,)
+    )
     row = cursor.fetchone()
     if not row:
         conn.close()
@@ -102,13 +139,13 @@ def update_price(asin, new_price):
     cursor.execute("""
         UPDATE products
         SET current_price = ?, lowest_price = ?, highest_price = ?, last_checked = ?
-        WHERE asin = ?
-    """, (new_price, new_lowest, new_highest, now, asin))
+        WHERE product_id = ?
+    """, (new_price, new_lowest, new_highest, now, product_id))
 
     cursor.execute("""
-        INSERT INTO price_history (asin, price, recorded_at)
+        INSERT INTO price_history (product_id, price, recorded_at)
         VALUES (?, ?, ?)
-    """, (asin, new_price, now))
+    """, (product_id, new_price, now))
 
     conn.commit()
     conn.close()
@@ -120,20 +157,59 @@ def get_active_products():
     """Get all actively tracked products."""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM products WHERE active = 1")
+    cursor.execute("SELECT * FROM products WHERE active = 1 ORDER BY site, title")
     rows = cursor.fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
 
-def record_alert(asin, old_price, new_price, drop_percent):
+def get_active_products_by_site(site):
+    """Get tracked products for a specific site."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM products WHERE active = 1 AND site = ?", (site,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def record_alert(product_id, old_price, new_price, drop_percent):
     """Record that an alert was sent."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO alerts_sent (asin, old_price, new_price, drop_percent)
+        INSERT INTO alerts_sent (product_id, old_price, new_price, drop_percent)
         VALUES (?, ?, ?, ?)
-    """, (asin, old_price, new_price, drop_percent))
+    """, (product_id, old_price, new_price, drop_percent))
+    conn.commit()
+    conn.close()
+
+
+def save_aggregator_deal(source, title, price, original_price, store, url):
+    """Save a deal found by an aggregator scraper."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Check if we already have this deal (by URL)
+    cursor.execute("SELECT id FROM aggregator_deals WHERE url = ?", (url,))
+    if cursor.fetchone():
+        conn.close()
+        return False  # Already exists
+
+    cursor.execute("""
+        INSERT INTO aggregator_deals (source, title, price, original_price, store, url)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (source, title, price, original_price, store, url))
+    conn.commit()
+    conn.close()
+    return True  # New deal
+
+
+def mark_deal_notified(deal_id):
+    """Mark an aggregator deal as notified."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE aggregator_deals SET notified = 1 WHERE id = ?", (deal_id,))
     conn.commit()
     conn.close()
 
@@ -148,23 +224,36 @@ def get_product_count():
     return count
 
 
-def get_price_history(asin, limit=30):
+def get_site_counts():
+    """Get product counts per site."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT site, COUNT(*) as cnt FROM products
+        WHERE active = 1 GROUP BY site ORDER BY cnt DESC
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    return {r["site"]: r["cnt"] for r in rows}
+
+
+def get_price_history(product_id, limit=30):
     """Get recent price history for a product."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
         SELECT price, recorded_at FROM price_history
-        WHERE asin = ? ORDER BY recorded_at DESC LIMIT ?
-    """, (asin, limit))
+        WHERE product_id = ? ORDER BY recorded_at DESC LIMIT ?
+    """, (product_id, limit))
     rows = cursor.fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
 
-def remove_product(asin):
+def remove_product(product_id):
     """Deactivate a product from tracking."""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("UPDATE products SET active = 0 WHERE asin = ?", (asin,))
+    cursor.execute("UPDATE products SET active = 0 WHERE product_id = ?", (product_id,))
     conn.commit()
     conn.close()

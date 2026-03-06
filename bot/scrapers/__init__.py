@@ -1,0 +1,55 @@
+"""Multi-site deal scrapers."""
+
+from scrapers.amazon import AmazonScraper
+from scrapers.bestbuy import BestBuyScraper
+from scrapers.walmart import WalmartScraper
+from scrapers.target import TargetScraper
+from scrapers.slickdeals import SlickdealsScraper
+from scrapers.dealnews import DealNewsScraper
+from scrapers.base import BaseScraper
+
+# All available scrapers
+ALL_SCRAPERS = {
+    "amazon": AmazonScraper,
+    "bestbuy": BestBuyScraper,
+    "walmart": WalmartScraper,
+    "target": TargetScraper,
+}
+
+# Deal aggregators (scrape curated deal feeds)
+DEAL_AGGREGATORS = {
+    "slickdeals": SlickdealsScraper,
+    "dealnews": DealNewsScraper,
+}
+
+
+def get_scraper_for_url(url):
+    """Return the appropriate scraper class for a given URL."""
+    url_lower = url.lower()
+    if "amazon.com" in url_lower or "amzn.to" in url_lower:
+        return AmazonScraper()
+    elif "bestbuy.com" in url_lower:
+        return BestBuyScraper()
+    elif "walmart.com" in url_lower:
+        return WalmartScraper()
+    elif "target.com" in url_lower:
+        return TargetScraper()
+    elif "slickdeals.net" in url_lower:
+        return SlickdealsScraper()
+    elif "dealnews.com" in url_lower:
+        return DealNewsScraper()
+    return None
+
+
+def detect_site(url):
+    """Detect which site a URL belongs to."""
+    url_lower = url.lower()
+    if "amazon.com" in url_lower or "amzn.to" in url_lower:
+        return "amazon"
+    elif "bestbuy.com" in url_lower:
+        return "bestbuy"
+    elif "walmart.com" in url_lower:
+        return "walmart"
+    elif "target.com" in url_lower:
+        return "target"
+    return "unknown"

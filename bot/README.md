@@ -1,6 +1,17 @@
 # Deal Alert Bot
 
-Amazon price drop monitor that sends deal alerts to your Telegram channel with your affiliate links. Every purchase through your link earns you 4-10% commission.
+Multi-site price drop monitor that sends deal alerts to your Telegram channel with affiliate links. Scans **Amazon, Best Buy, Walmart, Target** for price drops and **Slickdeals + DealNews** for hot curated deals.
+
+## Supported Sites
+
+| Site | Type | Affiliate Program |
+|---|---|---|
+| **Amazon** | Product tracking + deals | [Amazon Associates](https://affiliate-program.amazon.com) |
+| **Best Buy** | Product tracking + deals | [Impact Radius](https://impact.com) |
+| **Walmart** | Product tracking + deals | [Impact Radius](https://impact.com) |
+| **Target** | Product tracking + deals | [Impact Radius](https://impact.com) |
+| **Slickdeals** | Deal aggregator | Uses store affiliate links |
+| **DealNews** | Deal aggregator | Uses store affiliate links |
 
 ## Quick Setup (PyCharm)
 
@@ -10,65 +21,75 @@ cd bot
 pip install -r requirements.txt
 ```
 
-### 2. Create a Telegram Bot
-1. Open Telegram and message [@BotFather](https://t.me/BotFather)
-2. Send `/newbot` and follow the prompts
-3. Copy the bot token you receive
+### 2. Create a Telegram Bot & Channel
+1. Message [@BotFather](https://t.me/BotFather) on Telegram, send `/newbot`
+2. Copy the bot token
+3. Create a Telegram channel (e.g., "Daily Deals & Drops")
+4. Add your bot as a channel **administrator**
 
-### 3. Create a Telegram Channel
-1. Create a new Telegram channel (e.g., "Daily Deals & Drops")
-2. Add your bot as an **administrator** of the channel
-3. Get the channel ID:
-   - Public channel: use `@yourchannel` format
-   - Private channel: forward a message from the channel to [@userinfobot](https://t.me/userinfobot)
+### 3. Sign Up for Affiliate Programs
+- **Amazon**: [affiliate-program.amazon.com](https://affiliate-program.amazon.com) → tag like `yourtag-20`
+- **Walmart/Best Buy/Target**: [impact.com](https://impact.com) → search for each store's program
 
-### 4. Get an Amazon Affiliate Tag
-1. Sign up at [Amazon Associates](https://affiliate-program.amazon.com)
-2. Your tag will look like `yourtag-20`
-
-### 5. Configure the Bot
+### 4. Configure
 ```bash
 cp .env.example .env
 ```
-Edit `.env` with your credentials:
-```
-TELEGRAM_BOT_TOKEN=123456:ABC-DEF...
-TELEGRAM_CHANNEL_ID=@yourdealchannel
-AMAZON_AFFILIATE_TAG=yourtag-20
-CHECK_INTERVAL_MINUTES=60
-MIN_DROP_PERCENT=15
-MIN_DROP_DOLLARS=5
-```
+Edit `.env` with your credentials.
 
-### 6. Add Products to Track
+### 5. Add Products to Track
 ```bash
-# Add a single product
+# Amazon
 python main.py add https://www.amazon.com/dp/B09V3KXJPB
 
-# Add from a file (one URL/ASIN per line)
-python main.py add-bulk sample_watchlist.txt
+# Best Buy
+python main.py add https://www.bestbuy.com/site/some-product/1234567.p
+
+# Walmart
+python main.py add https://www.walmart.com/ip/some-product/123456789
+
+# Target
+python main.py add https://www.target.com/p/some-product/-/A-12345678
+
+# Bulk add from file (one URL per line, any site)
+python main.py add-bulk watchlist.txt
 ```
 
-### 7. Run the Bot
+### 6. Run
 ```bash
 python main.py run
 ```
-The bot will check prices every hour (configurable) and send Telegram alerts when prices drop.
 
 ## Commands
 
 | Command | Description |
 |---|---|
-| `python main.py run` | Start continuous monitoring |
-| `python main.py check` | Check all prices once |
-| `python main.py add <url>` | Add a product to track |
+| `python main.py run` | Start continuous monitoring (prices + deal scans) |
+| `python main.py check` | Check all tracked product prices once |
+| `python main.py scan-deals` | Scan Slickdeals & DealNews for hot deals |
+| `python main.py scan-all` | Scan ALL sites (retailers + aggregators) |
+| `python main.py add <url>` | Add a product from any supported site |
 | `python main.py add-bulk <file>` | Add products from a file |
-| `python main.py status` | Show all tracked products |
-| `python main.py remove <asin>` | Stop tracking a product |
+| `python main.py status` | Show tracked products grouped by site |
+| `python main.py remove <id>` | Stop tracking a product |
+| `python main.py sites` | List all supported sites |
+
+## How It Works
+
+### Product Tracking (Amazon, Best Buy, Walmart, Target)
+1. You add product URLs from any supported store
+2. Bot checks prices on a schedule (default: every 60 minutes)
+3. When a price drops 15%+ and $5+ (configurable), it sends a Telegram alert
+4. The alert contains your **affiliate link** — you earn commission on purchases
+
+### Deal Scanning (Slickdeals, DealNews)
+1. Bot scrapes deal aggregator front pages every 2 hours
+2. New deals are sent to your Telegram channel automatically
+3. Covers deals from hundreds of stores (aggregators curate the best deals)
 
 ## Running in PyCharm
 
-1. Open the `bot` folder as a project in PyCharm
+1. Open the `bot` folder as a project
 2. Set up a Python interpreter and install requirements
 3. Create a Run Configuration:
    - Script: `main.py`
@@ -76,20 +97,50 @@ The bot will check prices every hour (configurable) and send Telegram alerts whe
    - Working directory: `bot/`
 4. Click Run
 
-## How to Maximize Revenue
+## Revenue Strategy
 
-1. **Track 50-100+ popular products** across electronics, home, and tech
+### Commission Rates by Store
+| Store | Commission Rate | Cookie Duration |
+|---|---|---|
+| Amazon | 1-10% (varies by category) | 24 hours |
+| Best Buy | 1-7% | 1 day |
+| Walmart | 1-4% | 3 days |
+| Target | 1-8% | 7 days |
+
+### How to Maximize Revenue
+1. **Track 50-100+ products** across all 4 stores
 2. **Focus on high-ticket items** ($100+) for bigger commissions
-3. **Promote your Telegram channel** on social media, Reddit deal communities
-4. **Lower thresholds** for popular items (even 10% drops on popular items get clicks)
-5. **Check during deal events** (Prime Day, Black Friday) - set interval to 15 minutes
+3. **Promote your Telegram channel** on Reddit, Twitter, deal forums
+4. **Run during deal events** (Prime Day, Black Friday) — set interval to 15 mins
+5. **Use scan-deals** regularly — aggregator deals get the most engagement
 
-## Revenue Potential
-
+### Revenue Potential
 | Channel Subscribers | Monthly Clicks | Estimated Commission |
 |---|---|---|
-| 100 | 200 | $50-150 |
-| 1,000 | 2,000 | $500-1,500 |
-| 10,000 | 20,000 | $5,000-15,000 |
+| 100 | 200 | $50-200 |
+| 1,000 | 2,000 | $500-2,000 |
+| 10,000 | 20,000 | $5,000-20,000 |
 
-Amazon Associates pays 4-10% depending on category. A single person buying a $1,000 TV through your link = $40-100 commission.
+## File Structure
+
+```
+bot/
+├── main.py              # CLI entry point and scheduler
+├── scraper.py           # Multi-site scraper router
+├── tracker.py           # Deal detection and product management
+├── notifier.py          # Telegram alert formatting and sending
+├── database.py          # SQLite storage for prices and deals
+├── config.py            # Configuration loader
+├── requirements.txt     # Python dependencies
+├── .env.example         # Config template
+├── sample_watchlist.txt # Example product list
+└── scrapers/
+    ├── __init__.py      # Scraper registry and auto-detection
+    ├── base.py          # Base scraper class
+    ├── amazon.py        # Amazon scraper
+    ├── bestbuy.py       # Best Buy scraper
+    ├── walmart.py       # Walmart scraper
+    ├── target.py        # Target scraper
+    ├── slickdeals.py    # Slickdeals aggregator
+    └── dealnews.py      # DealNews aggregator
+```
