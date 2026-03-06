@@ -36,6 +36,7 @@ from tracker import (
     check_all_prices, add_new_product, scan_deals,
     scan_all_deals, scan_lifestyle, scan_category, get_status_text,
 )
+from url_safety import is_trusted_url
 
 logging.basicConfig(
     format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
@@ -106,6 +107,15 @@ async def add_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     url = context.args[0]
+
+    if not is_trusted_url(url):
+        await update.message.reply_text(
+            "That URL is not from a supported site.\n"
+            "Only trusted stores are allowed (no shortened or unknown links).\n"
+            "Use /sites to see supported stores."
+        )
+        return
+
     await update.message.reply_text(f"Adding product from: {url}\nScraping...")
 
     loop = asyncio.get_event_loop()

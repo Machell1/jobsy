@@ -1,9 +1,13 @@
 """Telegram notification system for deal alerts across multiple sites."""
 
 import asyncio
+import logging
 from telegram import Bot
 from telegram.constants import ParseMode
 from config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHANNEL_ID
+from url_safety import validate_deal, validate_product, sanitize_url
+
+logger = logging.getLogger("DealBot.Notifier")
 
 SITE_LABELS = {
     "amazon": "Amazon",
@@ -34,7 +38,12 @@ def _site_label(site):
 
 
 def format_deal_message(product, old_price, new_price, drop_percent):
-    """Format a price drop alert message."""
+    """Format a price drop alert message. Returns None if product fails safety checks."""
+    is_valid, reason = validate_product(product)
+    if not is_valid:
+        logger.warning("Blocked unsafe product alert: %s", reason)
+        return None
+
     savings = old_price - new_price
     site = _site_label(product.get("site", ""))
 
@@ -45,7 +54,10 @@ def format_deal_message(product, old_price, new_price, drop_percent):
     else:
         fire = "🔥"
 
-    buy_url = product.get("affiliate_url") or product.get("url", "#")
+    buy_url = sanitize_url(product.get("affiliate_url")) or sanitize_url(product.get("url")) or None
+    if not buy_url:
+        logger.warning("Blocked untrusted URL in price alert: %s", product.get("url"))
+        return None
 
     message = (
         f"{fire} <b>PRICE DROP ALERT</b> {fire}\n"
@@ -71,10 +83,18 @@ def format_deal_message(product, old_price, new_price, drop_percent):
 
 
 def format_new_product_message(product):
-    """Format a message for when a new product is added to tracking."""
+    """Format a message for when a new product is added to tracking. Returns None if unsafe."""
+    is_valid, reason = validate_product(product)
+    if not is_valid:
+        logger.warning("Blocked unsafe product tracking message: %s", reason)
+        return None
+
     price_str = f"${product['price']:.2f}" if product.get("price") else "Price unavailable"
     site = _site_label(product.get("site", ""))
-    buy_url = product.get("affiliate_url") or product.get("url", "#")
+    buy_url = sanitize_url(product.get("affiliate_url")) or sanitize_url(product.get("url")) or None
+    if not buy_url:
+        logger.warning("Blocked untrusted URL in tracking message: %s", product.get("url"))
+        return None
 
     message = (
         f"📌 <b>Now Tracking</b>\n"
@@ -90,13 +110,21 @@ def format_new_product_message(product):
 
 
 def format_aggregator_deal(deal):
-    """Format a deal found by an aggregator or lifestyle scraper."""
+    """Format a deal found by an aggregator or lifestyle scraper. Returns None if unsafe."""
+    is_valid, reason = validate_deal(deal)
+    if not is_valid:
+        logger.warning("Blocked unsafe aggregator deal: %s", reason)
+        return None
+
     title = deal.get("title", "Deal")
     price = deal.get("price")
     original_price = deal.get("original_price")
     store = deal.get("store", "")
     source = _site_label(deal.get("site", ""))
-    url = deal.get("url", "#")
+    url = sanitize_url(deal.get("url")) or None
+    if not url:
+        logger.warning("Blocked untrusted URL in aggregator deal: %s", deal.get("url"))
+        return None
     category = deal.get("category", "")
 
     cat_emoji = CATEGORY_EMOJI.get(category, "🏷️")
@@ -144,20 +172,26 @@ async def _send_message(text):
 
 
 def send_deal_alert(product, old_price, new_price, drop_percent):
-    """Send a price drop alert to the Telegram channel."""
+    """Send a price drop alert to the Telegram channel. Blocks unsafe links."""
     message = format_deal_message(product, old_price, new_price, drop_percent)
+    if not message:
+        return False
     return asyncio.run(_send_message(message))
 
 
 def send_tracking_notification(product):
-    """Send a notification that a new product is being tracked."""
+    """Send a notification that a new product is being tracked. Blocks unsafe links."""
     message = format_new_product_message(product)
+    if not message:
+        return False
     return asyncio.run(_send_message(message))
 
 
 def send_aggregator_deal(deal):
-    """Send a deal found by an aggregator."""
+    """Send a deal found by an aggregator. Blocks unsafe links."""
     message = format_aggregator_deal(deal)
+    if not message:
+        return False
     return asyncio.run(_send_message(message))
 
 

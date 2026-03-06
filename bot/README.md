@@ -86,6 +86,35 @@ Send `/add` followed by a product URL from any supported site:
 /add https://www.ebay.com/itm/123456789
 ```
 
+## Link Safety & Scam Protection
+
+The bot has built-in protection to ensure your customers **never receive scam or phishing links**:
+
+- **Domain whitelist** — Only links from trusted, verified stores are sent to your channel (Amazon, Best Buy, Walmart, Target, eBay, Slickdeals, DealNews, Groupon, Skyscanner, Expedia)
+- **URL shortener blocking** — bit.ly, tinyurl, and other shortened links are automatically blocked (scammers use these to hide malicious destinations)
+- **Phishing pattern detection** — URLs containing suspicious keywords (login, verify, account-update, etc.) are rejected
+- **Scam title filtering** — Deals with scam-style titles ("free iPhone", "claim your prize", "crypto giveaway") are blocked
+- **Price sanity checks** — Negative or unreasonably high prices are filtered out
+- **Affiliate URL validation** — Both the original URL and the affiliate URL must pass safety checks before being sent
+- **Input validation** — The `/add` command rejects URLs from non-whitelisted domains
+
+Every link that reaches your Telegram channel has been verified against the trusted domain whitelist. If a scraped deal contains a URL from an unknown domain, it is silently dropped and logged.
+
+## Free Hosting (Railway)
+
+The bot is designed to run **completely free** on Railway:
+
+- **Railway free tier** — Railway offers a free trial with $5 of credit, which is enough for a lightweight bot like this (no web server, just a background worker)
+- **No credit card required** to start — sign up with GitHub
+- **Worker process** — The bot uses a `worker` type (not a web server), which consumes minimal resources
+- **SQLite database** — No paid database service needed; uses a file stored on a Railway volume
+- **Stays within free limits** — The bot sleeps between price checks (60-180 min intervals), keeping CPU/memory usage very low
+
+To keep it free long-term, Railway periodically resets trial credits. For truly permanent free hosting, consider these alternatives:
+- **Render** (render.com) — Free background worker tier
+- **Fly.io** — Free tier with 3 shared VMs
+- **Oracle Cloud** — Always-free ARM instance (best for permanent hosting)
+
 ## How It Works
 
 ### Product Tracking (Amazon, Best Buy, Walmart, Target, eBay)
@@ -144,6 +173,7 @@ bot/
 ├── scraper.py           # Multi-site scraper router
 ├── tracker.py           # Deal detection and product management
 ├── notifier.py          # Telegram alert formatting and sending
+├── url_safety.py        # Link safety: domain whitelist, scam/phishing blocker
 ├── database.py          # SQLite storage for prices and deals
 ├── config.py            # Configuration loader
 ├── requirements.txt     # Python dependencies
