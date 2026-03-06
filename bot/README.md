@@ -1,6 +1,6 @@
 # Deal Alert Bot
 
-Multi-site price drop monitor that sends deal alerts to your Telegram channel with affiliate links. Scans **Amazon, Best Buy, Walmart, Target, eBay** for price drops, **Slickdeals + DealNews** for curated deals, and **Groupon, Skyscanner, Expedia** for flights, holiday packages, birthday gifts, wedding deals, baby shower gifts, and party deals.
+Multi-site price drop monitor that sends deal alerts to your Telegram channel with affiliate links. Fully controlled via **Telegram commands** and hosted 24/7 on **Railway**. Scans **Amazon, Best Buy, Walmart, Target, eBay** for price drops, **Slickdeals + DealNews** for curated deals, and **Groupon, Skyscanner, Expedia** for flights, holiday packages, birthday gifts, wedding deals, baby shower gifts, and party deals.
 
 ## Supported Sites
 
@@ -17,62 +17,47 @@ Multi-site price drop monitor that sends deal alerts to your Telegram channel wi
 | **Skyscanner** | Flight deals | [Impact Radius](https://impact.com) |
 | **Expedia** | Holiday packages | [CJ Affiliate](https://cj.com) |
 
-## Quick Setup (PyCharm)
+## Setup & Deploy
 
-### 1. Install Dependencies
-```bash
-cd bot
-pip install -r requirements.txt
-```
-
-### 2. Create a Telegram Bot & Channel
+### 1. Create a Telegram Bot & Channel
 1. Message [@BotFather](https://t.me/BotFather) on Telegram, send `/newbot`
 2. Copy the bot token
 3. Create a Telegram channel (e.g., "Daily Deals & Drops")
 4. Add your bot as a channel **administrator**
+5. Get your Telegram user ID from [@userinfobot](https://t.me/userinfobot)
 
-### 3. Sign Up for Affiliate Programs
+### 2. Sign Up for Affiliate Programs
 - **Amazon**: [affiliate-program.amazon.com](https://affiliate-program.amazon.com) → tag like `yourtag-20`
 - **Walmart/Best Buy/Target**: [impact.com](https://impact.com) → search for each store's program
 - **eBay**: [partnernetwork.ebay.com](https://partnernetwork.ebay.com) → get your campaign ID
 - **Groupon/Skyscanner**: [impact.com](https://impact.com) → search for each program
 - **Expedia**: [cj.com](https://cj.com) → search for Expedia program
 
-### 4. Configure
+### 3. Configure Environment Variables
 ```bash
 cp .env.example .env
 ```
-Edit `.env` with your credentials.
+Edit `.env` with your credentials (bot token, channel ID, affiliate tags).
 
-### 5. Add Products to Track
-```bash
-# Amazon
-python main.py add https://www.amazon.com/dp/B09V3KXJPB
+### 4. Deploy to Railway (24/7 Hosting)
 
-# Best Buy
-python main.py add https://www.bestbuy.com/site/some-product/1234567.p
+1. Push this repo to GitHub
+2. Go to [railway.app](https://railway.app) and create a new project
+3. Connect your GitHub repo, set the root directory to `bot/`
+4. Add environment variables in Railway's dashboard:
+   - `TELEGRAM_BOT_TOKEN` — your bot token
+   - `TELEGRAM_CHANNEL_ID` — your channel ID
+   - `ADMIN_USER_IDS` — your Telegram user ID (from step 1.5)
+   - `DB_PATH` — `/data/deals.db`
+   - Plus any affiliate tags you want
+5. Add a **Volume** in Railway, mount it at `/data`
+6. Deploy — the bot starts automatically and runs 24/7
 
-# Walmart
-python main.py add https://www.walmart.com/ip/some-product/123456789
-
-# Target
-python main.py add https://www.target.com/p/some-product/-/A-12345678
-
-# eBay
-python main.py add https://www.ebay.com/itm/123456789
-
-# Bulk add from file (one URL per line, any site)
-python main.py add-bulk watchlist.txt
-```
-
-### 6. Run
-```bash
-python main.py run
-```
+The bot uses a `worker` process (not a web server), so it stays running continuously.
 
 ## Telegram Bot Commands
 
-Control the bot directly from Telegram (the primary way to use it):
+Control the bot entirely from Telegram:
 
 | Command | Description |
 |---|---|
@@ -91,24 +76,20 @@ Control the bot directly from Telegram (the primary way to use it):
 | `/holidays` | Holiday packages (Expedia) |
 | `/sites` | List supported sites |
 
-## CLI Commands (Local Development)
-
-| Command | Description |
-|---|---|
-| `python main.py run` | Start continuous monitoring (prices + deal scans) |
-| `python main.py check` | Check all tracked product prices once |
-| `python main.py scan-deals` | Scan Slickdeals & DealNews for hot deals |
-| `python main.py scan-all` | Scan ALL sites (retailers + aggregators) |
-| `python main.py add <url>` | Add a product from any supported site |
-| `python main.py add-bulk <file>` | Add products from a file |
-| `python main.py status` | Show tracked products grouped by site |
-| `python main.py remove <id>` | Stop tracking a product |
-| `python main.py sites` | List all supported sites |
+### Adding Products
+Send `/add` followed by a product URL from any supported site:
+```
+/add https://www.amazon.com/dp/B09V3KXJPB
+/add https://www.bestbuy.com/site/some-product/1234567.p
+/add https://www.walmart.com/ip/some-product/123456789
+/add https://www.target.com/p/some-product/-/A-12345678
+/add https://www.ebay.com/itm/123456789
+```
 
 ## How It Works
 
 ### Product Tracking (Amazon, Best Buy, Walmart, Target, eBay)
-1. You add product URLs from any supported store
+1. You add product URLs via `/add` in Telegram
 2. Bot checks prices on a schedule (default: every 60 minutes)
 3. When a price drops 15%+ and $5+ (configurable), it sends a Telegram alert
 4. The alert contains your **affiliate link** — you earn commission on purchases
@@ -123,40 +104,6 @@ Control the bot directly from Telegram (the primary way to use it):
 2. Categories: flights, holiday packages, birthday gifts, wedding packages, baby shower gifts, party deals
 3. Each deal includes your affiliate link for commission
 4. Use category commands (/flights, /birthday, /wedding, etc.) for on-demand scans
-
-## Deploy to Railway (24/7 Hosting)
-
-1. Push this repo to GitHub
-2. Go to [railway.app](https://railway.app) and create a new project
-3. Connect your GitHub repo, set the root directory to `bot/`
-4. Add environment variables in Railway's dashboard:
-   - `TELEGRAM_BOT_TOKEN` — your bot token
-   - `TELEGRAM_CHANNEL_ID` — your channel ID
-   - `ADMIN_USER_IDS` — your Telegram user ID (get it from @userinfobot)
-   - `DB_PATH` — `/data/deals.db`
-   - Plus any affiliate tags you want
-5. Add a **Volume** in Railway, mount it at `/data`
-6. Deploy — the bot starts automatically and runs 24/7
-
-The bot uses a `worker` process (not a web server), so it stays running continuously.
-
-## Running Locally
-
-### PyCharm
-1. Open the `bot` folder as a project
-2. Set up a Python interpreter and install requirements
-3. Create a Run Configuration:
-   - Script: `telegram_bot.py`
-   - Working directory: `bot/`
-4. Click Run
-
-### Command Line
-```bash
-cd bot
-python telegram_bot.py
-```
-
-The CLI entry point (`main.py`) is also still available for local debugging.
 
 ## Revenue Strategy
 
@@ -177,7 +124,7 @@ The CLI entry point (`main.py`) is also still available for local debugging.
 2. **Focus on high-ticket items** ($100+) for bigger commissions
 3. **Promote your Telegram channel** on Reddit, Twitter, deal forums
 4. **Run during deal events** (Prime Day, Black Friday) — set interval to 15 mins
-5. **Use scan-deals** regularly — aggregator deals get the most engagement
+5. **Use /deals** regularly — aggregator deals get the most engagement
 6. **Use /lifestyle** to find flight, gift, and event deals — high commission categories
 7. **Target seasonal events** — wedding season, holidays, baby showers drive big commissions
 
@@ -192,8 +139,8 @@ The CLI entry point (`main.py`) is also still available for local debugging.
 
 ```
 bot/
-├── telegram_bot.py      # Telegram bot entry point (primary)
-├── main.py              # CLI entry point and scheduler (local dev)
+├── telegram_bot.py      # Telegram bot entry point
+├── main.py              # CLI entry point (local debugging only)
 ├── scraper.py           # Multi-site scraper router
 ├── tracker.py           # Deal detection and product management
 ├── notifier.py          # Telegram alert formatting and sending
@@ -217,4 +164,13 @@ bot/
     ├── expedia.py       # Expedia (holiday packages)
     ├── slickdeals.py    # Slickdeals aggregator
     └── dealnews.py      # DealNews aggregator
+```
+
+## Local Development
+
+For local testing, you can run the bot directly:
+```bash
+cd bot
+pip install -r requirements.txt
+python telegram_bot.py
 ```
