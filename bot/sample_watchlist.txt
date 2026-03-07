@@ -1,0 +1,29 @@
+# Sample product URLs to track
+# Add your own product URLs (one per line, any supported site)
+# Lines starting with # are ignored
+#
+# Supported sites:
+# - Amazon (amazon.com)
+# - Best Buy (bestbuy.com)
+# - Walmart (walmart.com)
+# - Target (target.com)
+# - eBay (ebay.com)
+
+# === Amazon Examples ===
+# https://www.amazon.com/dp/B09V3KXJPB
+# https://www.amazon.com/dp/B0BSHF7WHW
+
+# === Best Buy Examples ===
+# https://www.bestbuy.com/site/apple-airpods-pro-2nd-generation/4900964.p
+# https://www.bestbuy.com/site/samsung-65-class-cu8000-crystal-uhd-4k/6536964.p
+
+# === Walmart Examples ===
+# https://www.walmart.com/ip/Apple-AirPods-Pro-2nd-Generation/1752657021
+# https://www.walmart.com/ip/PlayStation-5-Console/363472942
+
+# === eBay Examples ===
+# https://www.ebay.com/itm/123456789
+
+# === Target Examples ===
+# https://www.target.com/p/apple-ipad-10-9-inch/-/A-87710636
+# https://www.target.com/p/dyson-v8-cordless-vacuum/-/A-86098792
