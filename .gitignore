@@ -43,3 +43,12 @@ __pycache__/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Jobsy #
+##########
+jobsy/**/node_modules/
+jobsy/**/.next/
+jobsy/**/dist/
+jobsy/**/.env
+jobsy/**/alembic/versions/*.pyc
+jobsy/**/*.egg-info/
