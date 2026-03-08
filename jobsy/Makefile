@@ -85,3 +85,17 @@ clean: ## Remove Python cache files
 
 status: ## Show status of all services
 	docker compose ps
+
+# ── Mobile App ──────────────────────────────────────────────
+
+mobile-install: ## Install mobile app dependencies
+	cd mobile && npm install
+
+mobile-dev: ## Start Expo dev server for mobile app
+	cd mobile && npx expo start
+
+mobile-build-android: ## Build Android APK
+	cd mobile && npx eas build --platform android
+
+mobile-build-ios: ## Build iOS IPA
+	cd mobile && npx eas build --platform ios
