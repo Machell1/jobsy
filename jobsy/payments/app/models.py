@@ -48,7 +48,7 @@ class Transaction(Base):
     status = Column(String(20), default="pending")
     # pending -> processing -> completed / failed / refunded
     description = Column(String(500), nullable=True)
-    metadata = Column(JSONB, default={})
+    extra_metadata = Column("metadata", JSONB, default={})
 
     created_at = Column(DateTime(timezone=True), nullable=False)
     updated_at = Column(DateTime(timezone=True), nullable=False)
