@@ -1,4 +1,4 @@
-import { FlatList, Pressable, Text, View } from "react-native";
+import { FlatList, Pressable, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { SERVICE_CATEGORIES } from "@/constants/categories";

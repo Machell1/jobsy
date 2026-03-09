@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from "react-native";
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, TextInput, View } from "react-native";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
@@ -7,7 +7,6 @@ import { useQuery } from "@tanstack/react-query";
 import { getMessages, markConversationRead, Message } from "@/api/chat";
 import { ChatBubble } from "@/components/ChatBubble";
 import { LoadingScreen } from "@/components/LoadingScreen";
-import { COLORS } from "@/constants/theme";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useAuthStore } from "@/stores/auth";
 

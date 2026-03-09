@@ -1,5 +1,5 @@
 import { FlatList, Text, View } from "react-native";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 
 import { getUserRatingSummary, getUserReviews } from "@/api/reviews";

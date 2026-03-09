@@ -12,6 +12,7 @@ interface ChatMessage {
   content: string;
   message_type: string;
   created_at: string;
+  is_read: boolean;
 }
 
 export function useWebSocket(conversationId: string | null) {
@@ -37,7 +38,8 @@ export function useWebSocket(conversationId: string | null) {
 
     socket.onmessage = (event) => {
       try {
-        const msg: ChatMessage = JSON.parse(event.data);
+        const parsed = JSON.parse(event.data);
+        const msg: ChatMessage = { ...parsed, is_read: parsed.is_read ?? false };
         setMessages((prev) => [...prev, msg]);
       } catch {
         // Ignore malformed messages
