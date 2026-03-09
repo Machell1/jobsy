@@ -144,7 +144,7 @@ Each service auto-generates OpenAPI docs:
 ## Contact
 
 - **Website**: [www.jobsyja.com](https://www.jobsyja.com)
-- **Email**: williamsmachell@gmail.com
+- **Email**: jobsyja@jobsyja.com
 - **Twitter/X**: [@MachellWil66296](https://x.com/MachellWil66296)
 
 ## License
