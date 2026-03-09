@@ -25,7 +25,9 @@ def setup_middleware(app: FastAPI, allowed_origins: list[str] | None = None) -> 
 
     @app.middleware("http")
     async def request_logging(request: Request, call_next):
-        request_id = str(uuid.uuid4())[:8]
+        # Use incoming X-Request-ID for distributed tracing, or generate one
+        request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())[:8]
+        request.state.request_id = request_id
         start = time.time()
         response = await call_next(request)
         duration_ms = round((time.time() - start) * 1000, 1)

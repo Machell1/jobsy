@@ -20,7 +20,7 @@ async def handle_swipe_right(payload: dict) -> None:
         user_id=data.get("swiper_id"),
         target_id=data.get("target_id"),
         target_type=data.get("target_type", "unknown"),
-        action="right_swipe",
+        action="swipe_right",
     )
 
 
@@ -31,7 +31,7 @@ async def handle_swipe_left(payload: dict) -> None:
         user_id=data.get("swiper_id"),
         target_id=data.get("target_id"),
         target_type=data.get("target_type", "unknown"),
-        action="left_swipe",
+        action="swipe_left",
     )
 
 

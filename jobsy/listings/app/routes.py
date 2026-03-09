@@ -51,12 +51,19 @@ async def create_listing(data: ListingCreate, request: Request, db: AsyncSession
     await db.flush()
 
     await publish_event("listing.created", {
+        "id": listing.id,
         "listing_id": listing.id,
         "poster_id": user_id,
+        "title": listing.title,
+        "description": listing.description,
         "category": listing.category,
+        "budget_min": float(listing.budget_min) if listing.budget_min else None,
+        "budget_max": float(listing.budget_max) if listing.budget_max else None,
+        "status": listing.status,
         "latitude": data.latitude,
         "longitude": data.longitude,
         "parish": parish,
+        "created_at": listing.created_at.isoformat(),
     })
 
     return listing
@@ -124,6 +131,23 @@ async def update_listing(
         setattr(listing, field, value)
     listing.updated_at = datetime.now(UTC)
     await db.flush()
+
+    await publish_event("listing.updated", {
+        "id": listing.id,
+        "listing_id": listing.id,
+        "poster_id": listing.poster_id,
+        "title": listing.title,
+        "description": listing.description,
+        "category": listing.category,
+        "budget_min": float(listing.budget_min) if listing.budget_min else None,
+        "budget_max": float(listing.budget_max) if listing.budget_max else None,
+        "status": listing.status,
+        "latitude": float(listing.latitude) if listing.latitude else None,
+        "longitude": float(listing.longitude) if listing.longitude else None,
+        "parish": listing.parish,
+        "created_at": listing.created_at.isoformat(),
+    })
+
     return listing
 
 
@@ -140,3 +164,9 @@ async def delete_listing(listing_id: str, request: Request, db: AsyncSession = D
     listing.status = "cancelled"
     listing.updated_at = datetime.now(UTC)
     await db.flush()
+
+    await publish_event("listing.cancelled", {
+        "id": listing.id,
+        "listing_id": listing.id,
+        "poster_id": listing.poster_id,
+    })

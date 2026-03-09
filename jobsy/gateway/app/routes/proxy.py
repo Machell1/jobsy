@@ -21,9 +21,12 @@ async def _proxy_request(service: str, path: str, request: Request, user: dict) 
         return Response(status_code=404, content=f"Service {service} not found")
 
     url = f"{base_url}{path}"
+    # Forward request ID for distributed tracing
+    request_id = getattr(request.state, "request_id", None) or request.headers.get("X-Request-ID", "")
     headers = {
         "X-User-ID": user["user_id"],
         "X-User-Role": user["role"],
+        "X-Request-ID": request_id,
         "Content-Type": request.headers.get("content-type", "application/json"),
     }
 

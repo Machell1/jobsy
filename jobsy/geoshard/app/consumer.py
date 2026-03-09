@@ -86,10 +86,25 @@ async def _upsert_entry(entity_id: str, entity_type: str, lat: float, lng: float
         await db.commit()
 
 
+async def handle_listing_updated(payload: dict) -> None:
+    """Update a listing's geospatial entry when its location changes."""
+    data = payload.get("data", {})
+    listing_id = data.get("listing_id") or data.get("id")
+    lat = data.get("latitude")
+    lng = data.get("longitude")
+
+    if not listing_id or lat is None or lng is None:
+        return
+
+    await _upsert_entry(entity_id=listing_id, entity_type="listing", lat=lat, lng=lng)
+    logger.info("Updated geoshard for listing %s at (%s, %s)", listing_id, lat, lng)
+
+
 async def start_consumers() -> None:
     """Start all geoshard event consumers."""
     logger.info("Starting geoshard consumers...")
     await asyncio.gather(
         consume_events("geoshard.profile_updated", "profile.updated", handle_profile_updated),
         consume_events("geoshard.listing_created", "listing.created", handle_listing_created),
+        consume_events("geoshard.listing_updated", "listing.updated", handle_listing_updated),
     )

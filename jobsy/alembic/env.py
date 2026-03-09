@@ -23,11 +23,13 @@ import chat.app.models  # noqa: F401
 
 # Import ALL service models so Base.metadata contains every table
 import gateway.app.models  # noqa: F401
+import geoshard.app.models  # noqa: F401
 import listings.app.models  # noqa: F401
 import matches.app.models  # noqa: F401
 import notifications.app.models  # noqa: F401
 import payments.app.models  # noqa: F401
 import profiles.app.models  # noqa: F401
+import recommendations.app.models  # noqa: F401
 import reviews.app.models  # noqa: F401
 import swipes.app.models  # noqa: F401
 from shared.database import Base

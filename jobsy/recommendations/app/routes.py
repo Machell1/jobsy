@@ -1,6 +1,7 @@
 """Recommendation service API routes."""
 
 import os
+import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
 
@@ -12,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.database import get_db
 
-from .models import UserPreference
+from .models import InteractionLog, UserPreference
 from .ranker import rank_candidate
 
 router = APIRouter(tags=["recommendations"])
@@ -163,8 +164,20 @@ async def update_preferences(
 
 
 @router.post("/feedback")
-async def record_feedback(data: FeedbackCreate, request: Request):
+async def record_feedback(data: FeedbackCreate, request: Request, db: AsyncSession = Depends(get_db)):
     """Record implicit user feedback (dwell time, views) for future ML training."""
     user_id = _get_user_id(request)
-    # For now, just acknowledge. In production, write to interaction_log.
+
+    log_entry = InteractionLog(
+        id=str(uuid.uuid4()),
+        user_id=user_id,
+        target_id=data.target_id,
+        target_type=data.target_type,
+        action=data.action,
+        duration_ms=data.duration_ms,
+        created_at=datetime.now(UTC),
+    )
+    db.add(log_entry)
+    await db.flush()
+
     return {"status": "recorded", "user_id": user_id, "target_id": data.target_id}

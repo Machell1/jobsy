@@ -4,6 +4,7 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,7 +12,7 @@ from shared.database import get_db
 from shared.events import publish_event
 from shared.geo import encode_geohash, get_parish
 
-from .models import Profile
+from .models import Profile, VerificationRequest
 from .schemas import ProfileCreate, ProfileResponse, ProfileUpdate
 
 router = APIRouter(tags=["profiles"])
@@ -73,11 +74,15 @@ async def update_or_create_profile(
     await db.flush()
 
     await publish_event("profile.updated", {
+        "id": profile.id,
         "user_id": user_id,
+        "display_name": profile.display_name,
+        "bio": profile.bio,
+        "skills": profile.skills,
+        "service_category": profile.service_category,
         "latitude": data.latitude,
         "longitude": data.longitude,
         "parish": parish,
-        "category": profile.service_category,
     })
 
     return profile
@@ -113,3 +118,71 @@ async def get_nearby_profiles(
 
     result = await db.execute(query)
     return result.scalars().all()
+
+
+# --- Verification ---
+
+
+class VerificationSubmit(BaseModel):
+    document_urls: list[str]
+
+
+@router.post("/verification/submit", status_code=status.HTTP_201_CREATED)
+async def submit_verification(
+    data: VerificationSubmit, request: Request, db: AsyncSession = Depends(get_db)
+):
+    """Submit documents for provider verification."""
+    user_id = _get_user_id(request)
+
+    # Check for existing pending request
+    result = await db.execute(
+        select(VerificationRequest).where(
+            VerificationRequest.user_id == user_id,
+            VerificationRequest.status == "pending",
+        )
+    )
+    existing = result.scalar_one_or_none()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A pending verification request already exists",
+        )
+
+    verification = VerificationRequest(
+        id=str(uuid.uuid4()),
+        user_id=user_id,
+        document_urls=data.document_urls,
+        status="pending",
+        submitted_at=datetime.now(UTC),
+    )
+    db.add(verification)
+    await db.flush()
+
+    return {"id": verification.id, "status": verification.status}
+
+
+@router.get("/verification/status")
+async def verification_status(request: Request, db: AsyncSession = Depends(get_db)):
+    """Check current verification status."""
+    user_id = _get_user_id(request)
+
+    result = await db.execute(
+        select(VerificationRequest)
+        .where(VerificationRequest.user_id == user_id)
+        .order_by(VerificationRequest.submitted_at.desc())
+        .limit(1)
+    )
+    verification = result.scalar_one_or_none()
+    if not verification:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No verification request found",
+        )
+
+    return {
+        "id": verification.id,
+        "status": verification.status,
+        "submitted_at": verification.submitted_at.isoformat(),
+        "reviewed_at": verification.reviewed_at.isoformat() if verification.reviewed_at else None,
+        "reviewer_notes": verification.reviewer_notes,
+    }

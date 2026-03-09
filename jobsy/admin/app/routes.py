@@ -9,9 +9,10 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.database import get_db
+from shared.events import publish_event
 
 from .deps import require_admin
-from .models import AuditLog, ModerationQueue
+from .models import AuditLog, ModerationQueue, Profile, VerificationRequest
 
 router = APIRouter(tags=["admin"])
 
@@ -237,6 +238,112 @@ async def get_audit_log(
         }
         for e in entries
     ]
+
+
+# --- Verification management ---
+
+
+@router.get("/verifications/pending")
+async def list_pending_verifications(
+    admin_id: str = Depends(require_admin),
+    limit: int = Query(default=20, le=100),
+    offset: int = 0,
+    db: AsyncSession = Depends(get_db),
+):
+    """List pending verification requests."""
+    query = (
+        select(VerificationRequest)
+        .where(VerificationRequest.status == "pending")
+        .order_by(VerificationRequest.submitted_at.asc())
+        .offset(offset)
+        .limit(limit)
+    )
+
+    result = await db.execute(query)
+    items = result.scalars().all()
+
+    return [
+        {
+            "id": item.id,
+            "user_id": item.user_id,
+            "document_urls": item.document_urls,
+            "status": item.status,
+            "submitted_at": item.submitted_at.isoformat(),
+        }
+        for item in items
+    ]
+
+
+class VerificationReview(BaseModel):
+    action: str = Field(..., pattern=r"^(approve|reject)$")
+    reviewer_notes: str | None = None
+
+
+@router.post("/verifications/{request_id}/review")
+async def review_verification(
+    request_id: str,
+    data: VerificationReview,
+    admin_id: str = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Approve or reject a verification request."""
+    result = await db.execute(
+        select(VerificationRequest).where(VerificationRequest.id == request_id)
+    )
+    verification = result.scalar_one_or_none()
+    if not verification:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Verification request not found",
+        )
+
+    if verification.status != "pending":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Verification request already {verification.status}",
+        )
+
+    now = datetime.now(UTC)
+
+    if data.action == "approve":
+        verification.status = "approved"
+
+        # Update Profile.is_verified
+        profile_result = await db.execute(
+            select(Profile).where(Profile.user_id == verification.user_id)
+        )
+        profile = profile_result.scalar_one_or_none()
+        if profile:
+            profile.is_verified = True
+
+        # Publish profile.verified event
+        await publish_event("profile.verified", {
+            "user_id": verification.user_id,
+            "verification_request_id": verification.id,
+        })
+    else:
+        verification.status = "rejected"
+
+    verification.reviewer_notes = data.reviewer_notes
+    verification.reviewed_at = now
+    await db.flush()
+
+    # Log in audit trail
+    await _log_action(
+        db, admin_id,
+        action=f"verification.{data.action}",
+        target_type="verification_request",
+        target_id=request_id,
+        reason=data.reviewer_notes,
+        details={"user_id": verification.user_id},
+    )
+    await db.flush()
+
+    return {
+        "status": verification.status,
+        "action": data.action,
+        "request_id": request_id,
+    }
 
 
 # --- Content management ---
