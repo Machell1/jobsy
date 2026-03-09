@@ -91,14 +91,14 @@ class TestLogin:
 class TestRefresh:
     async def test_refresh_success(self, client, seeded_user):
         refresh = create_refresh_token(seeded_user.id)
-        response = await client.post(f"/auth/refresh?refresh_token={refresh}")
+        response = await client.post("/auth/refresh", json={"refresh_token": refresh})
         assert response.status_code == 200
         data = response.json()
         assert "access_token" in data
 
     async def test_refresh_with_access_token_fails(self, client, seeded_user):
         access = create_access_token(seeded_user.id)
-        response = await client.post(f"/auth/refresh?refresh_token={access}")
+        response = await client.post("/auth/refresh", json={"refresh_token": access})
         assert response.status_code == 401
 
 

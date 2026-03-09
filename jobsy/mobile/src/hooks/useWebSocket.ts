@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as SecureStore from "expo-secure-store";
 
-const WS_URL = process.env.EXPO_PUBLIC_WS_URL || "ws://localhost:8000";
+const WS_URL =
+  process.env.EXPO_PUBLIC_WS_URL ||
+  (__DEV__ ? "ws://localhost:8000" : (() => { throw new Error("EXPO_PUBLIC_WS_URL must be set in production"); })());
 
 interface ChatMessage {
   id: string;

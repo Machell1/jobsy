@@ -67,11 +67,16 @@ async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
     )
 
 
+from pydantic import BaseModel as _BaseModel
+
+class _RefreshRequest(_BaseModel):
+    refresh_token: str
+
 @router.post("/refresh", response_model=TokenResponse)
-async def refresh_token(refresh_token: str, db: AsyncSession = Depends(get_db)):
+async def refresh_token(body: _RefreshRequest, db: AsyncSession = Depends(get_db)):
     """Refresh an access token using a refresh token."""
     try:
-        payload = decode_token(refresh_token)
+        payload = decode_token(body.refresh_token)
         if payload.get("type") != "refresh":
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
     except Exception:

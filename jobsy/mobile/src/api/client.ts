@@ -1,7 +1,9 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import * as SecureStore from "expo-secure-store";
 
-export const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8000";
+export const API_URL =
+  process.env.EXPO_PUBLIC_API_URL ||
+  (__DEV__ ? "http://localhost:8000" : (() => { throw new Error("EXPO_PUBLIC_API_URL must be set in production"); })());
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -71,8 +73,8 @@ api.interceptors.response.use(
         throw new Error("No refresh token");
       }
 
-      const { data } = await axios.post(`${API_URL}/auth/refresh`, null, {
-        params: { refresh_token: refreshToken },
+      const { data } = await axios.post(`${API_URL}/auth/refresh`, {
+        refresh_token: refreshToken,
       });
 
       await SecureStore.setItemAsync("access_token", data.access_token);

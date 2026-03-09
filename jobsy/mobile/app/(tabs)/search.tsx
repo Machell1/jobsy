@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FlatList, Pressable, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -15,14 +15,21 @@ import { COLORS } from "@/constants/theme";
 export default function SearchScreen() {
   const router = useRouter();
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    debounceTimer.current = setTimeout(() => setDebouncedQuery(query), 300);
+    return () => clearTimeout(debounceTimer.current);
+  }, [query]);
 
   const { data: listings = [], isLoading } = useQuery({
-    queryKey: ["search-listings", query, selectedCategory],
+    queryKey: ["search-listings", debouncedQuery, selectedCategory],
     queryFn: async () => {
-      if (query.length > 0) {
+      if (debouncedQuery.length > 0) {
         const result = await searchListings({
-          q: query,
+          q: debouncedQuery,
           category: selectedCategory || undefined,
           limit: 30,
         });
