@@ -21,13 +21,20 @@ interface AuthState {
 
 function parseJwt(token: string): Record<string, unknown> | null {
   try {
-    const base64Url = token.split(".")[1];
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
     const jsonPayload = atob(base64);
     return JSON.parse(jsonPayload);
   } catch {
     return null;
   }
+}
+
+function isTokenExpired(payload: Record<string, unknown>): boolean {
+  const exp = payload.exp;
+  if (typeof exp !== "number") return true;
+  return Date.now() >= exp * 1000;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -40,11 +47,15 @@ export const useAuthStore = create<AuthState>((set) => ({
       const accessToken = await SecureStore.getItemAsync("access_token");
       if (accessToken) {
         const payload = parseJwt(accessToken);
-        if (payload && payload.sub) {
+        if (payload && payload.sub && !isTokenExpired(payload)) {
           set({
             user: { id: payload.sub as string, role: (payload.role as string) || "user" },
             isAuthenticated: true,
           });
+        } else {
+          // Token expired or invalid — clear stored tokens
+          await SecureStore.deleteItemAsync("access_token");
+          await SecureStore.deleteItemAsync("refresh_token");
         }
       }
     } catch {

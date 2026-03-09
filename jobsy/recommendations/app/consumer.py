@@ -3,7 +3,7 @@
 import asyncio
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from shared.database import async_session_factory
 from shared.events import consume_events
@@ -46,7 +46,7 @@ async def _log_interaction(user_id: str | None, target_id: str | None, target_ty
             target_id=target_id,
             target_type=target_type,
             action=action,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         db.add(log_entry)
         await db.commit()

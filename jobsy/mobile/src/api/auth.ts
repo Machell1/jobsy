@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8000";
+import { API_URL } from "./client";
 
 export interface TokenResponse {
   access_token: string;
@@ -39,8 +39,8 @@ export async function login(data: LoginData): Promise<TokenResponse> {
 }
 
 export async function refreshTokens(refreshToken: string): Promise<TokenResponse> {
-  const res = await authClient.post<TokenResponse>("/auth/refresh", null, {
-    params: { refresh_token: refreshToken },
+  const res = await authClient.post<TokenResponse>("/auth/refresh", {
+    refresh_token: refreshToken,
   });
   return res.data;
 }

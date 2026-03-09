@@ -5,9 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Service Provider | Jobsy Jamaica</title>
   <meta name="description" content="View service provider details and listings on Jobsy Jamaica.">
+  <meta property="og:title" content="Service Provider | Jobsy Jamaica">
+  <meta property="og:description" content="View service provider details and listings on Jobsy Jamaica.">
   <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.jobsyja.com/provider.html">
   <meta property="og:site_name" content="Jobsy">
   <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://www.jobsyja.com/provider.html">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -61,7 +65,7 @@
       document.getElementById('breadcrumb-title').textContent = listing.title;
 
       const cat = findCategory(listing.category);
-      const icon = cat ? cat.icon : '&#128188;';
+      const icon = cat ? cat.icon : '💼';
       const price = listing.budget
         ? `J$${Number(listing.budget).toLocaleString()} ${listing.currency || 'JMD'}`
         : 'Get Quote';
@@ -73,8 +77,8 @@
             <h1>${escapeHtml(listing.title)}</h1>
             <div class="service-detail-meta">
               <span>${escapeHtml(listing.category || 'Service')}</span>
-              ${listing.parish ? `<span>&#128205; ${escapeHtml(listing.parish)}</span>` : ''}
-              <span>&#128176; ${price}</span>
+              ${listing.parish ? `<span>📍 ${escapeHtml(listing.parish)}</span>` : ''}
+              <span>💰 ${price}</span>
               ${listing.status ? `<span>Status: ${escapeHtml(listing.status)}</span>` : ''}
             </div>
             <div class="service-detail-actions">

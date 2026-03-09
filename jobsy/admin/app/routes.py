@@ -1,11 +1,11 @@
 """Admin service API routes -- dashboard stats, user management, moderation, audit log."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.database import get_db
@@ -34,7 +34,7 @@ async def _log_action(
         target_id=target_id,
         reason=reason,
         details=details or {},
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     db.add(entry)
 
@@ -134,7 +134,7 @@ async def resolve_moderation_item(
     if not item:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Moderation item not found")
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     if data.action == "dismiss":
         item.status = "dismissed"
@@ -261,7 +261,7 @@ async def submit_report(
         item_id=data.item_id,
         reported_by=admin_id,
         reason=data.reason,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     db.add(item)
     await db.flush()

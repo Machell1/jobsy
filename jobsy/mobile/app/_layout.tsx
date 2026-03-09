@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAuthStore } from "@/stores/auth";
@@ -48,13 +49,15 @@ export default function RootLayout() {
   usePushNotifications();
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryClientProvider client={queryClient}>
-        <StatusBar style="dark" />
-        <AuthGuard>
-          <Slot />
-        </AuthGuard>
-      </QueryClientProvider>
-    </GestureHandlerRootView>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <QueryClientProvider client={queryClient}>
+          <StatusBar style="dark" />
+          <AuthGuard>
+            <Slot />
+          </AuthGuard>
+        </QueryClientProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }

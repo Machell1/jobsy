@@ -9,7 +9,7 @@ interface ChatBubbleProps {
   messageType?: string;
 }
 
-export function ChatBubble({ content, isMine, timestamp, messageType = "text" }: ChatBubbleProps) {
+export function ChatBubble({ content, isMine, timestamp, messageType: _messageType = "text" }: ChatBubbleProps) {
   return (
     <View className={`mb-2 max-w-[80%] ${isMine ? "self-end" : "self-start"}`}>
       <View

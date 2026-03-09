@@ -1,9 +1,8 @@
 """Event consumer that auto-creates conversations when matches are formed."""
 
-import asyncio
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 
@@ -40,7 +39,7 @@ async def handle_match_created(payload: dict) -> None:
             match_id=match_id,
             user_a_id=user_a_id,
             user_b_id=user_b_id,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         db.add(conversation)
         await db.commit()

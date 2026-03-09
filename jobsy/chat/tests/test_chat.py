@@ -1,9 +1,8 @@
 """Tests for chat service REST routes."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
@@ -32,7 +31,7 @@ async def seeded_conversation(test_session):
         match_id=str(uuid.uuid4()),
         user_a_id="user-a",
         user_b_id="user-b",
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     test_session.add(conversation)
 
@@ -49,7 +48,7 @@ async def seeded_conversation(test_session):
             content=content,
             message_type="text",
             is_read=False,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         test_session.add(msg)
 

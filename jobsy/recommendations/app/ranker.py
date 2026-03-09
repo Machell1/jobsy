@@ -13,9 +13,8 @@ Scoring breakdown (weights sum to 1.0):
 """
 
 import math
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
-
 
 # Maximum distance considered for scoring (beyond this, proximity score = 0)
 MAX_DISTANCE_KM = 100.0
@@ -87,7 +86,7 @@ def compute_budget_score(
 
 def compute_freshness_score(created_at: datetime) -> float:
     """Score based on how recently the listing was created."""
-    age_days = (datetime.now(timezone.utc) - created_at).total_seconds() / 86400
+    age_days = (datetime.now(UTC) - created_at).total_seconds() / 86400
     if age_days <= 0:
         return 1.0
     if age_days >= MAX_AGE_DAYS:

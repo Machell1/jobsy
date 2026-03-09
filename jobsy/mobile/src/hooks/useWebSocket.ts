@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as SecureStore from "expo-secure-store";
 
-const WS_URL = process.env.EXPO_PUBLIC_WS_URL || "ws://localhost:8000";
+const WS_URL =
+  process.env.EXPO_PUBLIC_WS_URL ||
+  (__DEV__ ? "ws://localhost:8000" : (() => { throw new Error("EXPO_PUBLIC_WS_URL must be set in production"); })());
 
 interface ChatMessage {
   id: string;
@@ -10,6 +12,7 @@ interface ChatMessage {
   content: string;
   message_type: string;
   created_at: string;
+  is_read: boolean;
 }
 
 export function useWebSocket(conversationId: string | null) {
@@ -35,7 +38,8 @@ export function useWebSocket(conversationId: string | null) {
 
     socket.onmessage = (event) => {
       try {
-        const msg: ChatMessage = JSON.parse(event.data);
+        const parsed = JSON.parse(event.data);
+        const msg: ChatMessage = { ...parsed, is_read: parsed.is_read ?? false };
         setMessages((prev) => [...prev, msg]);
       } catch {
         // Ignore malformed messages

@@ -1,7 +1,7 @@
 """Notification service API routes for device registration and history."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
@@ -53,7 +53,7 @@ async def register_device(
         user_id=user_id,
         token=data.token,
         platform=data.platform,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     db.add(device)
     await db.flush()

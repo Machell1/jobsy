@@ -23,3 +23,4 @@ SERVICE_URLS = {
 # Rate limiting
 RATE_LIMIT_UNAUTHENTICATED = int(os.getenv("RATE_LIMIT_UNAUTH", "100"))  # per minute
 RATE_LIMIT_AUTHENTICATED = int(os.getenv("RATE_LIMIT_AUTH", "300"))  # per minute
+RATE_LIMIT_AUTH_ENDPOINTS = int(os.getenv("RATE_LIMIT_AUTH_ENDPOINTS", "10"))  # per minute per IP

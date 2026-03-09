@@ -9,27 +9,28 @@ import os
 import sys
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
+
+from alembic import context
 
 # Add project root to path so we can import service models
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from shared.database import Base
+import admin.app.models  # noqa: F401
+import advertising.app.models  # noqa: F401
+import chat.app.models  # noqa: F401
 
 # Import ALL service models so Base.metadata contains every table
 import gateway.app.models  # noqa: F401
-import profiles.app.models  # noqa: F401
 import listings.app.models  # noqa: F401
-import swipes.app.models  # noqa: F401
 import matches.app.models  # noqa: F401
-import chat.app.models  # noqa: F401
 import notifications.app.models  # noqa: F401
-import advertising.app.models  # noqa: F401
 import payments.app.models  # noqa: F401
+import profiles.app.models  # noqa: F401
 import reviews.app.models  # noqa: F401
-import admin.app.models  # noqa: F401
+import swipes.app.models  # noqa: F401
+from shared.database import Base
 
 config = context.config
 

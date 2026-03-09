@@ -8,25 +8,20 @@ Requires DATABASE_URL to be set. Uses asyncpg for Postgres.
 
 import asyncio
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from shared.config import DATABASE_URL
-from shared.database import Base
-
 # Import all models so metadata is populated
 import gateway.app.models as _gw  # noqa: F401
-import profiles.app.models as _pr  # noqa: F401
 import listings.app.models as _ls  # noqa: F401
+import profiles.app.models as _pr  # noqa: F401
 import reviews.app.models as _rv  # noqa: F401
-
 from gateway.app.models import User
-from profiles.app.models import Profile
 from listings.app.models import Listing
-from reviews.app.models import Review, UserRating
+from profiles.app.models import Profile
 from shared.auth import hash_password
-
+from shared.config import DATABASE_URL
 
 PARISHES = [
     "Kingston", "St. Andrew", "St. Thomas", "Portland", "St. Mary",
@@ -49,12 +44,23 @@ PROVIDERS = [
         "email": "marcus@example.com",
         "parish": "Kingston",
         "category": "Skilled Trades",
-        "bio": "Licensed electrician with 12 years experience across Kingston and St. Andrew. Specialize in residential wiring, panel upgrades, and solar installations.",
+        "bio": (
+            "Licensed electrician with 12 years experience across Kingston and St. Andrew."
+            " Specialize in residential wiring, panel upgrades, and solar installations."
+        ),
         "skills": ["Electrical Wiring", "Solar Installation", "Panel Upgrades"],
         "hourly_rate": 3500,
         "listings": [
-            {"title": "Residential Electrical Wiring", "description": "Full house wiring, rewiring, and electrical inspections. Licensed and insured.", "budget": 25000},
-            {"title": "Solar Panel Installation", "description": "Complete solar setup for homes and small businesses. Reduce your JPS bill!", "budget": 150000},
+            {
+                "title": "Residential Electrical Wiring",
+                "description": "Full house wiring, rewiring, and electrical inspections. Licensed and insured.",
+                "budget": 25000,
+            },
+            {
+                "title": "Solar Panel Installation",
+                "description": "Complete solar setup for homes and small businesses. Reduce your JPS bill!",
+                "budget": 150000,
+            },
         ],
     },
     {
@@ -67,8 +73,16 @@ PROVIDERS = [
         "skills": ["Braiding", "Natural Hair", "Makeup Artistry", "Loc Maintenance"],
         "hourly_rate": 2500,
         "listings": [
-            {"title": "Natural Hair Styling", "description": "Twist-outs, bantu knots, protective styles. Using quality Jamaican products.", "budget": 4000},
-            {"title": "Bridal Makeup Package", "description": "Full bridal party makeup including trial. Based in Half Way Tree.", "budget": 15000},
+            {
+                "title": "Natural Hair Styling",
+                "description": "Twist-outs, bantu knots, protective styles. Using quality Jamaican products.",
+                "budget": 4000,
+            },
+            {
+                "title": "Bridal Makeup Package",
+                "description": "Full bridal party makeup including trial. Based in Half Way Tree.",
+                "budget": 15000,
+            },
         ],
     },
     {
@@ -77,12 +91,23 @@ PROVIDERS = [
         "email": "devon@example.com",
         "parish": "St. James",
         "category": "Technology",
-        "bio": "IT consultant and web developer based in Montego Bay. Building websites and managing networks for small businesses.",
+        "bio": (
+            "IT consultant and web developer based in Montego Bay."
+            " Building websites and managing networks for small businesses."
+        ),
         "skills": ["Web Development", "Network Setup", "Computer Repair"],
         "hourly_rate": 4000,
         "listings": [
-            {"title": "Small Business Website", "description": "Professional website with mobile-friendly design. E-commerce add-on available.", "budget": 45000},
-            {"title": "Office Network Setup", "description": "Wi-Fi, cabling, and security setup for offices in MoBay area.", "budget": 30000},
+            {
+                "title": "Small Business Website",
+                "description": "Professional website with mobile-friendly design. E-commerce add-on available.",
+                "budget": 45000,
+            },
+            {
+                "title": "Office Network Setup",
+                "description": "Wi-Fi, cabling, and security setup for offices in MoBay area.",
+                "budget": 30000,
+            },
         ],
     },
     {
@@ -95,8 +120,16 @@ PROVIDERS = [
         "skills": ["Mathematics", "Physics", "CXC Prep", "CAPE Prep"],
         "hourly_rate": 2000,
         "listings": [
-            {"title": "CXC Math Tutoring", "description": "One-on-one or group sessions. Proven track record of Grade 1 results.", "budget": 3000},
-            {"title": "CAPE Physics Preparation", "description": "Unit 1 and 2 preparation with past paper practice.", "budget": 3500},
+            {
+                "title": "CXC Math Tutoring",
+                "description": "One-on-one or group sessions. Proven track record of Grade 1 results.",
+                "budget": 3000,
+            },
+            {
+                "title": "CAPE Physics Preparation",
+                "description": "Unit 1 and 2 preparation with past paper practice.",
+                "budget": 3500,
+            },
         ],
     },
     {
@@ -109,8 +142,16 @@ PROVIDERS = [
         "skills": ["Engine Repair", "AC Service", "Diagnostics", "Bodywork"],
         "hourly_rate": 3000,
         "listings": [
-            {"title": "Full Vehicle Service", "description": "Oil change, filter replacement, brake check, and 20-point inspection.", "budget": 8000},
-            {"title": "AC Recharge & Repair", "description": "Diagnose and fix car AC systems. Most Japanese makes covered.", "budget": 12000},
+            {
+                "title": "Full Vehicle Service",
+                "description": "Oil change, filter replacement, brake check, and 20-point inspection.",
+                "budget": 8000,
+            },
+            {
+                "title": "AC Recharge & Repair",
+                "description": "Diagnose and fix car AC systems. Most Japanese makes covered.",
+                "budget": 12000,
+            },
         ],
     },
     {
@@ -123,8 +164,16 @@ PROVIDERS = [
         "skills": ["Event Planning", "Balloon Decor", "Floral Arrangements"],
         "hourly_rate": 3500,
         "listings": [
-            {"title": "Wedding Planning Package", "description": "Full wedding coordination from venue selection to day-of management.", "budget": 80000},
-            {"title": "Birthday Party Decor", "description": "Custom balloon arches, table settings, and themed decorations.", "budget": 15000},
+            {
+                "title": "Wedding Planning Package",
+                "description": "Full wedding coordination from venue selection to day-of management.",
+                "budget": 80000,
+            },
+            {
+                "title": "Birthday Party Decor",
+                "description": "Custom balloon arches, table settings, and themed decorations.",
+                "budget": 15000,
+            },
         ],
     },
     {
@@ -137,8 +186,16 @@ PROVIDERS = [
         "skills": ["Pipe Repair", "Water Heater", "Bathroom Renovation"],
         "hourly_rate": 3000,
         "listings": [
-            {"title": "Emergency Plumbing Repair", "description": "Burst pipes, blocked drains, leak detection. Available 24/7.", "budget": 10000},
-            {"title": "Bathroom Renovation", "description": "Complete bathroom remodel including tiling, fixtures, and plumbing.", "budget": 120000},
+            {
+                "title": "Emergency Plumbing Repair",
+                "description": "Burst pipes, blocked drains, leak detection. Available 24/7.",
+                "budget": 10000,
+            },
+            {
+                "title": "Bathroom Renovation",
+                "description": "Complete bathroom remodel including tiling, fixtures, and plumbing.",
+                "budget": 120000,
+            },
         ],
     },
     {
@@ -151,8 +208,20 @@ PROVIDERS = [
         "skills": ["Personal Training", "Nutrition Planning", "Weight Loss", "Strength Training"],
         "hourly_rate": 2500,
         "listings": [
-            {"title": "Personal Training (4 weeks)", "description": "Customized workout plan with 3 sessions per week. Includes nutrition guide.", "budget": 20000},
-            {"title": "Online Fitness Coaching", "description": "Weekly check-ins, meal plans, and workout programs delivered via WhatsApp.", "budget": 8000},
+            {
+                "title": "Personal Training (4 weeks)",
+                "description": (
+                    "Customized workout plan with 3 sessions per week. Includes nutrition guide."
+                ),
+                "budget": 20000,
+            },
+            {
+                "title": "Online Fitness Coaching",
+                "description": (
+                    "Weekly check-ins, meal plans, and workout programs delivered via WhatsApp."
+                ),
+                "budget": 8000,
+            },
         ],
     },
     {
@@ -165,8 +234,18 @@ PROVIDERS = [
         "skills": ["Tax Preparation", "Bookkeeping", "Business Registration"],
         "hourly_rate": 4500,
         "listings": [
-            {"title": "Small Business Tax Filing", "description": "Annual GCT and income tax preparation. Statutory compliance included.", "budget": 25000},
-            {"title": "Business Registration Package", "description": "Company registration, TRN, GCT, and NIS setup. Start your business right.", "budget": 35000},
+            {
+                "title": "Small Business Tax Filing",
+                "description": "Annual GCT and income tax preparation. Statutory compliance included.",
+                "budget": 25000,
+            },
+            {
+                "title": "Business Registration Package",
+                "description": (
+                    "Company registration, TRN, GCT, and NIS setup. Start your business right."
+                ),
+                "budget": 35000,
+            },
         ],
     },
     {
@@ -175,12 +254,27 @@ PROVIDERS = [
         "email": "simone@example.com",
         "parish": "Trelawny",
         "category": "Creative Services",
-        "bio": "Graphic designer and photographer. Specializing in brand identity and event photography across Jamaica.",
+        "bio": (
+            "Graphic designer and photographer."
+            " Specializing in brand identity and event photography across Jamaica."
+        ),
         "skills": ["Graphic Design", "Photography", "Branding", "Social Media"],
         "hourly_rate": 3000,
         "listings": [
-            {"title": "Brand Identity Package", "description": "Logo design, business cards, social media templates. 3 concept rounds included.", "budget": 30000},
-            {"title": "Event Photography", "description": "Professional event coverage with edited photos delivered within 5 business days.", "budget": 20000},
+            {
+                "title": "Brand Identity Package",
+                "description": (
+                    "Logo design, business cards, social media templates. 3 concept rounds included."
+                ),
+                "budget": 30000,
+            },
+            {
+                "title": "Event Photography",
+                "description": (
+                    "Professional event coverage with edited photos delivered within 5 business days."
+                ),
+                "budget": 20000,
+            },
         ],
     },
 ]
@@ -198,7 +292,7 @@ def _uid() -> str:
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 async def seed():

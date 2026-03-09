@@ -1,6 +1,7 @@
 """Tests for gateway authentication routes."""
 
-import pytest
+from datetime import UTC
+
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
@@ -13,7 +14,6 @@ async def client(db_override):
     """Create a test client with database override."""
     # Import here to avoid module-level DB connection
     from gateway.app.main import app
-    from gateway.app.models import User
 
     app.dependency_overrides[get_db] = db_override
     transport = ASGITransport(app=app)
@@ -25,8 +25,9 @@ async def client(db_override):
 @pytest_asyncio.fixture
 async def seeded_user(test_session):
     """Seed a test user in the database."""
+    from datetime import datetime
+
     from gateway.app.models import User
-    from datetime import datetime, timezone
 
     user = User(
         id="test-user-123",
@@ -34,8 +35,8 @@ async def seeded_user(test_session):
         email="test@jobsy.app",
         password_hash=hash_password("TestPass123!"),
         role="user",
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
     test_session.add(user)
     await test_session.commit()
@@ -91,14 +92,14 @@ class TestLogin:
 class TestRefresh:
     async def test_refresh_success(self, client, seeded_user):
         refresh = create_refresh_token(seeded_user.id)
-        response = await client.post(f"/auth/refresh?refresh_token={refresh}")
+        response = await client.post("/auth/refresh", json={"refresh_token": refresh})
         assert response.status_code == 200
         data = response.json()
         assert "access_token" in data
 
     async def test_refresh_with_access_token_fails(self, client, seeded_user):
         access = create_access_token(seeded_user.id)
-        response = await client.post(f"/auth/refresh?refresh_token={access}")
+        response = await client.post("/auth/refresh", json={"refresh_token": access})
         assert response.status_code == 401
 
 

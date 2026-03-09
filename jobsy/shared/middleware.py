@@ -19,8 +19,8 @@ def setup_middleware(app: FastAPI, allowed_origins: list[str] | None = None) -> 
         CORSMiddleware,
         allow_origins=origins,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
     )
 
     @app.middleware("http")

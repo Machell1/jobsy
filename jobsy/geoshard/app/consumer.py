@@ -3,7 +3,7 @@
 import asyncio
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 
@@ -50,7 +50,7 @@ async def _upsert_entry(entity_id: str, entity_type: str, lat: float, lng: float
     geohash = encode_geohash(lat, lng, precision=7)
     s2_cell_id = lat_lng_to_s2_cell_id(lat, lng)
     parish = get_parish(lat, lng)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     async with async_session_factory() as db:
         result = await db.execute(

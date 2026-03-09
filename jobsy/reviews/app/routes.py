@@ -1,11 +1,11 @@
 """Reviews service API routes -- create, list, respond, and aggregate ratings."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.database import get_db
@@ -51,7 +51,7 @@ async def _update_user_rating(user_id: str, db: AsyncSession) -> None:
     row = result.one()
     total, avg_rating, avg_q, avg_p, avg_c, avg_v = row
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     # Upsert user rating
     existing = await db.execute(select(UserRating).where(UserRating.user_id == user_id))
@@ -104,7 +104,7 @@ async def create_review(
         if existing.scalar_one_or_none():
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Already reviewed this transaction")
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     review = Review(
         id=str(uuid.uuid4()),
         reviewer_id=reviewer_id,
@@ -237,7 +237,7 @@ async def respond_to_review(
         review_id=review_id,
         responder_id=user_id,
         body=data.body,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     db.add(response)
     await db.flush()
@@ -256,7 +256,7 @@ async def flag_review(review_id: str, request: Request, db: AsyncSession = Depen
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Review not found")
 
     review.is_flagged = True
-    review.updated_at = datetime.now(timezone.utc)
+    review.updated_at = datetime.now(UTC)
     await db.flush()
 
     return {"status": "flagged", "review_id": review_id}
