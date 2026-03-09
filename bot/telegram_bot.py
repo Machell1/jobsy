@@ -85,7 +85,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = (
         "<b>Deal Alert Bot</b>\n\n"
         "I find the best deals across Amazon, Best Buy, Walmart, Target, "
-        "eBay, and more - and send instant alerts when prices drop!\n\n"
+        "eBay, and more, and we send instant alerts when prices drop!\n\n"
         f"Join our channel {TELEGRAM_CHANNEL_HANDLE} for real-time deal alerts.\n"
     )
 

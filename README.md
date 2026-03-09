@@ -1,6 +1,6 @@
 # Jobsy - Jamaica's Service Marketplace
 
-Jobsy connects Jamaicans with trusted local service providers across all 14 parishes. From home repair and beauty services to tutoring and events -find the right professional for every job.
+Jobsy connects Jamaicans with trusted local service providers across all 14 parishes. From home repair and beauty services to tutoring and events. Find the right professional for every job.
 
 ## Architecture
 

@@ -1,7 +1,7 @@
 """Skyscanner flight deal scraper.
 
 Scrapes Skyscanner's deals and cheap flights pages for discounted airfare.
-These are curated deals - no user search needed.
+These are curated deals, no user search needed.
 
 Affiliate program: Skyscanner via Impact Radius (impact.com)
 """
