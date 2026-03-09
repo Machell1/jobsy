@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from pydantic import BaseModel, Field
 
-from app.s3 import (
+from .s3 import (
     ALLOWED_DOC_TYPES,
     ALLOWED_IMAGE_TYPES,
     create_thumbnail,

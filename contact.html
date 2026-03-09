@@ -4,55 +4,211 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Contact Us | Jobsy - Jamaica's Service Marketplace</title>
-  <meta name="description" content="Get in touch with the Jobsy team. Contact us for service provider registration, business inquiries, partnerships, or questions.">
+  <meta name="description" content="Get in touch with the Jobsy team. Register as a service provider, ask questions, or explore business partnerships.">
+  <meta property="og:title" content="Contact Jobsy">
+  <meta property="og:description" content="Register your business or get in touch with Jamaica's premier service marketplace.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Jobsy">
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    .form-group { margin-bottom: 1.25rem; }
+    .form-group label { display: block; font-weight: 600; margin-bottom: 0.375rem; font-size: 0.9375rem; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--border);
+      border-radius: var(--radius); font-size: 0.9375rem; font-family: inherit;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,155,58,0.1);
+    }
+    .form-group textarea { resize: vertical; min-height: 100px; }
+    .form-group .hint { font-size: 0.8125rem; color: var(--text-light); margin-top: 0.25rem; }
+    .form-row { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+    @media (min-width: 640px) { .form-row { grid-template-columns: 1fr 1fr; } }
+    .form-message { padding: 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: 0.9375rem; }
+    .form-message.success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a; }
+    .form-message.error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; }
+  </style>
 </head>
 <body>
   <main>
     <div class="container">
       <div class="tool-detail" style="max-width:800px">
         <h1>Contact Us</h1>
-        <p class="text-muted">Jobsy Jamaica</p>
+        <p class="text-muted">Jobsy Jamaica &mdash; Mandeville, Manchester</p>
 
         <div class="content-section">
           <h2>General Inquiries</h2>
-          <p>Have a question about our platform, want to recommend a service provider, or need help finding the right professional? Reach out to us:</p>
+          <p>Have a question about our platform, want to recommend a service provider, or need help finding the right professional?</p>
           <p><strong>Email:</strong> <a href="mailto:williamsmachell@gmail.com">williamsmachell@gmail.com</a></p>
           <p><strong>Location:</strong> Mandeville, Manchester, Jamaica</p>
+        </div>
 
-          <h2>Register Your Business</h2>
-          <p>Are you a service provider in Jamaica? Join Jobsy and connect with customers across the island. To register your business, send us an email with:</p>
-          <ul>
-            <li>Your business name and type of service</li>
-            <li>Parish(es) you serve</li>
-            <li>Contact information (phone, email, social media)</li>
-            <li>Brief description of your services</li>
-            <li>Any certifications or licenses</li>
-          </ul>
-          <p><strong>Email:</strong> <a href="mailto:williamsmachell@gmail.com">williamsmachell@gmail.com</a></p>
-          <p>Listing your business on Jobsy is currently <strong>free</strong>.</p>
+        <!-- Registration Form -->
+        <div class="content-section" id="register">
+          <h2>Register as a Service Provider</h2>
+          <p>Join Jobsy and connect with customers across Jamaica. Registration is <strong>free</strong>.</p>
 
+          <div id="form-message" style="display:none"></div>
+
+          <form id="register-form" novalidate>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="reg-name">Full Name *</label>
+                <input type="text" id="reg-name" required placeholder="e.g. Marcus Brown">
+              </div>
+              <div class="form-group">
+                <label for="reg-phone">Phone Number *</label>
+                <input type="tel" id="reg-phone" required placeholder="+1 876 123 4567">
+                <p class="hint">Jamaican mobile number</p>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="reg-email">Email *</label>
+                <input type="email" id="reg-email" required placeholder="you@example.com">
+              </div>
+              <div class="form-group">
+                <label for="reg-parish">Parish *</label>
+                <select id="reg-parish" required>
+                  <option value="">Select your parish</option>
+                  <option>Kingston</option>
+                  <option>St. Andrew</option>
+                  <option>St. Thomas</option>
+                  <option>Portland</option>
+                  <option>St. Mary</option>
+                  <option>St. Ann</option>
+                  <option>Trelawny</option>
+                  <option>St. James</option>
+                  <option>Hanover</option>
+                  <option>Westmoreland</option>
+                  <option>St. Elizabeth</option>
+                  <option>Manchester</option>
+                  <option>Clarendon</option>
+                  <option>St. Catherine</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="reg-category">Service Category *</label>
+              <select id="reg-category" required>
+                <option value="">Select a category</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="reg-services">Services Offered *</label>
+              <textarea id="reg-services" required placeholder="Describe the services you offer, your experience, and any certifications..."></textarea>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="reg-password">Create Password *</label>
+                <input type="password" id="reg-password" required minlength="8" placeholder="Min. 8 characters">
+              </div>
+              <div class="form-group">
+                <label for="reg-password2">Confirm Password *</label>
+                <input type="password" id="reg-password2" required placeholder="Repeat password">
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg" id="reg-submit" style="width:100%;justify-content:center">
+              Register Your Business
+            </button>
+          </form>
+        </div>
+
+        <div class="content-section">
           <h2>Business &amp; Partnership Inquiries</h2>
-          <p>For advertising opportunities, partnership proposals, or affiliate program discussions, please contact us at:</p>
+          <p>For advertising opportunities, partnership proposals, or affiliate program discussions:</p>
           <p><strong>Email:</strong> <a href="mailto:williamsmachell@gmail.com">williamsmachell@gmail.com</a></p>
-          <p>Please include details about your company, the nature of the partnership, and any relevant links.</p>
+        </div>
 
+        <div class="content-section">
           <h2>Follow Us</h2>
-          <p>Stay connected with Jobsy across our channels:</p>
           <ul>
             <li><strong>Telegram Bot:</strong> <a href="https://t.me/JobsyDealBot" target="_blank" rel="noopener">@JobsyDealBot</a> &mdash; Deal alerts and service recommendations</li>
             <li><strong>X (Twitter):</strong> <a href="https://x.com/MachellWil66296" target="_blank" rel="noopener">@MachellWil66296</a> &mdash; Updates and community news</li>
           </ul>
+        </div>
 
-          <h2>Response Time</h2>
-          <p>We typically respond to all inquiries within 48 hours during business days. For urgent matters, reaching out via Telegram may be faster.</p>
-
+        <div class="content-section">
           <h2>Report an Issue</h2>
-          <p>Found a broken link, incorrect information, or a technical issue on our website? You can report it via email or open an issue on our <a href="https://github.com/Machell1/jobsy" target="_blank" rel="noopener">GitHub repository</a>.</p>
+          <p>Found a problem? Report it via email or on our <a href="https://github.com/Machell1/jobsy" target="_blank" rel="noopener">GitHub repository</a>.</p>
         </div>
       </div>
     </div>
   </main>
+
   <script src="js/common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Populate category dropdown
+      const catSelect = document.getElementById('reg-category');
+      CATEGORIES.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.name;
+        opt.textContent = c.name;
+        catSelect.appendChild(opt);
+      });
+
+      // Scroll to form if #register hash
+      if (window.location.hash === '#register') {
+        document.getElementById('register').scrollIntoView({ behavior: 'smooth' });
+      }
+
+      // Registration form handler
+      const form = document.getElementById('register-form');
+      const msgEl = document.getElementById('form-message');
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        msgEl.style.display = 'none';
+
+        const name = document.getElementById('reg-name').value.trim();
+        const phone = document.getElementById('reg-phone').value.trim();
+        const email = document.getElementById('reg-email').value.trim();
+        const password = document.getElementById('reg-password').value;
+        const password2 = document.getElementById('reg-password2').value;
+
+        // Client-side validation
+        if (!name || !phone || !email || !password) {
+          showMessage('Please fill in all required fields.', 'error');
+          return;
+        }
+        if (password !== password2) {
+          showMessage('Passwords do not match.', 'error');
+          return;
+        }
+        if (password.length < 8) {
+          showMessage('Password must be at least 8 characters.', 'error');
+          return;
+        }
+
+        const btn = document.getElementById('reg-submit');
+        btn.disabled = true;
+        btn.textContent = 'Registering...';
+
+        try {
+          await api.register({ phone, email, password, role: 'provider' });
+          showMessage('Registration successful! You can now log in through the Jobsy mobile app to set up your profile and list your services.', 'success');
+          form.reset();
+        } catch (err) {
+          showMessage(err.message || 'Registration failed. Please try again or email us directly.', 'error');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Register Your Business';
+        }
+      });
+
+      function showMessage(text, type) {
+        msgEl.textContent = text;
+        msgEl.className = 'form-message ' + type;
+        msgEl.style.display = 'block';
+        msgEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+  </script>
 </body>
 </html>

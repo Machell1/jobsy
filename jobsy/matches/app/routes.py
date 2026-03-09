@@ -1,13 +1,21 @@
 """Match service API routes."""
 
+from enum import Enum
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from pydantic import BaseModel
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.database import get_db
 from shared.models.match import MatchResponse
 
-from app.models import Match
+from .models import Match
+
+
+class MatchStatusUpdate(BaseModel):
+    status: Literal["completed", "cancelled"]
 
 router = APIRouter(tags=["matches"])
 
@@ -55,11 +63,9 @@ async def get_match(match_id: str, request: Request, db: AsyncSession = Depends(
 
 @router.put("/{match_id}/status")
 async def update_match_status(
-    match_id: str, new_status: str, request: Request, db: AsyncSession = Depends(get_db)
+    match_id: str, body: MatchStatusUpdate, request: Request, db: AsyncSession = Depends(get_db)
 ):
     user_id = _get_user_id(request)
-    if new_status not in ("completed", "cancelled"):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid status")
 
     result = await db.execute(select(Match).where(Match.id == match_id))
     match = result.scalar_one_or_none()
@@ -68,6 +74,6 @@ async def update_match_status(
     if match.user_a_id != user_id and match.user_b_id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a participant")
 
-    match.status = new_status
+    match.status = body.status
     await db.flush()
     return {"id": match.id, "status": match.status}

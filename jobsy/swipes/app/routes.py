@@ -12,7 +12,7 @@ from shared.database import get_db
 from shared.events import publish_event
 from shared.models.swipe import SwipeCreate, SwipeResponse
 
-from app.models import Swipe
+from .models import Swipe
 
 router = APIRouter(tags=["swipes"])
 

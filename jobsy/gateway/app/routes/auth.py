@@ -17,7 +17,7 @@ from shared.auth import (
 from shared.database import get_db
 from shared.models.user import TokenResponse, UserCreate, UserLogin, UserResponse
 
-from app.models import User
+from ..models import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

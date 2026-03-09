@@ -20,7 +20,57 @@ os.environ["REDIS_URL"] = "redis://localhost:6379/0"
 os.environ["RABBITMQ_URL"] = "amqp://guest:guest@localhost:5672/"
 os.environ["JWT_SECRET"] = "test-secret-key"
 
+# Monkey-patch JSONB to JSON so SQLite can handle JSONB columns
+import sqlalchemy.dialects.postgresql as _pg
+from sqlalchemy import JSON as _JSON
+_pg.JSONB = _JSON  # type: ignore[attr-defined]
+_pg.json.JSONB = _JSON  # type: ignore[attr-defined]
+
 from shared.database import Base, get_db
+
+# Import all models so Base.metadata registers every table before create_all.
+# With relative imports inside each service, these fully-qualified imports
+# are the canonical module path and won't conflict.
+try:
+    import gateway.app.models  # noqa: F401
+except Exception:
+    pass
+try:
+    import profiles.app.models  # noqa: F401
+except Exception:
+    pass
+try:
+    import listings.app.models  # noqa: F401
+except Exception:
+    pass
+try:
+    import swipes.app.models  # noqa: F401
+except Exception:
+    pass
+try:
+    import matches.app.models  # noqa: F401
+except Exception:
+    pass
+try:
+    import chat.app.models  # noqa: F401
+except Exception:
+    pass
+try:
+    import notifications.app.models  # noqa: F401
+except Exception:
+    pass
+try:
+    import payments.app.models  # noqa: F401
+except Exception:
+    pass
+try:
+    import reviews.app.models  # noqa: F401
+except Exception:
+    pass
+try:
+    import admin.app.models  # noqa: F401
+except Exception:
+    pass
 
 
 @pytest.fixture(scope="session")

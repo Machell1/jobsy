@@ -7,7 +7,11 @@ from sqlalchemy.orm import DeclarativeBase
 
 from shared.config import DATABASE_URL
 
-engine = create_async_engine(DATABASE_URL, pool_size=5, max_overflow=10, echo=False)
+_engine_kwargs: dict = {"echo": False}
+if not DATABASE_URL.startswith("sqlite"):
+    _engine_kwargs.update({"pool_size": 5, "max_overflow": 10})
+
+engine = create_async_engine(DATABASE_URL, **_engine_kwargs)
 async_session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 

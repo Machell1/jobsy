@@ -20,7 +20,7 @@ from shared.config import REDIS_URL
 from shared.database import async_session_factory
 from shared.events import publish_event
 
-from app.models import Conversation, Message
+from .models import Conversation, Message
 
 logger = logging.getLogger(__name__)
 

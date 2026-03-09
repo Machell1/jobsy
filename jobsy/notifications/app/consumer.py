@@ -10,8 +10,8 @@ from sqlalchemy import select
 from shared.database import async_session_factory
 from shared.events import consume_events
 
-from app.models import DeviceToken, NotificationLog
-from app.push import send_push_to_user
+from .models import DeviceToken, NotificationLog
+from .push import send_push_to_user
 
 logger = logging.getLogger(__name__)
 

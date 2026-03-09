@@ -8,9 +8,9 @@ from fastapi import FastAPI
 
 from shared.middleware import setup_middleware
 
-from app.consumer import start_consumers
-from app.elasticsearch_client import close_client, ensure_indices
-from app.routes import router
+from .consumer import start_consumers
+from .elasticsearch_client import close_client, ensure_indices
+from .routes import router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 
@@ -21,6 +21,10 @@ async def lifespan(app: FastAPI):
     consumer_task = asyncio.create_task(start_consumers())
     yield
     consumer_task.cancel()
+    try:
+        await asyncio.wait_for(consumer_task, timeout=5.0)
+    except (asyncio.CancelledError, asyncio.TimeoutError):
+        pass
     await close_client()
 
 

@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.database import get_db
 
-from app.models import DeviceToken, NotificationLog
+from .models import DeviceToken, NotificationLog
 
 router = APIRouter(tags=["notifications"])
 

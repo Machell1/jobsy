@@ -11,7 +11,10 @@
   <meta property="og:description" content="Find trusted local service providers across Jamaica. Plumbing, electrical, cleaning, beauty, events, and more.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://www.jobsyja.com/">
+  <meta property="og:site_name" content="Jobsy">
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Jobsy - Jamaica's Service Marketplace">
+  <meta name="twitter:description" content="Find trusted local service providers across Jamaica.">
   <link rel="stylesheet" href="css/style.css">
   <script type="application/ld+json">
   {
@@ -19,7 +22,37 @@
     "@type": "WebSite",
     "name": "Jobsy",
     "url": "https://www.jobsyja.com/",
-    "description": "Jamaica's premier service marketplace connecting you with trusted local professionals."
+    "description": "Jamaica's premier service marketplace connecting you with trusted local professionals.",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://www.jobsyja.com/index.html?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Jobsy",
+    "url": "https://www.jobsyja.com",
+    "description": "Jamaica's premier service marketplace",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Mandeville",
+      "addressRegion": "Manchester",
+      "addressCountry": "JM"
+    },
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "email": "williamsmachell@gmail.com",
+      "contactType": "customer service"
+    },
+    "sameAs": [
+      "https://t.me/JobsyDealBot",
+      "https://x.com/MachellWil66296",
+      "https://github.com/Machell1/jobsy"
+    ]
   }
   </script>
 </head>
@@ -32,8 +65,8 @@
         <input type="text" id="hero-search" placeholder="Search services... (e.g. plumber, cleaner, tutor)" aria-label="Search services">
       </div>
       <div class="hero-stats">
-        <div><span class="hero-stat-num">12+</span> Service Types</div>
-        <div><span class="hero-stat-num">10</span> Categories</div>
+        <div><span class="hero-stat-num" id="stat-listings">12+</span> Service Types</div>
+        <div><span class="hero-stat-num">12</span> Categories</div>
         <div><span class="hero-stat-num">14</span> Parishes Covered</div>
       </div>
     </div>
@@ -42,24 +75,14 @@
   <main>
     <div class="container">
       <!-- Category Pills -->
-      <div class="category-bar">
-        <a href="#all" class="category-pill active" data-filter="all">All Services</a>
-        <a href="#home-repair" class="category-pill" data-filter="home-repair">&#128295; Home Repair</a>
-        <a href="#cleaning" class="category-pill" data-filter="cleaning">&#129529; Cleaning</a>
-        <a href="#landscaping" class="category-pill" data-filter="landscaping">&#127793; Landscaping</a>
-        <a href="#beauty" class="category-pill" data-filter="beauty">&#128135; Beauty</a>
-        <a href="#automotive" class="category-pill" data-filter="automotive">&#128663; Automotive</a>
-        <a href="#tech" class="category-pill" data-filter="tech">&#128187; Tech & IT</a>
-        <a href="#tutoring" class="category-pill" data-filter="tutoring">&#128218; Tutoring</a>
-        <a href="#events" class="category-pill" data-filter="events">&#127881; Events</a>
-        <a href="#moving" class="category-pill" data-filter="moving">&#128666; Moving</a>
-        <a href="#construction" class="category-pill" data-filter="construction">&#127959; Construction</a>
-      </div>
+      <div class="category-bar" id="category-bar"></div>
 
       <div class="ad-slot" data-ad-format="horizontal" data-ad-slot="home-top"></div>
 
       <!-- Service Grid -->
-      <div class="tool-grid" id="tool-grid"></div>
+      <div class="tool-grid" id="tool-grid">
+        <p class="text-center text-muted" style="grid-column:1/-1;padding:2rem">Loading services...</p>
+      </div>
 
       <!-- Featured Banner -->
       <div class="featured-banner">
@@ -67,7 +90,7 @@
           <h2>Are You a Service Provider?</h2>
           <p>Join Jobsy and connect with customers across Jamaica. List your services for free and grow your business.</p>
         </div>
-        <a href="contact.html" class="btn btn-white btn-lg">Register Your Business &rarr;</a>
+        <a href="contact.html#register" class="btn btn-white btn-lg">Register Your Business &rarr;</a>
       </div>
 
       <div class="ad-slot" data-ad-format="horizontal" data-ad-slot="home-mid"></div>
@@ -104,20 +127,20 @@
         <h2>Serving All 14 Parishes</h2>
       </div>
       <div class="parishes-grid">
-        <span class="parish-tag">Kingston</span>
-        <span class="parish-tag">St. Andrew</span>
-        <span class="parish-tag">St. Catherine</span>
-        <span class="parish-tag">Manchester</span>
-        <span class="parish-tag">St. James</span>
-        <span class="parish-tag">St. Ann</span>
-        <span class="parish-tag">Clarendon</span>
-        <span class="parish-tag">Westmoreland</span>
-        <span class="parish-tag">St. Elizabeth</span>
-        <span class="parish-tag">Trelawny</span>
-        <span class="parish-tag">Portland</span>
-        <span class="parish-tag">St. Thomas</span>
-        <span class="parish-tag">St. Mary</span>
-        <span class="parish-tag">Hanover</span>
+        <a href="category.html?parish=Kingston" class="parish-tag">Kingston</a>
+        <a href="category.html?parish=St.+Andrew" class="parish-tag">St. Andrew</a>
+        <a href="category.html?parish=St.+Catherine" class="parish-tag">St. Catherine</a>
+        <a href="category.html?parish=Manchester" class="parish-tag">Manchester</a>
+        <a href="category.html?parish=St.+James" class="parish-tag">St. James</a>
+        <a href="category.html?parish=St.+Ann" class="parish-tag">St. Ann</a>
+        <a href="category.html?parish=Clarendon" class="parish-tag">Clarendon</a>
+        <a href="category.html?parish=Westmoreland" class="parish-tag">Westmoreland</a>
+        <a href="category.html?parish=St.+Elizabeth" class="parish-tag">St. Elizabeth</a>
+        <a href="category.html?parish=Trelawny" class="parish-tag">Trelawny</a>
+        <a href="category.html?parish=Portland" class="parish-tag">Portland</a>
+        <a href="category.html?parish=St.+Thomas" class="parish-tag">St. Thomas</a>
+        <a href="category.html?parish=St.+Mary" class="parish-tag">St. Mary</a>
+        <a href="category.html?parish=Hanover" class="parish-tag">Hanover</a>
       </div>
 
       <div class="ad-slot" data-ad-format="horizontal" data-ad-slot="home-bottom"></div>
@@ -126,36 +149,54 @@
 
   <script src="js/common.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      // Render all service cards
-      const grid = document.getElementById('tool-grid');
-      grid.innerHTML = TOOLS.map(t => toolCardHTML(t, '')).join('');
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Render category filter pills
+      const catBar = document.getElementById('category-bar');
+      catBar.innerHTML = `
+        <a href="#" class="category-pill active" data-filter="all">All Services</a>
+        ${CATEGORIES.map(c => `<a href="category.html?cat=${c.slug}" class="category-pill" data-filter="${c.slug}">${c.icon} ${c.name}</a>`).join('')}
+      `;
 
-      // Render category cards
+      // Load listings from API (falls back to hardcoded data)
+      const listings = await getListings();
+      renderListingGrid(listings);
+
+      // Update listing count stat
+      const statEl = document.getElementById('stat-listings');
+      if (statEl && listings.length) statEl.textContent = listings.length + '+';
+
+      // Render category cards with listing counts
       const catGrid = document.getElementById('category-grid');
-      catGrid.innerHTML = CATEGORIES.map(c => `
-        <div class="tool-card" style="cursor:default">
-          <div class="tool-card-header">
-            <div class="tool-card-icon">${c.icon}</div>
-            <h3>${c.name}</h3>
-          </div>
-          <p>${c.desc}</p>
-          <div class="tool-card-footer">
-            <span class="tool-card-category">${TOOLS.filter(t => t.category === c.slug).length} services</span>
-          </div>
-        </div>
-      `).join('');
+      catGrid.innerHTML = CATEGORIES.map(c => {
+        const count = listings.filter(l => {
+          const slug = categorySlug(l.category);
+          return slug === c.slug || (l.category || '').toLowerCase() === c.name.toLowerCase();
+        }).length;
+        return `
+          <a href="category.html?cat=${c.slug}" class="tool-card">
+            <div class="tool-card-header">
+              <div class="tool-card-icon">${c.icon}</div>
+              <h3>${c.name}</h3>
+            </div>
+            <p>${c.desc}</p>
+            <div class="tool-card-footer">
+              <span class="tool-card-category">${count} service${count !== 1 ? 's' : ''}</span>
+            </div>
+          </a>`;
+      }).join('');
 
-      // Category filter
-      document.querySelectorAll('.category-pill').forEach(pill => {
-        pill.addEventListener('click', e => {
+      // Category pill click — filter locally for "All", navigate for specific category
+      catBar.addEventListener('click', (e) => {
+        const pill = e.target.closest('.category-pill');
+        if (!pill) return;
+        const filter = pill.dataset.filter;
+        if (filter === 'all') {
           e.preventDefault();
-          document.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
+          catBar.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
           pill.classList.add('active');
-          const filter = pill.dataset.filter;
-          const filtered = filter === 'all' ? TOOLS : TOOLS.filter(t => t.category === filter);
-          renderToolGrid(filtered, '');
-        });
+          renderListingGrid(listings);
+        }
+        // Other pills are links to category.html — let them navigate
       });
     });
   </script>

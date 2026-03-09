@@ -11,8 +11,8 @@ from shared.database import get_db
 from shared.events import publish_event
 from shared.geo import encode_geohash, get_parish
 
-from app.models import Profile
-from app.schemas import ProfileCreate, ProfileResponse, ProfileUpdate
+from .models import Profile
+from .schemas import ProfileCreate, ProfileResponse, ProfileUpdate
 
 router = APIRouter(tags=["profiles"])
 
@@ -66,7 +66,7 @@ async def update_or_create_profile(
             parish=parish,
             created_at=now,
             updated_at=now,
-            **data.model_dump(),
+            **data.model_dump(exclude={"parish"}),
         )
         db.add(profile)
 

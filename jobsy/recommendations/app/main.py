@@ -9,8 +9,8 @@ from fastapi import FastAPI
 from shared.database import init_db
 from shared.middleware import setup_middleware
 
-from app.consumer import start_consumers
-from app.routes import router
+from .consumer import start_consumers
+from .routes import router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 
@@ -21,6 +21,10 @@ async def lifespan(app: FastAPI):
     consumer_task = asyncio.create_task(start_consumers())
     yield
     consumer_task.cancel()
+    try:
+        await asyncio.wait_for(consumer_task, timeout=5.0)
+    except (asyncio.CancelledError, asyncio.TimeoutError):
+        pass
 
 
 app = FastAPI(title="Jobsy Recommendations", version="0.1.0", lifespan=lifespan)

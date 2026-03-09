@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.database import get_db
 
-from app.models import GeoshardEntry
-from app.s2_utils import get_covering_cells, haversine_km
+from .models import GeoshardEntry
+from .s2_utils import get_covering_cells, haversine_km
 
 router = APIRouter(tags=["geo"])
 

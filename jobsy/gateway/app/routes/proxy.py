@@ -3,8 +3,8 @@
 import httpx
 from fastapi import APIRouter, Depends, Request, Response
 
-from app.config import SERVICE_URLS
-from app.deps import get_current_user
+from ..config import SERVICE_URLS
+from ..deps import get_current_user
 
 router = APIRouter(prefix="/api", tags=["proxy"])
 

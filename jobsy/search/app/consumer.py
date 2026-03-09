@@ -5,7 +5,7 @@ import logging
 
 from shared.events import consume_events
 
-from app.elasticsearch_client import index_listing, index_profile
+from .elasticsearch_client import index_listing, index_profile
 
 logger = logging.getLogger(__name__)
 

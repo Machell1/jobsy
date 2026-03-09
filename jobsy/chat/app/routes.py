@@ -5,8 +5,9 @@ from sqlalchemy import or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.database import get_db
+from shared.models.chat import ConversationResponse, MessageResponse
 
-from app.models import Conversation, Message
+from .models import Conversation, Message
 
 router = APIRouter(tags=["chat"])
 
@@ -18,7 +19,7 @@ def _get_user_id(request: Request) -> str:
     return user_id
 
 
-@router.get("/conversations")
+@router.get("/conversations", response_model=list[ConversationResponse])
 async def list_conversations(
     request: Request,
     limit: int = Query(default=20, le=100),
@@ -38,17 +39,17 @@ async def list_conversations(
     conversations = result.scalars().all()
 
     return [
-        {
-            "id": c.id,
-            "match_id": c.match_id,
-            "other_user_id": c.user_b_id if c.user_a_id == user_id else c.user_a_id,
-            "created_at": c.created_at.isoformat(),
-        }
+        ConversationResponse(
+            id=c.id,
+            match_id=c.match_id,
+            other_user_id=c.user_b_id if c.user_a_id == user_id else c.user_a_id,
+            created_at=c.created_at,
+        )
         for c in conversations
     ]
 
 
-@router.get("/conversations/{conversation_id}/messages")
+@router.get("/conversations/{conversation_id}/messages", response_model=list[MessageResponse])
 async def get_messages(
     conversation_id: str,
     request: Request,
@@ -80,14 +81,14 @@ async def get_messages(
     messages = result.scalars().all()
 
     return [
-        {
-            "id": m.id,
-            "sender_id": m.sender_id,
-            "content": m.content,
-            "message_type": m.message_type,
-            "is_read": m.is_read,
-            "created_at": m.created_at.isoformat(),
-        }
+        MessageResponse(
+            id=m.id,
+            sender_id=m.sender_id,
+            content=m.content,
+            message_type=m.message_type,
+            is_read=m.is_read,
+            created_at=m.created_at,
+        )
         for m in reversed(messages)  # oldest first
     ]
 

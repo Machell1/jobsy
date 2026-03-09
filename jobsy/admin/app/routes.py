@@ -10,8 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.database import get_db
 
-from app.deps import require_admin
-from app.models import AuditLog, ModerationQueue
+from .deps import require_admin
+from .models import AuditLog, ModerationQueue
 
 router = APIRouter(tags=["admin"])
 

@@ -12,7 +12,7 @@ from shared.events import publish_event
 from shared.geo import encode_geohash, get_parish
 from shared.models.listing import ListingCreate, ListingResponse, ListingUpdate
 
-from app.models import Listing
+from .models import Listing
 
 router = APIRouter(tags=["listings"])
 
