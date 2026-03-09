@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from shared.database import init_db
 from shared.middleware import setup_middleware
 
-from app.routes import router
+from .routes import router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 

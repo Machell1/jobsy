@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from shared.database import get_db
 from shared.models.match import MatchResponse
 
-from app.models import Match
+from .models import Match
 
 router = APIRouter(tags=["matches"])
 

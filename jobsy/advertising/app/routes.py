@@ -11,8 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.database import get_db
 
-from app.models import AdCampaign, AdClick, AdImpression, AdPlacement
-from app.revive import fetch_ad_from_revive, report_click_to_revive, report_impression_to_revive
+from .models import AdCampaign, AdClick, AdImpression, AdPlacement
+from .revive import fetch_ad_from_revive, report_click_to_revive, report_impression_to_revive
 
 router = APIRouter(tags=["advertising"])
 

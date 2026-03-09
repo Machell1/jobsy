@@ -4,7 +4,7 @@ import time
 
 from fastapi import HTTPException, Request, status
 
-from app.config import RATE_LIMIT_AUTHENTICATED, RATE_LIMIT_UNAUTHENTICATED
+from ..config import RATE_LIMIT_AUTHENTICATED, RATE_LIMIT_UNAUTHENTICATED
 
 
 async def rate_limit_check(request: Request) -> None:

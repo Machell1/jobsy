@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.database import get_db
 
-from app.models import Conversation, Message
+from .models import Conversation, Message
 
 router = APIRouter(tags=["chat"])
 

@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Query, Request
 
-from app.elasticsearch_client import search_listings, search_profiles
+from .elasticsearch_client import search_listings, search_profiles
 
 router = APIRouter(tags=["search"])
 

@@ -12,8 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.database import get_db
 
-from app.models import UserPreference
-from app.ranker import rank_candidate
+from .models import UserPreference
+from .ranker import rank_candidate
 
 router = APIRouter(tags=["recommendations"])
 

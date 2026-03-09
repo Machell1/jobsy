@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from shared.database import async_session_factory
 from shared.events import consume_events
 
-from app.models import InteractionLog
+from .models import InteractionLog
 
 logger = logging.getLogger(__name__)
 

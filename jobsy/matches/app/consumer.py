@@ -18,7 +18,7 @@ from shared.events import consume_events, publish_event
 logger = logging.getLogger(__name__)
 
 # Import here to avoid circular deps at module level
-from app.models import Match
+from .models import Match
 
 
 async def handle_swipe_right(payload: dict) -> None:

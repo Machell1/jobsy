@@ -10,10 +10,10 @@ from shared.config import REDIS_URL
 from shared.database import init_db
 from shared.middleware import setup_middleware
 
-from app.middleware.rate_limit import rate_limit_check
-from app.routes.auth import router as auth_router
-from app.routes.health import router as health_router
-from app.routes.proxy import router as proxy_router
+from .middleware.rate_limit import rate_limit_check
+from .routes.auth import router as auth_router
+from .routes.health import router as health_router
+from .routes.proxy import router as proxy_router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 

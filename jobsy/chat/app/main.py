@@ -9,9 +9,9 @@ from fastapi import FastAPI
 from shared.database import init_db
 from shared.middleware import setup_middleware
 
-from app.consumer import start_consumer
-from app.routes import router
-from app.websocket import chat_websocket
+from .consumer import start_consumer
+from .routes import router
+from .websocket import chat_websocket
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 

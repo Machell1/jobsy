@@ -7,8 +7,8 @@ from fastapi import FastAPI
 
 from shared.middleware import setup_middleware
 
-from app.routes import router
-from app.s3 import ensure_bucket
+from .routes import router
+from .s3 import ensure_bucket
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 

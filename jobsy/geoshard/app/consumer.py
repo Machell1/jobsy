@@ -11,8 +11,8 @@ from shared.database import async_session_factory
 from shared.events import consume_events
 from shared.geo import encode_geohash, get_parish
 
-from app.models import GeoshardEntry
-from app.s2_utils import lat_lng_to_s2_cell_id
+from .models import GeoshardEntry
+from .s2_utils import lat_lng_to_s2_cell_id
 
 logger = logging.getLogger(__name__)
 

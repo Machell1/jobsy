@@ -12,8 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from shared.database import get_db
 from shared.events import publish_event
 
-from app.models import PaymentAccount, Payout, Transaction
-from app.stripe_client import (
+from .models import PaymentAccount, Payout, Transaction
+from .stripe_client import (
     PLATFORM_FEE_PERCENT,
     create_connect_account,
     create_customer,

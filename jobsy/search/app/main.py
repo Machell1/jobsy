@@ -8,9 +8,9 @@ from fastapi import FastAPI
 
 from shared.middleware import setup_middleware
 
-from app.consumer import start_consumers
-from app.elasticsearch_client import close_client, ensure_indices
-from app.routes import router
+from .consumer import start_consumers
+from .elasticsearch_client import close_client, ensure_indices
+from .routes import router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 

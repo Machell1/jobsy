@@ -10,7 +10,7 @@ from sqlalchemy import select
 from shared.database import async_session_factory
 from shared.events import consume_events
 
-from app.models import Conversation
+from .models import Conversation
 
 logger = logging.getLogger(__name__)
 

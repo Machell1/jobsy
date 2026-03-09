@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from shared.database import get_db
 from shared.events import publish_event
 
-from app.models import Review, ReviewResponse, UserRating
+from .models import Review, ReviewResponse, UserRating
 
 router = APIRouter(tags=["reviews"])
 
