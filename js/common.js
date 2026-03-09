@@ -148,7 +148,7 @@ function renderFooter() {
       <div class="footer-grid">
         <div>
           <h4>About Jobsy</h4>
-          <p>${SITE_NAME} is Jamaica's premier service marketplace, connecting you with trusted local service providers across the island.</p>
+          <p>${SITE_NAME} is a Jamaican service marketplace. Find local professionals by category and parish.</p>
           <div class="footer-social" style="margin-top:0.75rem">
             <a href="https://t.me/JobsyDealBot" target="_blank" rel="noopener">Telegram</a>
             <a href="https://x.com/MachellWil66296" target="_blank" rel="noopener">X / Twitter</a>
@@ -173,7 +173,7 @@ function renderFooter() {
       </div>
       <div class="footer-bottom">
         <span>&copy; ${new Date().getFullYear()} ${SITE_NAME} Jamaica. All rights reserved.</span>
-        <span>Connecting Jamaicans with trusted local service providers.</span>
+        <span>Find services across Jamaica.</span>
       </div>
     </div>
   `;
