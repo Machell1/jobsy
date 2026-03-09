@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Browse Services | Jobsy - Jamaica's Service Marketplace</title>
+  <title>Browse Services | Jobsy Jamaica</title>
   <meta name="description" content="Browse service providers by category and parish on Jobsy Jamaica.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Jobsy">
@@ -26,7 +26,7 @@
       <div class="category-bar" id="filter-bar"></div>
 
       <!-- Results Grid -->
-      <div class="tool-grid" id="results-grid">
+      <div class="service-grid" id="results-grid">
         <p class="text-center text-muted" style="grid-column:1/-1;padding:2rem">Loading services...</p>
       </div>
 
@@ -60,13 +60,13 @@
           filterLabel = cat.name;
           pageTitle.textContent = `${cat.icon} ${cat.name} in Jamaica`;
           pageDesc.textContent = cat.desc;
-          document.title = `${cat.name} Services | Jobsy Jamaica`;
-          document.querySelector('meta[name="description"]').content = `${cat.desc} Find trusted ${cat.name.toLowerCase()} providers on Jobsy.`;
+          document.title = `${cat.name} | Jobsy Jamaica`;
+          document.querySelector('meta[name="description"]').content = `${cat.desc} Browse ${cat.name.toLowerCase()} providers on Jobsy.`;
         }
       } else if (parish) {
         filterLabel = parish;
         pageTitle.textContent = `Services in ${parish}`;
-        pageDesc.textContent = `Find trusted service providers in ${parish}, Jamaica.`;
+        pageDesc.textContent = `Browse service providers in ${parish}, Jamaica.`;
         document.title = `Services in ${parish} | Jobsy Jamaica`;
         document.querySelector('meta[name="description"]').content = `Browse service providers in ${parish}, Jamaica on Jobsy.`;
       }

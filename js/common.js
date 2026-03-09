@@ -29,9 +29,9 @@ const FALLBACK_LISTINGS = [
   { id: 'fb-4', title: 'Natural Hair Styling', description: 'Professional styling, braiding, locs, and makeup artistry. Mobile service available.', category: 'Beauty & Wellness', parish: 'St. Andrew', budget: 4000, currency: 'JMD' },
   { id: 'fb-5', title: 'Auto Repair & Detailing', description: 'Full-service automotive repair, engine diagnostics, AC service, and premium detailing.', category: 'Automotive', parish: 'St. Catherine', budget: 8000, currency: 'JMD' },
   { id: 'fb-6', title: 'Web Development & IT', description: 'Professional websites, office network setup, and IT consulting for small businesses.', category: 'Technology', parish: 'St. James', budget: 45000, currency: 'JMD' },
-  { id: 'fb-7', title: 'CXC Math Tutoring', description: 'Expert CXC and CAPE preparation. Proven track record of Grade 1 results.', category: 'Tutoring & Education', parish: 'Manchester', budget: 3000, currency: 'JMD' },
+  { id: 'fb-7', title: 'CXC Math Tutoring', description: 'CXC and CAPE preparation with consistent Grade 1 results.', category: 'Tutoring & Education', parish: 'Manchester', budget: 3000, currency: 'JMD' },
   { id: 'fb-8', title: 'Wedding Planning Package', description: 'Full wedding coordination from venue selection to day-of management.', category: 'Events & Entertainment', parish: 'Portland', budget: 80000, currency: 'JMD' },
-  { id: 'fb-9', title: 'Personal Training', description: 'Customized workout plans with nutrition guidance. Online and in-person sessions.', category: 'Health & Fitness', parish: 'Clarendon', budget: 20000, currency: 'JMD' },
+  { id: 'fb-9', title: 'Personal Training', description: 'Workout plans and nutrition guidance. Online and in-person sessions available.', category: 'Health & Fitness', parish: 'Clarendon', budget: 20000, currency: 'JMD' },
   { id: 'fb-10', title: 'Small Business Tax Filing', description: 'Annual GCT and income tax preparation. Statutory compliance included.', category: 'Professional Services', parish: 'Westmoreland', budget: 25000, currency: 'JMD' },
   { id: 'fb-11', title: 'Brand Identity Package', description: 'Logo design, business cards, social media templates. 3 concept rounds included.', category: 'Creative Services', parish: 'Trelawny', budget: 30000, currency: 'JMD' },
   { id: 'fb-12', title: 'Bathroom Renovation', description: 'Complete bathroom remodel including tiling, fixtures, and plumbing.', category: 'Construction', parish: 'St. Ann', budget: 120000, currency: 'JMD' }
@@ -118,13 +118,13 @@ function renderNav() {
   nav.className = 'nav';
   nav.innerHTML = `
     <div class="nav-inner">
-      <a href="index.html" class="nav-logo">${SITE_NAME}<span class="nav-logo-tag">Jamaica</span></a>
-      <div class="nav-links" id="mobile-menu">
+      <a href="index.html" class="nav-logo">${SITE_NAME}<span class="nav-logo-tag">JA</span></a>
+      <div class="nav-links" id="nav-menu">
         <a href="index.html">Home</a>
+        <a href="category.html">Services</a>
         <a href="about.html">About</a>
         <a href="contact.html">Contact</a>
-        <a href="disclosure.html">Disclosure</a>
-        <a href="https://t.me/JobsyDealBot" target="_blank" rel="noopener" class="btn btn-sm btn-primary">Telegram Bot</a>
+        <a href="https://t.me/JobsyDealBot" target="_blank" rel="noopener" class="btn btn-sm btn-accent">Telegram Bot</a>
       </div>
       <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">&#9776;</button>
     </div>
@@ -132,10 +132,15 @@ function renderNav() {
   document.body.prepend(nav);
 
   const toggle = nav.querySelector('.nav-toggle');
-  const menu = nav.querySelector('#mobile-menu');
+  const menu = nav.querySelector('#nav-menu');
   toggle.addEventListener('click', () => {
     const open = menu.classList.toggle('open');
     toggle.setAttribute('aria-expanded', open);
+  });
+
+  // Close menu when clicking a link (mobile)
+  menu.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', () => menu.classList.remove('open'));
   });
 }
 
@@ -159,13 +164,13 @@ function renderFooter() {
           ${CATEGORIES.slice(0, 6).map(c => `<a href="category.html?cat=${c.slug}">${c.name}</a>`).join('')}
         </div>
         <div>
-          <h4>More</h4>
+          <h4>More Services</h4>
           ${CATEGORIES.slice(6).map(c => `<a href="category.html?cat=${c.slug}">${c.name}</a>`).join('')}
         </div>
         <div>
           <h4>Links</h4>
           <a href="index.html">Home</a>
-          <a href="about.html">About Us</a>
+          <a href="about.html">About</a>
           <a href="contact.html">Contact</a>
           <a href="privacy.html">Privacy Policy</a>
           <a href="disclosure.html">Affiliate Disclosure</a>
@@ -173,7 +178,7 @@ function renderFooter() {
       </div>
       <div class="footer-bottom">
         <span>&copy; ${new Date().getFullYear()} ${SITE_NAME} Jamaica. All rights reserved.</span>
-        <span>Find services across Jamaica.</span>
+        <span>Mandeville, Manchester, Jamaica</span>
       </div>
     </div>
   `;
@@ -207,18 +212,18 @@ function listingCardHTML(listing) {
     : 'Get Quote';
 
   return `
-    <a href="provider.html?id=${encodeURIComponent(listing.id)}" class="tool-card">
-      <div class="tool-card-header">
-        <div class="tool-card-icon">${icon}</div>
+    <a href="provider.html?id=${encodeURIComponent(listing.id)}" class="service-card">
+      <div class="service-card-header">
+        <div class="service-card-icon">${icon}</div>
         <div>
           <h3>${escapeHtml(listing.title)}</h3>
         </div>
-        <span class="tool-badge badge-freemium">${price}</span>
+        <span class="service-badge">${price}</span>
       </div>
       <p>${escapeHtml(listing.description || '')}</p>
-      <div class="tool-card-footer">
-        <span class="tool-card-category">${escapeHtml(catName)}</span>
-        ${parish ? `<span class="tool-card-rating">${escapeHtml(parish)}</span>` : ''}
+      <div class="service-card-footer">
+        <span class="service-card-category">${escapeHtml(catName)}</span>
+        ${parish ? `<span class="service-card-location">&#128205; ${escapeHtml(parish)}</span>` : ''}
       </div>
     </a>`;
 }
@@ -259,7 +264,7 @@ function initSearch() {
 }
 
 function renderListingGrid(listings) {
-  const grid = document.getElementById('tool-grid');
+  const grid = document.getElementById('service-grid');
   if (!grid) return;
   if (!listings || listings.length === 0) {
     grid.innerHTML = '<p class="text-center text-muted" style="grid-column:1/-1;padding:2rem">No services found matching your search.</p>';
