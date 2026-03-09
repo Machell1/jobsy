@@ -26,7 +26,7 @@ import asyncio
 import datetime
 import logging
 import functools
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 from telegram.constants import ParseMode
 
@@ -83,35 +83,57 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     is_admin = not ADMIN_USER_IDS or user.id in ADMIN_USER_IDS
 
     text = (
-        "<b>Deal Alert Bot</b>\n\n"
-        "I find the best deals across Amazon, Best Buy, Walmart, Target, "
-        "eBay, and more, and we send instant alerts when prices drop!\n\n"
-        f"Join our channel {TELEGRAM_CHANNEL_HANDLE} for real-time deal alerts.\n"
+        f"Hey {user.first_name}! Welcome to the <b>Jobsy Deal Alert Bot</b> 🇯🇲\n\n"
+        "We scan Amazon, Best Buy, Walmart, Target, eBay, and more "
+        "so you never miss a price drop or a good deal.\n\n"
+        "Here's what you can do:\n\n"
+        "🛒 <b>Browse Deals</b>\n"
+        "Tap a button below to see the latest deals by category.\n\n"
+        "✈️ <b>Flights & Travel</b>\n"
+        "We also track flight deals, holiday packages, and travel offers.\n\n"
+        "🎁 <b>Gift Ideas</b>\n"
+        "Birthday, wedding, baby shower, and party deals all in one place.\n\n"
+        f"Join our channel {TELEGRAM_CHANNEL_HANDLE} to get alerts as soon as deals go live."
     )
+
+    keyboard = [
+        [
+            InlineKeyboardButton("🛍️ Latest Deals", callback_data="menu:deals"),
+            InlineKeyboardButton("✈️ Flights", callback_data="menu:flights"),
+        ],
+        [
+            InlineKeyboardButton("🎂 Birthday Gifts", callback_data="menu:birthday"),
+            InlineKeyboardButton("💒 Wedding Deals", callback_data="menu:wedding"),
+        ],
+        [
+            InlineKeyboardButton("🎉 Party Deals", callback_data="menu:party"),
+            InlineKeyboardButton("🏖️ Holiday Packages", callback_data="menu:holidays"),
+        ],
+        [
+            InlineKeyboardButton(f"📢 Join Channel", url=f"https://t.me/{TELEGRAM_CHANNEL_HANDLE.lstrip('@')}"),
+        ],
+    ]
 
     if is_admin:
         text += (
-            "\n<b>Admin Commands:</b>\n"
+            "\n\n<b>Admin Commands:</b>\n"
             "/add &lt;url&gt; - Track a product\n"
             "/remove &lt;id&gt; - Stop tracking\n"
             "/status - View tracked products\n"
             "/check - Check prices now\n"
             "/deals - Scan deal aggregators\n"
             "/lifestyle - Flights, gifts, events, packages\n"
-            "/flights - Flight deals\n"
-            "/birthday - Birthday gift deals\n"
-            "/wedding - Wedding package deals\n"
-            "/babyshower - Baby shower deals\n"
-            "/party - Party deals\n"
-            "/holidays - Holiday packages\n"
             "/sites - Supported sites\n"
             "/earnings - Estimated revenue\n"
-            "/revenue - Actual + estimated revenue\n"
-            "/help - Show this message\n\n"
+            "/revenue - Actual + estimated revenue\n\n"
             f"Price checks run every {CHECK_INTERVAL_MINUTES} minutes automatically."
         )
 
-    await update.message.reply_text(text, parse_mode=ParseMode.HTML)
+    await update.message.reply_text(
+        text,
+        parse_mode=ParseMode.HTML,
+        reply_markup=InlineKeyboardMarkup(keyboard),
+    )
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -311,6 +333,36 @@ async def revenue_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(report, parse_mode=ParseMode.HTML)
 
 
+async def menu_button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle menu button taps from the welcome message."""
+    query = update.callback_query
+    await query.answer()
+
+    action = query.data.split(":")[1] if ":" in query.data else ""
+    loop = asyncio.get_event_loop()
+
+    if action == "deals":
+        await query.message.reply_text("Looking for the latest deals...")
+        await loop.run_in_executor(None, scan_deals)
+    elif action == "flights":
+        await query.message.reply_text("Searching for flight deals...")
+        await loop.run_in_executor(None, scan_category, "flights")
+    elif action == "birthday":
+        await query.message.reply_text("Finding birthday gift ideas...")
+        await loop.run_in_executor(None, scan_category, "birthday")
+    elif action == "wedding":
+        await query.message.reply_text("Looking for wedding deals...")
+        await loop.run_in_executor(None, scan_category, "wedding")
+    elif action == "party":
+        await query.message.reply_text("Grabbing party deals...")
+        await loop.run_in_executor(None, scan_category, "party")
+    elif action == "holidays":
+        await query.message.reply_text("Checking holiday packages...")
+        await loop.run_in_executor(None, scan_category, "holidays")
+    else:
+        await query.message.reply_text("Not sure what that was. Try /start to see the menu again.")
+
+
 async def buy_button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle 'Get This Deal' button clicks - log the click and send the affiliate URL."""
     query = update.callback_query
@@ -429,6 +481,7 @@ def run_bot():
     app.add_handler(CommandHandler("sites", sites_command))
     app.add_handler(CommandHandler("earnings", earnings_command))
     app.add_handler(CommandHandler("revenue", revenue_command))
+    app.add_handler(CallbackQueryHandler(menu_button_callback, pattern=r"^menu:"))
     app.add_handler(CallbackQueryHandler(buy_button_callback, pattern=r"^buy:"))
 
     # Register scheduled jobs
