@@ -14,10 +14,10 @@ RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/")
 _jwt_secret = os.getenv("JWT_SECRET", "")
 if not _jwt_secret:
     if os.getenv("TESTING"):
-        _jwt_secret = "test-secret"
+        _jwt_secret = "test-secret"  # noqa: S105
     else:
         logging.warning("JWT_SECRET not set — using insecure default. Set JWT_SECRET in production!")
-        _jwt_secret = "change-me-in-production"
+        _jwt_secret = "change-me-in-production"  # noqa: S105
 JWT_SECRET = _jwt_secret
 
 JWT_ALGORITHM = "HS256"

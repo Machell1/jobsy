@@ -42,7 +42,7 @@ def get_covering_cells(lat: float, lng: float, radius_km: float, level: int = DE
     radius_lng = radius_km / KM_PER_DEG_LNG
 
     # Create a region covering the search area
-    center = s2sphere.LatLng.from_degrees(lat, lng)
+    s2sphere.LatLng.from_degrees(lat, lng)
     region = s2sphere.LatLngRect(
         s2sphere.LatLng.from_degrees(lat - radius_lat, lng - radius_lng),
         s2sphere.LatLng.from_degrees(lat + radius_lat, lng + radius_lng),
@@ -62,7 +62,7 @@ def get_neighbor_cells(cell_id: int, level: int = DEFAULT_S2_LEVEL) -> list[int]
     """Get the immediate neighbor cell IDs for a given S2 cell."""
     cell = s2sphere.CellId(cell_id)
     neighbors = []
-    for edge in range(4):
+    for _edge in range(4):
         neighbor_cells = cell.get_edge_neighbors()
         for n in neighbor_cells:
             if n.id() not in neighbors:

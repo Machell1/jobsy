@@ -1,10 +1,10 @@
 """Payments service API routes -- transactions, accounts, webhooks, payouts."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, Header, Query, Request, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -59,7 +59,7 @@ async def setup_payment_account(
     result = await db.execute(select(PaymentAccount).where(PaymentAccount.user_id == user_id))
     account = result.scalar_one_or_none()
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     if not account:
         account = PaymentAccount(
@@ -164,7 +164,7 @@ async def initiate_payment(
         metadata={"payer_id": payer_id, "payee_id": data.payee_id, "listing_id": data.listing_id or ""},
     )
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     txn = Transaction(
         id=str(uuid.uuid4()),
         payer_id=payer_id,
@@ -299,7 +299,7 @@ async def request_payout(data: PayoutRequest, request: Request, db: AsyncSession
     amount = Decimal(str(data.amount))
     stripe_payout = await create_payout(account.stripe_account_id, amount)
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payout = Payout(
         id=str(uuid.uuid4()),
         user_id=user_id,
@@ -370,7 +370,7 @@ async def stripe_webhook(
     event_type = event["type"]
     data = event["data"]["object"]
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     if event_type == "payment_intent.succeeded":
         pi_id = data["id"]

@@ -14,7 +14,6 @@ import io
 import logging
 import os
 import uuid
-from datetime import datetime, timezone
 
 import boto3
 from botocore.config import Config

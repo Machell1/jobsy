@@ -3,7 +3,7 @@
 import time
 import uuid
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
@@ -18,7 +18,7 @@ from shared.auth import (
     verify_password,
 )
 from shared.database import get_db
-from shared.models.user import TokenResponse, UserCreate, UserLogin, UserResponse
+from shared.models.user import TokenResponse, UserCreate, UserLogin
 
 from ..config import RATE_LIMIT_AUTH_ENDPOINTS
 from ..models import User
@@ -63,8 +63,8 @@ async def register(request: Request, data: UserCreate, db: AsyncSession = Depend
         email=data.email,
         password_hash=hash_password(data.password),
         role=data.role,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
     db.add(user)
     await db.flush()
@@ -103,7 +103,7 @@ async def refresh_token(body: _RefreshRequest, db: AsyncSession = Depends(get_db
         if payload.get("type") != "refresh":
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
     except Exception:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token") from None
 
     user_id = payload["sub"]
     result = await db.execute(select(User).where(User.id == user_id))

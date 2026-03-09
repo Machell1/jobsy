@@ -3,7 +3,7 @@
 import asyncio
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 
@@ -42,7 +42,7 @@ async def _log_notification(
             data=data or {},
             notification_type=notification_type,
             delivered=delivered,
-            sent_at=datetime.now(timezone.utc),
+            sent_at=datetime.now(UTC),
         )
         db.add(log_entry)
         await db.commit()

@@ -8,17 +8,16 @@ forming a mutual match.
 import asyncio
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import and_, select
 
 from shared.database import async_session_factory
 from shared.events import consume_events, publish_event
 
-logger = logging.getLogger(__name__)
-
-# Import here to avoid circular deps at module level
 from .models import Match
+
+logger = logging.getLogger(__name__)
 
 
 async def handle_swipe_right(payload: dict) -> None:
@@ -63,7 +62,7 @@ async def handle_swipe_right(payload: dict) -> None:
                 user_b_id=max(swiper_id, target_id),
                 listing_id=None,
                 status="active",
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             )
             db.add(match)
             await db.commit()

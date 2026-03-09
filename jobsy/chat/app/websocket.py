@@ -5,10 +5,11 @@ messages reach users regardless of which server instance they're
 connected to.
 """
 
+import contextlib
 import json
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import redis.asyncio as aioredis
 from fastapi import WebSocket, WebSocketDisconnect
@@ -64,7 +65,7 @@ async def _verify_participant(user_id: str, conversation_id: str) -> bool:
 async def _save_message(conversation_id: str, sender_id: str, content: str, message_type: str = "text") -> dict:
     """Persist a message to the database."""
     msg_id = str(uuid.uuid4())
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     async with async_session_factory() as db:
         message = Message(
@@ -162,10 +163,8 @@ async def chat_websocket(websocket: WebSocket, conversation_id: str):
             # Send to local connections (same instance)
             for uid, ws in _connections.get(conversation_id, {}).items():
                 if uid != user_id:
-                    try:
+                    with contextlib.suppress(Exception):
                         await ws.send_json(msg)
-                    except Exception:
-                        pass
 
             # Emit event for notifications service
             await publish_event("message.new", {

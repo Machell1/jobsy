@@ -1,9 +1,8 @@
 """Tests for matches service routes."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
@@ -32,7 +31,7 @@ async def seeded_match(test_session):
         user_b_id="user-b",
         listing_id="listing-1",
         status="active",
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     test_session.add(match)
     await test_session.commit()

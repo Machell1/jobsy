@@ -1,6 +1,5 @@
 """Match service API routes."""
 
-from enum import Enum
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status

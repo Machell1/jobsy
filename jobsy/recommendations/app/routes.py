@@ -1,7 +1,7 @@
 """Recommendation service API routes."""
 
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 
 import httpx
@@ -105,7 +105,7 @@ async def get_recommendation_feed(
                     listing = resp.json()
 
                     # 4. Score the candidate
-                    created_at = datetime.fromisoformat(listing.get("created_at", datetime.now(timezone.utc).isoformat()))
+                    created_at = datetime.fromisoformat(listing.get("created_at", datetime.now(UTC).isoformat()))
                     score_result = rank_candidate(
                         distance_km=entity.get("distance_km"),
                         listing_category=listing.get("category"),
@@ -136,7 +136,7 @@ async def update_preferences(
 ):
     """Update user's recommendation preferences."""
     user_id = _get_user_id(request)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     result = await db.execute(select(UserPreference).where(UserPreference.user_id == user_id))
     prefs = result.scalar_one_or_none()

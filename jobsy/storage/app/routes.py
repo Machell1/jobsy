@@ -1,6 +1,6 @@
 """Storage service API routes for file upload, presigned URLs, and deletion."""
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
+from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile, status
 from pydantic import BaseModel, Field
 
 from .s3 import (
@@ -55,7 +55,7 @@ async def upload(
     try:
         result = upload_file(file_data, content_type, folder)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
     # Generate thumbnail for images
     thumbnail_url = None
@@ -66,7 +66,7 @@ async def upload(
                 thumb_data, content_type, f"{folder}/thumbs"
             )
             thumbnail_url = thumb_result["url"]
-        except Exception:
+        except Exception:  # noqa: S110
             pass  # Thumbnail generation failure is non-fatal
 
     return {

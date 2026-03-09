@@ -1,7 +1,7 @@
 """Listing service API routes."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select
@@ -27,7 +27,7 @@ def _get_user_id(request: Request) -> str:
 @router.post("/", response_model=ListingResponse, status_code=status.HTTP_201_CREATED)
 async def create_listing(data: ListingCreate, request: Request, db: AsyncSession = Depends(get_db)):
     user_id = _get_user_id(request)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     geohash = None
     parish = data.parish
@@ -122,7 +122,7 @@ async def update_listing(
 
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(listing, field, value)
-    listing.updated_at = datetime.now(timezone.utc)
+    listing.updated_at = datetime.now(UTC)
     await db.flush()
     return listing
 
@@ -138,5 +138,5 @@ async def delete_listing(listing_id: str, request: Request, db: AsyncSession = D
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not the listing owner")
 
     listing.status = "cancelled"
-    listing.updated_at = datetime.now(timezone.utc)
+    listing.updated_at = datetime.now(UTC)
     await db.flush()

@@ -1,6 +1,5 @@
 """Tests for listings service routes."""
 
-import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
@@ -83,7 +82,7 @@ class TestListListings:
         response = await client.get("/?category=electrical")
         assert response.status_code == 200
         listings = response.json()
-        assert all(l["category"] == "electrical" for l in listings)
+        assert all(listing["category"] == "electrical" for listing in listings)
 
 
 class TestListingFeed:

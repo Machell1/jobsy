@@ -1,6 +1,5 @@
 """Tests for admin service routes."""
 
-import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
@@ -58,7 +57,7 @@ class TestModeration:
             "reason": "Inappropriate content",
         }, headers=admin_headers())
         assert response.status_code == 201
-        item_id = response.json()["id"]
+        response.json()["id"]
 
         # List pending items
         response = await client.get("/moderation", headers=admin_headers())

@@ -1,7 +1,7 @@
 """Advertising service API routes -- ad serving, impression/click tracking, campaigns."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import RedirectResponse
@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from shared.database import get_db
 
 from .models import AdCampaign, AdClick, AdImpression, AdPlacement
-from .revive import fetch_ad_from_revive, report_click_to_revive, report_impression_to_revive
+from .revive import fetch_ad_from_revive, report_impression_to_revive
 
 router = APIRouter(tags=["advertising"])
 
@@ -88,7 +88,7 @@ async def serve_ad(
         placement_id=placement.id,
         user_id=user_id,
         parish=parish,
-        recorded_at=datetime.now(timezone.utc),
+        recorded_at=datetime.now(UTC),
     )
     db.add(impression)
     await db.flush()
@@ -131,7 +131,7 @@ async def record_click(
         placement_id=placement,
         user_id=user_id,
         parish=parish,
-        recorded_at=datetime.now(timezone.utc),
+        recorded_at=datetime.now(UTC),
     )
     db.add(click)
     await db.flush()
@@ -156,7 +156,7 @@ async def record_impression(
         placement_id=placement_id,
         user_id=user_id,
         parish=parish,
-        recorded_at=datetime.now(timezone.utc),
+        recorded_at=datetime.now(UTC),
     )
     db.add(impression)
     await db.flush()
@@ -185,7 +185,7 @@ class CampaignCreate(BaseModel):
 @router.post("/campaigns", status_code=status.HTTP_201_CREATED)
 async def create_campaign(data: CampaignCreate, db: AsyncSession = Depends(get_db)):
     """Create a new advertising campaign."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     campaign = AdCampaign(
         id=str(uuid.uuid4()),
         advertiser_name=data.advertiser_name,

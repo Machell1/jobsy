@@ -6,71 +6,52 @@ use integration tests with the real database via docker-compose.
 """
 
 import asyncio
+import contextlib
 import os
 from unittest.mock import AsyncMock, patch
 
 import pytest
 import pytest_asyncio
-from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 # Override env before importing any app code
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 os.environ["REDIS_URL"] = "redis://localhost:6379/0"
 os.environ["RABBITMQ_URL"] = "amqp://guest:guest@localhost:5672/"
-os.environ["JWT_SECRET"] = "test-secret-key"
+os.environ["JWT_SECRET"] = "test-secret-key"  # noqa: S105
 
 # Monkey-patch JSONB to JSON so SQLite can handle JSONB columns
-import sqlalchemy.dialects.postgresql as _pg
-from sqlalchemy import JSON as _JSON
+import sqlalchemy.dialects.postgresql as _pg  # noqa: E402
+from sqlalchemy import JSON as _JSON  # noqa: E402
+
 _pg.JSONB = _JSON  # type: ignore[attr-defined]
 _pg.json.JSONB = _JSON  # type: ignore[attr-defined]
 
-from shared.database import Base, get_db
+from shared.database import Base  # noqa: E402
 
 # Import all models so Base.metadata registers every table before create_all.
 # With relative imports inside each service, these fully-qualified imports
 # are the canonical module path and won't conflict.
-try:
+with contextlib.suppress(Exception):
     import gateway.app.models  # noqa: F401
-except Exception:
-    pass
-try:
+with contextlib.suppress(Exception):
     import profiles.app.models  # noqa: F401
-except Exception:
-    pass
-try:
+with contextlib.suppress(Exception):
     import listings.app.models  # noqa: F401
-except Exception:
-    pass
-try:
+with contextlib.suppress(Exception):
     import swipes.app.models  # noqa: F401
-except Exception:
-    pass
-try:
+with contextlib.suppress(Exception):
     import matches.app.models  # noqa: F401
-except Exception:
-    pass
-try:
+with contextlib.suppress(Exception):
     import chat.app.models  # noqa: F401
-except Exception:
-    pass
-try:
+with contextlib.suppress(Exception):
     import notifications.app.models  # noqa: F401
-except Exception:
-    pass
-try:
+with contextlib.suppress(Exception):
     import payments.app.models  # noqa: F401
-except Exception:
-    pass
-try:
+with contextlib.suppress(Exception):
     import reviews.app.models  # noqa: F401
-except Exception:
-    pass
-try:
+with contextlib.suppress(Exception):
     import admin.app.models  # noqa: F401
-except Exception:
-    pass
 
 
 @pytest.fixture(scope="session")

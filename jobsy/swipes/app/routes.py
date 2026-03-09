@@ -1,7 +1,7 @@
 """Swipe service API routes."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select
@@ -34,17 +34,17 @@ async def record_swipe(data: SwipeCreate, request: Request, db: AsyncSession = D
         target_id=data.target_id,
         target_type=data.target_type,
         direction=data.direction,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
 
     try:
         db.add(swipe)
         await db.flush()
-    except IntegrityError:
+    except IntegrityError as err:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Already swiped on this target",
-        )
+        ) from err
 
     # Publish event for right swipes (matches service listens)
     if data.direction == "right":

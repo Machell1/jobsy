@@ -3,8 +3,9 @@
 import asyncio
 import json
 import logging
-from datetime import datetime, timezone
-from typing import Any, Callable
+from collections.abc import Callable
+from datetime import UTC, datetime
+from typing import Any
 
 import aio_pika
 
@@ -44,7 +45,7 @@ async def publish_event(routing_key: str, data: dict[str, Any]) -> None:
     message = aio_pika.Message(
         body=json.dumps({
             "event_type": routing_key,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "data": data,
         }).encode(),
         content_type="application/json",
