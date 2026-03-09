@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Browse Services | Jobsy - Jamaica's Service Marketplace</title>
+  <meta name="description" content="Browse service providers by category and parish on Jobsy — Jamaica's trusted service marketplace.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Jobsy">
+  <meta name="twitter:card" content="summary">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main>
+    <div class="container">
+      <div class="breadcrumbs">
+        <a href="index.html">Home</a> <span>&rsaquo;</span> <span id="breadcrumb-title">Services</span>
+      </div>
+
+      <div style="padding:2rem 0 1rem">
+        <h1 id="page-title">Browse Services</h1>
+        <p class="text-muted" id="page-desc">Find trusted service providers across Jamaica.</p>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="category-bar" id="filter-bar"></div>
+
+      <!-- Results Grid -->
+      <div class="tool-grid" id="results-grid">
+        <p class="text-center text-muted" style="grid-column:1/-1;padding:2rem">Loading services...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div id="empty-state" style="display:none;text-align:center;padding:3rem 1rem">
+        <h2>No services found</h2>
+        <p class="text-muted">Try a different category or <a href="index.html">browse all services</a>.</p>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const params = new URLSearchParams(window.location.search);
+      const catSlug = params.get('cat');
+      const parish = params.get('parish');
+
+      const pageTitle = document.getElementById('page-title');
+      const pageDesc = document.getElementById('page-desc');
+      const breadcrumb = document.getElementById('breadcrumb-title');
+      const filterBar = document.getElementById('filter-bar');
+      const grid = document.getElementById('results-grid');
+      const emptyState = document.getElementById('empty-state');
+
+      // Set page context based on filter type
+      let filterLabel = 'All Services';
+      if (catSlug) {
+        const cat = CATEGORIES.find(c => c.slug === catSlug);
+        if (cat) {
+          filterLabel = cat.name;
+          pageTitle.textContent = `${cat.icon} ${cat.name} in Jamaica`;
+          pageDesc.textContent = cat.desc;
+          document.title = `${cat.name} Services | Jobsy Jamaica`;
+          document.querySelector('meta[name="description"]').content = `${cat.desc} Find trusted ${cat.name.toLowerCase()} providers on Jobsy.`;
+        }
+      } else if (parish) {
+        filterLabel = parish;
+        pageTitle.textContent = `Services in ${parish}`;
+        pageDesc.textContent = `Find trusted service providers in ${parish}, Jamaica.`;
+        document.title = `Services in ${parish} | Jobsy Jamaica`;
+        document.querySelector('meta[name="description"]').content = `Browse service providers in ${parish}, Jamaica on Jobsy.`;
+      }
+      breadcrumb.textContent = filterLabel;
+
+      // Render category filter pills
+      filterBar.innerHTML = `
+        <a href="category.html" class="category-pill ${!catSlug && !parish ? 'active' : ''}">All</a>
+        ${CATEGORIES.map(c => `<a href="category.html?cat=${c.slug}" class="category-pill ${catSlug === c.slug ? 'active' : ''}">${c.icon} ${c.name}</a>`).join('')}
+      `;
+
+      // Load and filter listings
+      const allListings = await getListings();
+      let filtered = allListings;
+
+      if (catSlug) {
+        const cat = CATEGORIES.find(c => c.slug === catSlug);
+        if (cat) {
+          filtered = allListings.filter(l => {
+            const slug = categorySlug(l.category);
+            return slug === catSlug || (l.category || '').toLowerCase() === cat.name.toLowerCase();
+          });
+        }
+      } else if (parish) {
+        filtered = allListings.filter(l =>
+          (l.parish || '').toLowerCase() === parish.toLowerCase()
+        );
+      }
+
+      // Render results
+      if (filtered.length === 0) {
+        grid.style.display = 'none';
+        emptyState.style.display = 'block';
+      } else {
+        grid.innerHTML = filtered.map(l => listingCardHTML(l)).join('');
+      }
+    });
+  </script>
+</body>
+</html>
