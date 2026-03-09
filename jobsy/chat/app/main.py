@@ -22,6 +22,10 @@ async def lifespan(app: FastAPI):
     consumer_task = asyncio.create_task(start_consumer())
     yield
     consumer_task.cancel()
+    try:
+        await asyncio.wait_for(consumer_task, timeout=5.0)
+    except (asyncio.CancelledError, asyncio.TimeoutError):
+        pass
 
 
 app = FastAPI(title="Jobsy Chat", version="0.1.0", lifespan=lifespan)

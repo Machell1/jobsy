@@ -81,7 +81,8 @@ class TestGetMatch:
 class TestUpdateMatchStatus:
     async def test_update_status_to_completed(self, client, seeded_match):
         response = await client.put(
-            f"/{seeded_match.id}/status?new_status=completed",
+            f"/{seeded_match.id}/status",
+            json={"status": "completed"},
             headers={"X-User-ID": "user-a"},
         )
         assert response.status_code == 200
@@ -90,7 +91,8 @@ class TestUpdateMatchStatus:
 
     async def test_update_status_to_cancelled(self, client, seeded_match):
         response = await client.put(
-            f"/{seeded_match.id}/status?new_status=cancelled",
+            f"/{seeded_match.id}/status",
+            json={"status": "cancelled"},
             headers={"X-User-ID": "user-b"},
         )
         assert response.status_code == 200
@@ -98,14 +100,16 @@ class TestUpdateMatchStatus:
 
     async def test_update_status_invalid_value(self, client, seeded_match):
         response = await client.put(
-            f"/{seeded_match.id}/status?new_status=invalid",
+            f"/{seeded_match.id}/status",
+            json={"status": "invalid"},
             headers={"X-User-ID": "user-a"},
         )
-        assert response.status_code == 400
+        assert response.status_code == 422
 
     async def test_update_status_forbidden_for_non_participant(self, client, seeded_match):
         response = await client.put(
-            f"/{seeded_match.id}/status?new_status=completed",
+            f"/{seeded_match.id}/status",
+            json={"status": "completed"},
             headers={"X-User-ID": "stranger"},
         )
         assert response.status_code == 403
@@ -121,5 +125,8 @@ class TestAuthRequired:
         assert response.status_code == 401
 
     async def test_update_status_without_header(self, client, seeded_match):
-        response = await client.put(f"/{seeded_match.id}/status?new_status=completed")
+        response = await client.put(
+            f"/{seeded_match.id}/status",
+            json={"status": "completed"},
+        )
         assert response.status_code == 401
