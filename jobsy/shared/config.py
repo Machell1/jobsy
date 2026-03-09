@@ -15,6 +15,8 @@ _jwt_secret = os.getenv("JWT_SECRET", "")
 if not _jwt_secret:
     if os.getenv("TESTING"):
         _jwt_secret = "test-secret"  # noqa: S105
+    elif os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PRODUCTION"):
+        raise RuntimeError("JWT_SECRET environment variable must be set in production")
     else:
         logging.warning("JWT_SECRET not set — using insecure default. Set JWT_SECRET in production!")
         _jwt_secret = "change-me-in-production"  # noqa: S105

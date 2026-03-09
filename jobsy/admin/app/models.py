@@ -45,3 +45,28 @@ class ModerationQueue(Base):
     __table_args__ = (
         Index("idx_moderation_status", "status", "created_at"),
     )
+
+
+class VerificationRequest(Base):
+    """Mirror of profiles VerificationRequest for cross-service queries."""
+
+    __tablename__ = "verification_requests"
+    __table_args__ = {"extend_existing": True}
+
+    id = Column(String, primary_key=True)
+    user_id = Column(String, nullable=False)
+    document_urls = Column(JSONB, default=[])
+    status = Column(String(20), default="pending")
+    reviewer_notes = Column(String, nullable=True)
+    submitted_at = Column(DateTime(timezone=True), nullable=False)
+    reviewed_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class Profile(Base):
+    """Mirror of profiles Profile for cross-service queries."""
+
+    __tablename__ = "profiles"
+    __table_args__ = {"extend_existing": True}
+
+    id = Column(String, primary_key=True)
+    user_id = Column(String, nullable=False)

@@ -17,7 +17,9 @@ import gateway.app.models as _gw  # noqa: F401
 import listings.app.models as _ls  # noqa: F401
 import profiles.app.models as _pr  # noqa: F401
 import reviews.app.models as _rv  # noqa: F401
+from advertising.app.models import AdCampaign, AdPlacement
 from gateway.app.models import User
+from geoshard.app.models import GeoshardEntry
 from listings.app.models import Listing
 from profiles.app.models import Profile
 from shared.auth import hash_password
@@ -28,6 +30,24 @@ PARISHES = [
     "St. Ann", "Trelawny", "St. James", "Hanover", "Westmoreland",
     "St. Elizabeth", "Manchester", "Clarendon", "St. Catherine",
 ]
+
+# Approximate coordinates for Jamaican parishes (lat, lng)
+PARISH_COORDS = {
+    "Kingston":       (17.9714,  -76.7920),
+    "St. Andrew":     (18.0179,  -76.7674),
+    "St. Thomas":     (17.9500,  -76.3500),
+    "Portland":       (18.1750,  -76.4100),
+    "St. Mary":       (18.2700,  -76.8500),
+    "St. Ann":        (18.4100,  -77.2000),
+    "Trelawny":       (18.3500,  -77.6100),
+    "St. James":      (18.4762,  -77.8939),
+    "Hanover":        (18.4100,  -78.1300),
+    "Westmoreland":   (18.2700,  -78.1500),
+    "St. Elizabeth":  (18.0000,  -77.8300),
+    "Manchester":     (18.0300,  -77.5000),
+    "Clarendon":      (17.9600,  -77.2400),
+    "St. Catherine":  (18.0300,  -76.9500),
+}
 
 CATEGORIES = [
     "Home Services", "Beauty & Wellness", "Tutoring & Education",
@@ -295,6 +315,44 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
+# Minimal geohash encoder (base-32) -- good enough for seed data
+_BASE32 = "0123456789bcdefghjkmnpqrstuvwxyz"
+
+
+def _encode_geohash(lat: float, lng: float, precision: int = 7) -> str:
+    lat_range, lng_range = [-90.0, 90.0], [-180.0, 180.0]
+    bits = [16, 8, 4, 2, 1]
+    hash_chars: list[str] = []
+    bit, ch, even = 0, 0, True
+    while len(hash_chars) < precision:
+        if even:
+            mid = (lng_range[0] + lng_range[1]) / 2
+            if lng > mid:
+                ch |= bits[bit]
+                lng_range[0] = mid
+            else:
+                lng_range[1] = mid
+        else:
+            mid = (lat_range[0] + lat_range[1]) / 2
+            if lat > mid:
+                ch |= bits[bit]
+                lat_range[0] = mid
+            else:
+                lat_range[1] = mid
+        even = not even
+        if bit < 4:
+            bit += 1
+        else:
+            hash_chars.append(_BASE32[ch])
+            bit, ch = 0, 0
+    return "".join(hash_chars)
+
+
+def _fake_s2_cell(lat: float, lng: float) -> int:
+    """Return a deterministic pseudo S2 cell ID from coordinates (good enough for seed data)."""
+    return int((lat * 1e7 + 900000000) * 1000 + (lng * 1e7 + 1800000000)) & 0x7FFFFFFFFFFFFFFF
+
+
 async def seed():
     engine = create_async_engine(DATABASE_URL)
     session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -302,6 +360,9 @@ async def seed():
     async with session_factory() as session:
         print("Seeding provider accounts...")
         password_hash = hash_password("DemoPass123!")
+
+        profile_ids: list[tuple[str, str]] = []  # (profile_id, parish)
+        listing_ids: list[tuple[str, str]] = []   # (listing_id, parish)
 
         for p in PROVIDERS:
             user_id = _uid()
@@ -316,8 +377,9 @@ async def seed():
             )
             session.add(user)
 
+            profile_id = _uid()
             profile = Profile(
-                id=_uid(),
+                id=profile_id,
                 user_id=user_id,
                 display_name=p["name"],
                 bio=p["bio"],
@@ -329,10 +391,12 @@ async def seed():
                 updated_at=_now(),
             )
             session.add(profile)
+            profile_ids.append((profile_id, p["parish"]))
 
             for lst in p["listings"]:
+                listing_id = _uid()
                 session.add(Listing(
-                    id=_uid(),
+                    id=listing_id,
                     user_id=user_id,
                     title=lst["title"],
                     description=lst["description"],
@@ -344,6 +408,7 @@ async def seed():
                     created_at=_now(),
                     updated_at=_now(),
                 ))
+                listing_ids.append((listing_id, p["parish"]))
 
         print("Seeding customer accounts...")
         for c in CUSTOMERS:
@@ -357,8 +422,9 @@ async def seed():
                 is_verified=True,
                 created_at=_now(),
             ))
+            profile_id = _uid()
             session.add(Profile(
-                id=_uid(),
+                id=profile_id,
                 user_id=user_id,
                 display_name=c["name"],
                 parish=c["parish"],
@@ -366,10 +432,117 @@ async def seed():
                 created_at=_now(),
                 updated_at=_now(),
             ))
+            profile_ids.append((profile_id, c["parish"]))
+
+        # --- Ad Placements ---
+        print("Seeding ad placements...")
+        ad_placements = [
+            {"name": "feed_card", "description": "Sponsored card in the main feed", "position": "feed"},
+            {"name": "profile_banner", "description": "Banner ad on profile pages", "position": "profile"},
+            {"name": "listing_sidebar", "description": "Sidebar ad on listing details", "position": "sidebar"},
+        ]
+        for ap in ad_placements:
+            session.add(AdPlacement(
+                id=_uid(),
+                name=ap["name"],
+                description=ap["description"],
+                position=ap["position"],
+                is_active=True,
+                created_at=_now(),
+            ))
+
+        # --- Ad Campaigns ---
+        print("Seeding ad campaigns...")
+        ad_campaigns = [
+            {
+                "advertiser_name": "Island Grill Jamaica",
+                "advertiser_email": "marketing@islandgrill.com",
+                "title": "Island Grill - Hire the Best, Feed the Rest",
+                "description": "Promote your catering services with Jamaica's favourite chicken.",
+                "click_url": "https://www.islandgrillja.com",
+                "target_parishes": ["Kingston", "St. Andrew", "St. Catherine"],
+                "target_categories": ["Events & Entertainment", "Home Services"],
+                "budget_total": 50000.00,
+                "budget_daily": 5000.00,
+                "cost_per_click": 15.00,
+                "cost_per_impression": 2.50,
+            },
+            {
+                "advertiser_name": "Courts Jamaica",
+                "advertiser_email": "ads@courts.com",
+                "title": "Courts - Furnish Your Workspace",
+                "description": "Special financing for tradespeople setting up new workshops.",
+                "click_url": "https://www.courtsjamaica.com",
+                "target_parishes": ["St. James", "St. Ann", "Trelawny", "Westmoreland"],
+                "target_categories": ["Skilled Trades", "Technology", "Professional Services"],
+                "budget_total": 75000.00,
+                "budget_daily": 7500.00,
+                "cost_per_click": 20.00,
+                "cost_per_impression": 3.00,
+            },
+        ]
+        for ac in ad_campaigns:
+            session.add(AdCampaign(
+                id=_uid(),
+                advertiser_name=ac["advertiser_name"],
+                advertiser_email=ac["advertiser_email"],
+                title=ac["title"],
+                description=ac["description"],
+                click_url=ac["click_url"],
+                target_parishes=ac["target_parishes"],
+                target_categories=ac["target_categories"],
+                budget_total=ac["budget_total"],
+                budget_daily=ac["budget_daily"],
+                cost_per_click=ac["cost_per_click"],
+                cost_per_impression=ac["cost_per_impression"],
+                status="active",
+                created_at=_now(),
+                updated_at=_now(),
+            ))
+
+        # --- Geoshard Entries for profiles and listings ---
+        print("Seeding geoshard entries...")
+        geo_count = 0
+        for entity_id, parish in profile_ids:
+            lat, lng = PARISH_COORDS.get(parish, (18.1096, -77.2975))
+            session.add(GeoshardEntry(
+                id=_uid(),
+                entity_id=entity_id,
+                entity_type="profile",
+                geohash=_encode_geohash(lat, lng),
+                s2_cell_id=_fake_s2_cell(lat, lng),
+                latitude=lat,
+                longitude=lng,
+                parish=parish,
+                is_active="true",
+                created_at=_now(),
+                updated_at=_now(),
+            ))
+            geo_count += 1
+
+        for entity_id, parish in listing_ids:
+            lat, lng = PARISH_COORDS.get(parish, (18.1096, -77.2975))
+            session.add(GeoshardEntry(
+                id=_uid(),
+                entity_id=entity_id,
+                entity_type="listing",
+                geohash=_encode_geohash(lat, lng),
+                s2_cell_id=_fake_s2_cell(lat, lng),
+                latitude=lat,
+                longitude=lng,
+                parish=parish,
+                is_active="true",
+                created_at=_now(),
+                updated_at=_now(),
+            ))
+            geo_count += 1
 
         await session.commit()
         print(f"Seeded {len(PROVIDERS)} providers with {sum(len(p['listings']) for p in PROVIDERS)} listings")
         print(f"Seeded {len(CUSTOMERS)} customer accounts")
+        print(f"Seeded {len(ad_placements)} ad placements")
+        print(f"Seeded {len(ad_campaigns)} ad campaigns")
+        print(f"Seeded {geo_count} geoshard entries")
         print("All accounts use password: DemoPass123!")
 
     await engine.dispose()

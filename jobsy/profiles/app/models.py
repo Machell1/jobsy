@@ -25,6 +25,19 @@ class Profile(Base):
     is_provider = Column(Boolean, default=False)
     rating_avg = Column(Numeric(3, 2), default=0)
     rating_count = Column(Integer, default=0)
+    is_verified = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), nullable=False)
     updated_at = Column(DateTime(timezone=True), nullable=False)
+
+
+class VerificationRequest(Base):
+    __tablename__ = "verification_requests"
+
+    id = Column(String, primary_key=True)
+    user_id = Column(String, nullable=False, index=True)
+    document_urls = Column(JSONB, default=[])  # list of uploaded document URLs
+    status = Column(String(20), default="pending")  # pending, approved, rejected
+    reviewer_notes = Column(String, nullable=True)
+    submitted_at = Column(DateTime(timezone=True), nullable=False)
+    reviewed_at = Column(DateTime(timezone=True), nullable=True)

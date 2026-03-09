@@ -1,6 +1,6 @@
 """SQLAlchemy ORM models for the recommendation engine."""
 
-from sqlalchemy import Column, DateTime, Index, Numeric, String
+from sqlalchemy import Column, DateTime, Index, Integer, Numeric, String
 from sqlalchemy.dialects.postgresql import JSONB
 
 from shared.database import Base
@@ -33,14 +33,12 @@ class InteractionScore(Base):
 
 
 class InteractionLog(Base):
-    """Raw interaction events for training the ranking model."""
-
-    __tablename__ = "interaction_log"
+    __tablename__ = "interaction_logs"
 
     id = Column(String, primary_key=True)
     user_id = Column(String, nullable=False, index=True)
     target_id = Column(String, nullable=False)
-    target_type = Column(String(20), nullable=False)
-    action = Column(String(20), nullable=False)  # 'right_swipe', 'left_swipe', 'view', 'message'
-    metadata = Column(JSONB, default={})
+    target_type = Column(String(20), nullable=False)  # 'listing' or 'profile'
+    action = Column(String(20), nullable=False)  # 'view', 'dwell', 'swipe_left', 'swipe_right'
+    duration_ms = Column(Integer, nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False)

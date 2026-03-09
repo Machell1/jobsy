@@ -5,15 +5,25 @@ import logging
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import Column, String, select
 
-from shared.database import async_session_factory
+from shared.database import Base, async_session_factory
 from shared.events import consume_events
 
 from .models import DeviceToken, NotificationLog
 from .push import send_push_to_user
 
 logger = logging.getLogger(__name__)
+
+
+class _Conversation(Base):
+    """Minimal mirror of the chat service's Conversation model for direct DB lookup."""
+
+    __tablename__ = "conversations"
+    __table_args__ = {"extend_existing": True}
+    id = Column(String, primary_key=True)
+    user_a_id = Column(String, nullable=False)
+    user_b_id = Column(String, nullable=False)
 
 
 async def _get_user_tokens(user_id: str) -> list[tuple[str, str]]:
@@ -79,15 +89,28 @@ async def handle_new_message(payload: dict) -> None:
     if not sender_id or not conversation_id:
         return
 
-    # Need to determine the recipient -- fetch conversation participants
-    # In production, the event would include recipient_id or we'd query the chat service
+    # Look up conversation participants directly from the shared database
+    async with async_session_factory() as db:
+        result = await db.execute(
+            select(_Conversation).where(_Conversation.id == conversation_id)
+        )
+        conversation = result.scalar_one_or_none()
+
+    if conversation is None:
+        logger.warning("Conversation %s not found, skipping notification", conversation_id)
+        return
+
+    # Determine the recipient: the other participant in the conversation
+    recipient_id = conversation.user_b_id if sender_id == conversation.user_a_id else conversation.user_a_id
+
     title = "New Message"
     body = "You have a new message on Jobsy"
     notif_data = {"type": "message", "conversation_id": conversation_id}
 
-    # Log for the sender (we'd need recipient lookup in production)
-    await _log_notification(sender_id, title, body, "message", notif_data, delivered=False)
-    logger.info("Message notification logged for conversation %s", conversation_id)
+    tokens = await _get_user_tokens(recipient_id)
+    sent = await send_push_to_user(tokens, title, body, notif_data)
+    await _log_notification(recipient_id, title, body, "message", notif_data, delivered=sent > 0)
+    logger.info("Message notification sent to %s for conversation %s", recipient_id, conversation_id)
 
 
 async def handle_listing_expired(payload: dict) -> None:
