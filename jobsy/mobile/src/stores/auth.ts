@@ -53,7 +53,7 @@ export const useAuthStore = create<AuthState>((set) => ({
             isAuthenticated: true,
           });
         } else {
-          // Token expired or invalid — clear stored tokens
+          // Token expired or invalid - clear stored tokens
           await SecureStore.deleteItemAsync("access_token");
           await SecureStore.deleteItemAsync("refresh_token");
         }
