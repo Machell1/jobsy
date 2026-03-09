@@ -45,13 +45,13 @@ Edit `.env` with your credentials (bot token, channel ID, affiliate tags).
 2. Go to [railway.app](https://railway.app) and create a new project
 3. Connect your GitHub repo, set the root directory to `bot/`
 4. Add environment variables in Railway's dashboard:
-   - `TELEGRAM_BOT_TOKEN` — your bot token
-   - `TELEGRAM_CHANNEL_ID` — your channel ID
-   - `ADMIN_USER_IDS` — your Telegram user ID (from step 1.5)
-   - `DB_PATH` — `/data/deals.db`
+   - `TELEGRAM_BOT_TOKEN` -your bot token
+   - `TELEGRAM_CHANNEL_ID` -your channel ID
+   - `ADMIN_USER_IDS` -your Telegram user ID (from step 1.5)
+   - `DB_PATH` -`/data/deals.db`
    - Plus any affiliate tags you want
 5. Add a **Volume** in Railway, mount it at `/data`
-6. Deploy — the bot starts automatically and runs 24/7
+6. Deploy -the bot starts automatically and runs 24/7
 
 The bot uses a `worker` process (not a web server), so it stays running continuously.
 
@@ -90,13 +90,13 @@ Send `/add` followed by a product URL from any supported site:
 
 The bot has built-in protection to ensure your customers **never receive scam or phishing links**:
 
-- **Domain whitelist** — Only links from trusted, verified stores are sent to your channel (Amazon, Best Buy, Walmart, Target, eBay, Slickdeals, DealNews, Groupon, Skyscanner, Expedia)
-- **URL shortener blocking** — bit.ly, tinyurl, and other shortened links are automatically blocked (scammers use these to hide malicious destinations)
-- **Phishing pattern detection** — URLs containing suspicious keywords (login, verify, account-update, etc.) are rejected
-- **Scam title filtering** — Deals with scam-style titles ("free iPhone", "claim your prize", "crypto giveaway") are blocked
-- **Price sanity checks** — Negative or unreasonably high prices are filtered out
-- **Affiliate URL validation** — Both the original URL and the affiliate URL must pass safety checks before being sent
-- **Input validation** — The `/add` command rejects URLs from non-whitelisted domains
+- **Domain whitelist** -Only links from trusted, verified stores are sent to your channel (Amazon, Best Buy, Walmart, Target, eBay, Slickdeals, DealNews, Groupon, Skyscanner, Expedia)
+- **URL shortener blocking** -bit.ly, tinyurl, and other shortened links are automatically blocked (scammers use these to hide malicious destinations)
+- **Phishing pattern detection** -URLs containing suspicious keywords (login, verify, account-update, etc.) are rejected
+- **Scam title filtering** -Deals with scam-style titles ("free iPhone", "claim your prize", "crypto giveaway") are blocked
+- **Price sanity checks** -Negative or unreasonably high prices are filtered out
+- **Affiliate URL validation** -Both the original URL and the affiliate URL must pass safety checks before being sent
+- **Input validation** -The `/add` command rejects URLs from non-whitelisted domains
 
 Every link that reaches your Telegram channel has been verified against the trusted domain whitelist. If a scraped deal contains a URL from an unknown domain, it is silently dropped and logged.
 
@@ -104,16 +104,16 @@ Every link that reaches your Telegram channel has been verified against the trus
 
 The bot is designed to run **completely free** on Railway:
 
-- **Railway free tier** — Railway offers a free trial with $5 of credit, which is enough for a lightweight bot like this (no web server, just a background worker)
-- **No credit card required** to start — sign up with GitHub
-- **Worker process** — The bot uses a `worker` type (not a web server), which consumes minimal resources
-- **SQLite database** — No paid database service needed; uses a file stored on a Railway volume
-- **Stays within free limits** — The bot sleeps between price checks (60-180 min intervals), keeping CPU/memory usage very low
+- **Railway free tier** -Railway offers a free trial with $5 of credit, which is enough for a lightweight bot like this (no web server, just a background worker)
+- **No credit card required** to start -sign up with GitHub
+- **Worker process** -The bot uses a `worker` type (not a web server), which consumes minimal resources
+- **SQLite database** -No paid database service needed; uses a file stored on a Railway volume
+- **Stays within free limits** -The bot sleeps between price checks (60-180 min intervals), keeping CPU/memory usage very low
 
 To keep it free long-term, Railway periodically resets trial credits. For truly permanent free hosting, consider these alternatives:
-- **Render** (render.com) — Free background worker tier
-- **Fly.io** — Free tier with 3 shared VMs
-- **Oracle Cloud** — Always-free ARM instance (best for permanent hosting)
+- **Render** (render.com) -Free background worker tier
+- **Fly.io** -Free tier with 3 shared VMs
+- **Oracle Cloud** -Always-free ARM instance (best for permanent hosting)
 
 ## How It Works
 
@@ -121,7 +121,7 @@ To keep it free long-term, Railway periodically resets trial credits. For truly 
 1. You add product URLs via `/add` in Telegram
 2. Bot checks prices on a schedule (default: every 60 minutes)
 3. When a price drops 15%+ and $5+ (configurable), it sends a Telegram alert
-4. The alert contains your **affiliate link** — you earn commission on purchases
+4. The alert contains your **affiliate link** -you earn commission on purchases
 
 ### Deal Scanning (Slickdeals, DealNews)
 1. Bot scrapes deal aggregator front pages every 2 hours
@@ -152,10 +152,10 @@ To keep it free long-term, Railway periodically resets trial credits. For truly 
 1. **Track 50-100+ products** across all 5 stores
 2. **Focus on high-ticket items** ($100+) for bigger commissions
 3. **Promote your Telegram channel** on Reddit, Twitter, deal forums
-4. **Run during deal events** (Prime Day, Black Friday) — set interval to 15 mins
-5. **Use /deals** regularly — aggregator deals get the most engagement
-6. **Use /lifestyle** to find flight, gift, and event deals — high commission categories
-7. **Target seasonal events** — wedding season, holidays, baby showers drive big commissions
+4. **Run during deal events** (Prime Day, Black Friday) -set interval to 15 mins
+5. **Use /deals** regularly -aggregator deals get the most engagement
+6. **Use /lifestyle** to find flight, gift, and event deals -high commission categories
+7. **Target seasonal events** -wedding season, holidays, baby showers drive big commissions
 
 ### Revenue Potential
 | Channel Subscribers | Monthly Clicks | Estimated Commission |

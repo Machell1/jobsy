@@ -70,7 +70,7 @@ def admin_only(func):
 # --- Command Handlers ---
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle /start — public for all users, with referral tracking."""
+    """Handle /start - public for all users, with referral tracking."""
     user = update.effective_user
     if not user or not update.message:
         return
@@ -85,7 +85,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = (
         "<b>Deal Alert Bot</b>\n\n"
         "I find the best deals across Amazon, Best Buy, Walmart, Target, "
-        "eBay, and more — and send instant alerts when prices drop!\n\n"
+        "eBay, and more - and send instant alerts when prices drop!\n\n"
         f"Join our channel {TELEGRAM_CHANNEL_HANDLE} for real-time deal alerts.\n"
     )
 
@@ -312,7 +312,7 @@ async def revenue_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def buy_button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle 'Get This Deal' button clicks — log the click and send the affiliate URL."""
+    """Handle 'Get This Deal' button clicks - log the click and send the affiliate URL."""
     query = update.callback_query
     await query.answer()
 

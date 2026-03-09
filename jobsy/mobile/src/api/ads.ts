@@ -24,7 +24,7 @@ export async function fetchAd(
     });
     return res.data;
   } catch {
-    // No ad available or server error — silently return null
+    // No ad available or server error - silently return null
     return null;
   }
 }
@@ -43,6 +43,6 @@ export async function recordImpression(
       placement_id: placementId,
     });
   } catch {
-    // Silently ignore — impression tracking should not block UI
+    // Silently ignore - impression tracking should not block UI
   }
 }

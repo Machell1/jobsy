@@ -74,7 +74,7 @@ def estimate_commission(site, sale_price, category=None, apply_funnel=False,
     if not has_tag:
         return 0.0, has_tag
 
-    # Get the commission rate — category-specific for Amazon
+    # Get the commission rate - category-specific for Amazon
     rate = _get_rate_for_deal(site, category)
     if rate is None:
         return 0.0, has_tag
