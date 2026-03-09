@@ -1,4 +1,4 @@
-"""Initial schema - all 20 tables for Jobsy microservices.
+"""Initial schema for all 20 Jobsy microservice tables.
 
 Revision ID: 001_initial
 Revises:
