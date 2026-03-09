@@ -1,10 +1,10 @@
 /* ===== CSS Variables ===== */
 :root {
-  --primary: #6366f1;
-  --primary-dark: #4f46e5;
-  --primary-light: #eef2ff;
-  --accent: #f59e0b;
-  --accent-dark: #d97706;
+  --primary: #009B3A;
+  --primary-dark: #007A2E;
+  --primary-light: #e6f7ed;
+  --accent: #FED100;
+  --accent-dark: #E0B800;
   --bg: #ffffff;
   --bg-alt: #f8fafc;
   --bg-dark: #0f172a;
@@ -19,7 +19,7 @@
   --radius-lg: 16px;
   --max-width: 1200px;
   --success: #10b981;
-  --gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+  --gradient: linear-gradient(135deg, #009B3A 0%, #007A2E 50%, #005A22 100%);
 }
 
 /* ===== Reset ===== */
@@ -321,3 +321,22 @@ p { margin-bottom: 1rem; }
 .text-center { text-align: center; }
 .text-sm { font-size: 0.875rem; }
 .text-muted { color: var(--text-light); }
+
+/* ===== Parishes Grid ===== */
+.parishes-grid {
+  display: flex; flex-wrap: wrap; gap: 0.75rem;
+  justify-content: center; padding: 1.5rem 0 2rem;
+}
+.parish-tag {
+  display: inline-block; padding: 0.5rem 1.25rem;
+  background: var(--primary-light); border: 1px solid var(--primary);
+  border-radius: 50px; font-size: 0.875rem; font-weight: 500;
+  color: var(--primary-dark);
+}
+
+/* ===== Nav Logo Tag ===== */
+.nav-logo-tag {
+  font-size: 0.625rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; background: var(--accent); color: #1a1a1a;
+  padding: 0.125rem 0.5rem; border-radius: 50px; margin-left: 0.25rem;
+}

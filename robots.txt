@@ -1,3 +1,3 @@
 User-agent: *
 Allow: /
-Sitemap: https://machell1.github.io/skills-introduction-to-github/sitemap.xml
+Sitemap: https://www.jobsyja.com/sitemap.xml
