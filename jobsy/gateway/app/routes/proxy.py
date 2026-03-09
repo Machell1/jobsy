@@ -1,6 +1,6 @@
 """Reverse proxy routes to internal microservices."""
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from ..config import SERVICE_URLS
 from ..deps import get_current_user
@@ -114,4 +114,6 @@ async def proxy_search(path: str, request: Request, user: dict = Depends(get_cur
 
 @router.api_route("/admin/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
 async def proxy_admin(path: str, request: Request, user: dict = Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
     return await _proxy_request("admin", f"/{path}", request, user)

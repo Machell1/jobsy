@@ -1,9 +1,12 @@
 """Authentication routes: register, login, refresh."""
 
+import time
 import uuid
+from collections import defaultdict
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,13 +20,33 @@ from shared.auth import (
 from shared.database import get_db
 from shared.models.user import TokenResponse, UserCreate, UserLogin, UserResponse
 
+from ..config import RATE_LIMIT_AUTH_ENDPOINTS
 from ..models import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+# Simple in-memory sliding window for auth endpoint rate limiting
+_auth_attempts: dict[str, list[float]] = defaultdict(list)
+
+
+async def _check_auth_rate_limit(request: Request) -> None:
+    """Rate-limit auth endpoints by client IP."""
+    client_ip = request.client.host if request.client else "unknown"
+    now = time.time()
+    window_start = now - 60
+    attempts = _auth_attempts[client_ip]
+    _auth_attempts[client_ip] = [t for t in attempts if t > window_start]
+    if len(_auth_attempts[client_ip]) >= RATE_LIMIT_AUTH_ENDPOINTS:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many authentication attempts. Please try again later.",
+        )
+    _auth_attempts[client_ip].append(now)
+
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-async def register(data: UserCreate, db: AsyncSession = Depends(get_db)):
+async def register(request: Request, data: UserCreate, db: AsyncSession = Depends(get_db)):
+    await _check_auth_rate_limit(request)
     """Register a new user with phone number and password."""
     result = await db.execute(select(User).where(User.phone == data.phone))
     if result.scalar_one_or_none():
@@ -53,7 +76,8 @@ async def register(data: UserCreate, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
+async def login(request: Request, data: UserLogin, db: AsyncSession = Depends(get_db)):
+    await _check_auth_rate_limit(request)
     """Login with phone and password."""
     result = await db.execute(select(User).where(User.phone == data.phone))
     user = result.scalar_one_or_none()
@@ -67,10 +91,9 @@ async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
     )
 
 
-from pydantic import BaseModel as _BaseModel
-
-class _RefreshRequest(_BaseModel):
+class _RefreshRequest(BaseModel):
     refresh_token: str
+
 
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(body: _RefreshRequest, db: AsyncSession = Depends(get_db)):
