@@ -7,18 +7,18 @@ const ADSENSE_PUB_ID = ''; // Paste your AdSense publisher ID here
 
 /* ===== Service Categories ===== */
 const CATEGORIES = [
-  { slug: 'home-services', name: 'Home Services', icon: '\u{1F527}', desc: 'Plumbing, electrical, carpentry, and general home maintenance services across Jamaica.' },
-  { slug: 'cleaning', name: 'Cleaning', icon: '\u{1F9F9}', desc: 'Residential and commercial cleaning, deep cleaning, and janitorial services.' },
-  { slug: 'beauty-wellness', name: 'Beauty & Wellness', icon: '\u{1F487}', desc: 'Hair styling, barbering, nails, massage therapy, and personal care.' },
-  { slug: 'automotive', name: 'Automotive', icon: '\u{1F697}', desc: 'Car repair, detailing, towing, and vehicle maintenance services.' },
-  { slug: 'technology', name: 'Technology', icon: '\u{1F4BB}', desc: 'Computer repair, phone repair, networking, web design, and IT support.' },
-  { slug: 'tutoring-education', name: 'Tutoring & Education', icon: '\u{1F4DA}', desc: 'Academic tutoring, music lessons, language classes, and skill training.' },
-  { slug: 'events-entertainment', name: 'Events & Entertainment', icon: '\u{1F389}', desc: 'Event planning, catering, DJ services, photography, and videography.' },
-  { slug: 'health-fitness', name: 'Health & Fitness', icon: '\u{1F4AA}', desc: 'Personal training, nutrition coaching, yoga, and wellness services.' },
-  { slug: 'professional-services', name: 'Professional Services', icon: '\u{1F4BC}', desc: 'Accounting, tax preparation, business registration, and consulting.' },
-  { slug: 'skilled-trades', name: 'Skilled Trades', icon: '\u26A1', desc: 'Electrical, welding, carpentry, and specialized trade services.' },
-  { slug: 'creative-services', name: 'Creative Services', icon: '\u{1F3A8}', desc: 'Graphic design, photography, branding, and social media.' },
-  { slug: 'construction', name: 'Construction', icon: '\u{1F3D7}', desc: 'Building, renovation, tiling, painting, and general contracting.' }
+  { slug: 'home-services', name: 'Home Services', icon: '🔧', desc: 'Plumbing, electrical, carpentry, and general home maintenance services across Jamaica.' },
+  { slug: 'cleaning', name: 'Cleaning', icon: '🧹', desc: 'Residential and commercial cleaning, deep cleaning, and janitorial services.' },
+  { slug: 'beauty-wellness', name: 'Beauty & Wellness', icon: '💇', desc: 'Hair styling, barbering, nails, massage therapy, and personal care.' },
+  { slug: 'automotive', name: 'Automotive', icon: '🚗', desc: 'Car repair, detailing, towing, and vehicle maintenance services.' },
+  { slug: 'technology', name: 'Technology', icon: '💻', desc: 'Computer repair, phone repair, networking, web design, and IT support.' },
+  { slug: 'tutoring-education', name: 'Tutoring & Education', icon: '📚', desc: 'Academic tutoring, music lessons, language classes, and skill training.' },
+  { slug: 'events-entertainment', name: 'Events & Entertainment', icon: '🎉', desc: 'Event planning, catering, DJ services, photography, and videography.' },
+  { slug: 'health-fitness', name: 'Health & Fitness', icon: '💪', desc: 'Personal training, nutrition coaching, yoga, and wellness services.' },
+  { slug: 'professional-services', name: 'Professional Services', icon: '💼', desc: 'Accounting, tax preparation, business registration, and consulting.' },
+  { slug: 'skilled-trades', name: 'Skilled Trades', icon: '⚡', desc: 'Electrical, welding, carpentry, and specialized trade services.' },
+  { slug: 'creative-services', name: 'Creative Services', icon: '🎨', desc: 'Graphic design, photography, branding, and social media.' },
+  { slug: 'construction', name: 'Construction', icon: '🏗', desc: 'Building, renovation, tiling, painting, and general contracting.' }
 ];
 
 /* ===== Fallback Listings (shown when API is unavailable) ===== */
@@ -204,7 +204,7 @@ function initAds() {
 /* ===== Listing Card HTML ===== */
 function listingCardHTML(listing) {
   const cat = findCategory(listing.category);
-  const icon = cat ? cat.icon : '\u{1F4BC}';
+  const icon = cat ? cat.icon : '💼';
   const catName = listing.category || 'Service';
   const parish = listing.parish || '';
   const price = listing.budget
@@ -223,7 +223,7 @@ function listingCardHTML(listing) {
       <p>${escapeHtml(listing.description || '')}</p>
       <div class="service-card-footer">
         <span class="service-card-category">${escapeHtml(catName)}</span>
-        ${parish ? `<span class="service-card-location">\u{1F4CD} ${escapeHtml(parish)}</span>` : ''}
+        ${parish ? `<span class="service-card-location">📍 ${escapeHtml(parish)}</span>` : ''}
       </div>
     </a>`;
 }

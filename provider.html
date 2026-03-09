@@ -65,7 +65,7 @@
       document.getElementById('breadcrumb-title').textContent = listing.title;
 
       const cat = findCategory(listing.category);
-      const icon = cat ? cat.icon : '&#128188;';
+      const icon = cat ? cat.icon : '💼';
       const price = listing.budget
         ? `J$${Number(listing.budget).toLocaleString()} ${listing.currency || 'JMD'}`
         : 'Get Quote';
@@ -77,8 +77,8 @@
             <h1>${escapeHtml(listing.title)}</h1>
             <div class="service-detail-meta">
               <span>${escapeHtml(listing.category || 'Service')}</span>
-              ${listing.parish ? `<span>&#128205; ${escapeHtml(listing.parish)}</span>` : ''}
-              <span>&#128176; ${price}</span>
+              ${listing.parish ? `<span>📍 ${escapeHtml(listing.parish)}</span>` : ''}
+              <span>💰 ${price}</span>
               ${listing.status ? `<span>Status: ${escapeHtml(listing.status)}</span>` : ''}
             </div>
             <div class="service-detail-actions">
