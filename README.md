@@ -103,7 +103,7 @@ docker-compose up --build
 ### Mobile App
 
 ```bash
-cd jobsy-mobile
+cd jobsy/mobile
 npm install
 npx expo start
 ```

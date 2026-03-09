@@ -3,6 +3,7 @@
 import logging
 from contextlib import asynccontextmanager
 
+import httpx
 import redis.asyncio as aioredis
 from fastapi import FastAPI, Request
 
@@ -27,7 +28,9 @@ async def lifespan(app: FastAPI):
     except Exception:
         app.state.redis = None
         logging.warning("Redis unavailable, rate limiting disabled")
+    app.state.http_client = httpx.AsyncClient(timeout=30.0)
     yield
+    await app.state.http_client.aclose()
     if app.state.redis:
         await app.state.redis.close()
 
@@ -35,6 +38,7 @@ async def lifespan(app: FastAPI):
 ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:8000",
+    "http://localhost:19006",
     "https://www.jobsyja.com",
     "https://jobsyja.com",
 ]

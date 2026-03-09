@@ -273,10 +273,54 @@ function renderListingGrid(listings) {
   grid.innerHTML = listings.map(l => listingCardHTML(l)).join('');
 }
 
+/* ===== Favicon & Meta ===== */
+function injectHeadMeta() {
+  // Favicon
+  if (!document.querySelector('link[rel="icon"]')) {
+    const link = document.createElement('link');
+    link.rel = 'icon';
+    link.type = 'image/svg+xml';
+    link.href = 'images/logo.svg';
+    document.head.appendChild(link);
+  }
+  // og:image fallback
+  if (!document.querySelector('meta[property="og:image"]')) {
+    const meta = document.createElement('meta');
+    meta.setAttribute('property', 'og:image');
+    meta.content = `${BASE_URL}/images/logo.svg`;
+    document.head.appendChild(meta);
+  }
+}
+
+/* ===== Newsletter ===== */
+function initNewsletter() {
+  const form = document.querySelector('.newsletter-form');
+  if (!form) return;
+  const btn = form.querySelector('button');
+  const input = form.querySelector('input[type="email"]');
+  if (!btn || !input) return;
+
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    const email = input.value.trim();
+    if (!email || !email.includes('@')) {
+      input.style.borderColor = '#dc2626';
+      return;
+    }
+    input.style.borderColor = '';
+    btn.textContent = 'Subscribed!';
+    btn.disabled = true;
+    input.disabled = true;
+    input.value = email;
+  });
+}
+
 /* ===== Init ===== */
 document.addEventListener('DOMContentLoaded', () => {
+  injectHeadMeta();
   renderNav();
   renderFooter();
   initAds();
   initSearch();
+  initNewsletter();
 });

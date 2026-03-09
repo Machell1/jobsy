@@ -1,5 +1,6 @@
 """Redis-backed sliding window rate limiter."""
 
+import hashlib
 import time
 
 from fastapi import HTTPException, Request, status
@@ -16,7 +17,9 @@ async def rate_limit_check(request: Request) -> None:
     # Determine client identity and limit
     auth_header = request.headers.get("authorization", "")
     if auth_header.startswith("Bearer "):
-        key = f"rate:{auth_header[-16:]}"
+        # Hash the full token for a stable, unique key per user session
+        token_hash = hashlib.sha256(auth_header.encode()).hexdigest()[:16]
+        key = f"rate:{token_hash}"
         limit = RATE_LIMIT_AUTHENTICATED
     else:
         client_ip = request.client.host if request.client else "unknown"

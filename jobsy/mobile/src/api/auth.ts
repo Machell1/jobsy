@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8000";
+import { API_URL } from "./client";
 
 export interface TokenResponse {
   access_token: string;

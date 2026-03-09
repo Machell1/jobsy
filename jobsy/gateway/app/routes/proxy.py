@@ -1,12 +1,17 @@
 """Reverse proxy routes to internal microservices."""
 
-import httpx
 from fastapi import APIRouter, Depends, Request, Response
 
 from ..config import SERVICE_URLS
 from ..deps import get_current_user
 
 router = APIRouter(prefix="/api", tags=["proxy"])
+
+# Headers that must not be forwarded between proxy hops
+_HOP_BY_HOP = frozenset({
+    "connection", "keep-alive", "proxy-authenticate", "proxy-authorization",
+    "te", "trailers", "transfer-encoding", "upgrade", "content-encoding", "content-length",
+})
 
 
 async def _proxy_request(service: str, path: str, request: Request, user: dict) -> Response:
@@ -23,20 +28,22 @@ async def _proxy_request(service: str, path: str, request: Request, user: dict) 
     }
 
     body = await request.body()
+    client = request.app.state.http_client
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.request(
-            method=request.method,
-            url=url,
-            headers=headers,
-            content=body,
-            params=dict(request.query_params),
-        )
+    response = await client.request(
+        method=request.method,
+        url=url,
+        headers=headers,
+        content=body,
+        params=dict(request.query_params),
+    )
+
+    resp_headers = {k: v for k, v in response.headers.items() if k.lower() not in _HOP_BY_HOP}
 
     return Response(
         content=response.content,
         status_code=response.status_code,
-        headers=dict(response.headers),
+        headers=resp_headers,
     )
 
 
