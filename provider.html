@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Service Provider | Jobsy - Jamaica's Service Marketplace</title>
-  <meta name="description" content="View service provider details, listings, and reviews on Jobsy Jamaica.">
+  <title>Service Provider | Jobsy Jamaica</title>
+  <meta name="description" content="View service provider details and listings on Jobsy Jamaica.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Jobsy">
   <meta name="twitter:card" content="summary">
@@ -17,7 +17,7 @@
         <a href="index.html">Home</a> <span>&rsaquo;</span> <span id="breadcrumb-title">Service</span>
       </div>
 
-      <div class="tool-detail" id="provider-detail">
+      <div class="service-detail" id="provider-detail">
         <p class="text-center text-muted" style="padding:3rem">Loading service details...</p>
       </div>
     </div>
@@ -67,25 +67,25 @@
         : 'Get Quote';
 
       container.innerHTML = `
-        <div class="tool-detail-header">
-          <div class="tool-detail-icon">${icon}</div>
-          <div class="tool-detail-info">
+        <div class="service-detail-header">
+          <div class="service-detail-icon">${icon}</div>
+          <div class="service-detail-info">
             <h1>${escapeHtml(listing.title)}</h1>
-            <div class="tool-detail-meta">
+            <div class="service-detail-meta">
               <span>${escapeHtml(listing.category || 'Service')}</span>
               ${listing.parish ? `<span>&#128205; ${escapeHtml(listing.parish)}</span>` : ''}
               <span>&#128176; ${price}</span>
               ${listing.status ? `<span>Status: ${escapeHtml(listing.status)}</span>` : ''}
             </div>
-            <div class="tool-detail-actions">
+            <div class="service-detail-actions">
               <a href="contact.html" class="btn btn-primary">Contact Provider</a>
               ${listing.category ? `<a href="category.html?cat=${categorySlug(listing.category)}" class="btn btn-outline">More ${escapeHtml(listing.category)}</a>` : ''}
             </div>
           </div>
         </div>
 
-        <div class="tool-detail-body">
-          <div class="tool-detail-main">
+        <div class="service-detail-body">
+          <div class="service-detail-main">
             <div class="content-section">
               <h2>About This Service</h2>
               <p>${escapeHtml(listing.description || 'No description available.')}</p>
@@ -108,7 +108,7 @@
             <div class="content-section" id="similar-section"></div>
           </div>
 
-          <div class="tool-detail-sidebar">
+          <div class="service-detail-sidebar">
             <div class="sidebar-card">
               <h3>Service Details</h3>
               <p><strong>Category:</strong> ${escapeHtml(listing.category || 'Service')}</p>
@@ -118,7 +118,7 @@
 
             <div class="cta-box">
               <h3>Need This Service?</h3>
-              <p>Download the Jobsy app to connect directly with this provider.</p>
+              <p>Download the Jobsy app to message this provider directly.</p>
               <a href="contact.html" class="btn btn-white" style="width:100%;justify-content:center">Get Started</a>
             </div>
           </div>
@@ -136,7 +136,7 @@
         if (related.length) {
           similar.innerHTML = `
             <h2>Similar Services</h2>
-            <div class="tool-grid">${related.map(l => listingCardHTML(l)).join('')}</div>
+            <div class="service-grid">${related.map(l => listingCardHTML(l)).join('')}</div>
           `;
         }
       }

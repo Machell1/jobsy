@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Jobsy - Jamaica's Service Marketplace | Find Trusted Local Professionals</title>
+  <title>Jobsy - Find Service Providers in Jamaica</title>
   <meta name="description" content="Find local service providers across Jamaica. Plumbing, electrical, cleaning, beauty, events, tutoring, and more — browse by category or parish.">
   <meta name="keywords" content="Jamaica services, Jamaican service providers, hire professionals Jamaica, plumber Jamaica, electrician Jamaica, cleaning services Jamaica, Jobsy">
   <link rel="canonical" href="https://www.jobsyja.com/">
-  <meta property="og:title" content="Jobsy - Jamaica's Service Marketplace">
+  <meta property="og:title" content="Jobsy - Find Service Providers in Jamaica">
   <meta property="og:description" content="Find local service providers across Jamaica. Browse by category or parish.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://www.jobsyja.com/">
   <meta property="og:site_name" content="Jobsy">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Jobsy - Jamaica's Service Marketplace">
+  <meta name="twitter:title" content="Jobsy - Find Service Providers in Jamaica">
   <meta name="twitter:description" content="Find local service providers across Jamaica.">
   <link rel="stylesheet" href="css/style.css">
   <script type="application/ld+json">
@@ -65,9 +65,9 @@
         <input type="text" id="hero-search" placeholder="Search services... (e.g. plumber, cleaner, tutor)" aria-label="Search services">
       </div>
       <div class="hero-stats">
-        <div><span class="hero-stat-num" id="stat-listings">12+</span> Service Types</div>
+        <div><span class="hero-stat-num" id="stat-listings">12+</span> Services</div>
         <div><span class="hero-stat-num">12</span> Categories</div>
-        <div><span class="hero-stat-num">14</span> Parishes Covered</div>
+        <div><span class="hero-stat-num">14</span> Parishes</div>
       </div>
     </div>
   </section>
@@ -80,8 +80,30 @@
       <div class="ad-slot" data-ad-format="horizontal" data-ad-slot="home-top"></div>
 
       <!-- Service Grid -->
-      <div class="tool-grid" id="tool-grid">
+      <div class="service-grid" id="service-grid">
         <p class="text-center text-muted" style="grid-column:1/-1;padding:2rem">Loading services...</p>
+      </div>
+
+      <!-- How It Works -->
+      <div class="section-heading">
+        <h2>How It Works</h2>
+      </div>
+      <div class="how-it-works">
+        <div class="how-step">
+          <div class="how-step-num">1</div>
+          <h3>Search</h3>
+          <p>Type what you need or browse by category and parish.</p>
+        </div>
+        <div class="how-step">
+          <div class="how-step-num">2</div>
+          <h3>Compare</h3>
+          <p>View prices, descriptions, and locations side by side.</p>
+        </div>
+        <div class="how-step">
+          <div class="how-step-num">3</div>
+          <h3>Connect</h3>
+          <p>Contact the provider directly through the Jobsy app.</p>
+        </div>
       </div>
 
       <!-- Featured Banner -->
@@ -99,21 +121,23 @@
       <div class="section-heading">
         <h2>Browse by Category</h2>
       </div>
-      <div class="tool-grid" id="category-grid"></div>
+      <div class="service-grid" id="category-grid"></div>
 
-      <!-- Telegram Bot Promo -->
-      <div class="newsletter" style="background: linear-gradient(135deg, #0088cc 0%, #005fa3 100%); color: #fff;">
-        <h2 style="color: #fff;">Get Deals & Updates on Telegram</h2>
-        <p>Get notified about deals and new services from Jamaican businesses.</p>
-        <div class="newsletter-form">
-          <a href="https://t.me/JobsyDealBot" class="btn btn-primary" style="background: #fff; color: #0088cc; text-decoration: none; font-weight: bold; padding: 12px 32px; border-radius: 6px; display: inline-block;">Chat with @JobsyDealBot</a>
+      <!-- App Download Banner -->
+      <div class="app-banner">
+        <h2>Get the Jobsy App</h2>
+        <p>Swipe through services, chat with providers, and book jobs from your phone.</p>
+        <div class="app-banner-actions">
+          <a href="contact.html" class="btn btn-accent btn-lg">Download the App</a>
+          <a href="https://t.me/JobsyDealBot" class="btn btn-white btn-lg">Telegram Bot</a>
         </div>
-        <p class="text-sm mt-1" style="opacity: 0.85;">Free to use. No spam.</p>
       </div>
+
+      <div class="ad-slot" data-ad-format="horizontal" data-ad-slot="home-mid2"></div>
 
       <!-- Newsletter -->
       <div class="newsletter">
-        <h2>Stay Updated on Jamaican Services</h2>
+        <h2>Stay Updated</h2>
         <p>We send updates when new providers join or when there are deals worth knowing about.</p>
         <div class="newsletter-form">
           <input type="email" placeholder="Enter your email" aria-label="Email for newsletter">
@@ -173,14 +197,14 @@
           return slug === c.slug || (l.category || '').toLowerCase() === c.name.toLowerCase();
         }).length;
         return `
-          <a href="category.html?cat=${c.slug}" class="tool-card">
-            <div class="tool-card-header">
-              <div class="tool-card-icon">${c.icon}</div>
+          <a href="category.html?cat=${c.slug}" class="service-card">
+            <div class="service-card-header">
+              <div class="service-card-icon">${c.icon}</div>
               <h3>${c.name}</h3>
             </div>
             <p>${c.desc}</p>
-            <div class="tool-card-footer">
-              <span class="tool-card-category">${count} service${count !== 1 ? 's' : ''}</span>
+            <div class="service-card-footer">
+              <span class="service-card-category">${count} service${count !== 1 ? 's' : ''}</span>
             </div>
           </a>`;
       }).join('');
