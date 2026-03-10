@@ -28,14 +28,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Jobsy Chat", version="0.1.0", lifespan=lifespan)
 setup_middleware(app)
+@app.get("/health")
+async def health():
+    return {"status": "ok", "service": "chat"}
+
+
 app.include_router(router)
 
 
 @app.websocket("/ws/{conversation_id}")
 async def websocket_endpoint(websocket, conversation_id: str):
     await chat_websocket(websocket, conversation_id)
-
-
-@app.get("/health")
-async def health():
-    return {"status": "ok", "service": "chat"}

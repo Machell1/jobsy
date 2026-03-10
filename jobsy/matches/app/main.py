@@ -28,9 +28,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Jobsy Matches", version="0.1.0", lifespan=lifespan)
 setup_middleware(app)
-app.include_router(router)
 
 
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "matches"}
+
+
+app.include_router(router)
