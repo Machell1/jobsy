@@ -14,6 +14,7 @@ from prometheus_fastapi_instrumentator import Instrumentator
 
 from shared.config import REDIS_URL
 from shared.database import init_db
+from shared.logging import setup_json_logging
 from shared.middleware import setup_middleware
 
 from .middleware.rate_limit import rate_limit_check
@@ -21,7 +22,8 @@ from .routes.auth import router as auth_router
 from .routes.health import router as health_router
 from .routes.proxy import router as proxy_router
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
+setup_json_logging()
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -32,7 +34,7 @@ async def lifespan(app: FastAPI):
         app.state.redis = aioredis.from_url(REDIS_URL, decode_responses=True)
     except Exception:
         app.state.redis = None
-        logging.warning("Redis unavailable, rate limiting disabled")
+        logger.warning("Redis unavailable, rate limiting disabled")
     app.state.http_client = httpx.AsyncClient(timeout=30.0)
     yield
     await app.state.http_client.aclose()
@@ -50,9 +52,29 @@ ALLOWED_ORIGINS = [
     "exp://localhost:19000",
     "https://www.jobsyja.com",
     "https://jobsyja.com",
+    "jobsy://",
+    "com.jobsy.app://",
 ]
 
-app = FastAPI(title="Jobsy Gateway", version="0.1.0", lifespan=lifespan)
+app = FastAPI(
+    title="Jobsy Gateway",
+    version="0.1.0",
+    description=(
+        "Central API gateway for the Jobsy service marketplace. "
+        "Handles authentication, rate limiting, and proxies requests "
+        "to 14 internal microservices."
+    ),
+    lifespan=lifespan,
+    openapi_tags=[
+        {"name": "health", "description": "Health check endpoints"},
+        {"name": "auth", "description": "User registration, login, and token refresh"},
+        {"name": "proxy", "description": "Proxied routes to internal microservices"},
+        {"name": "websocket", "description": "Real-time WebSocket connections"},
+        {"name": "metrics", "description": "Prometheus metrics"},
+    ],
+    docs_url="/docs",
+    redoc_url="/redoc",
+)
 setup_middleware(app, allowed_origins=ALLOWED_ORIGINS)
 Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
@@ -131,7 +153,7 @@ async def websocket_chat_proxy(websocket: WebSocket, conversation_id: str):
     except (websockets.ConnectionClosed, WebSocketDisconnect):
         pass
     except Exception:
-        logging.exception("WebSocket proxy error for conversation %s", conversation_id)
+        logger.exception("WebSocket proxy error for conversation %s", conversation_id)
     finally:
         with contextlib.suppress(Exception):
             await websocket.close()

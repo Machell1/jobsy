@@ -65,6 +65,7 @@ async def update_or_create_profile(
             user_id=user_id,
             geohash=geohash,
             parish=parish,
+            is_active=True,
             created_at=now,
             updated_at=now,
             **data.model_dump(exclude={"parish"}),

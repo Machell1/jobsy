@@ -12,9 +12,11 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://www.jobsyja.com/">
   <meta property="og:site_name" content="Jobsy">
+  <meta property="og:image" content="https://www.jobsyja.com/images/logo.svg">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Jobsy - Find Service Providers in Jamaica">
   <meta name="twitter:description" content="Find local service providers across Jamaica.">
+  <link rel="icon" type="image/svg+xml" href="images/logo.svg">
   <link rel="stylesheet" href="css/style.css">
   <script type="application/ld+json">
   {
@@ -139,10 +141,10 @@
       <div class="newsletter">
         <h2>Stay Updated</h2>
         <p>We send updates when new providers join or when there are deals worth knowing about.</p>
-        <div class="newsletter-form">
-          <input type="email" placeholder="Enter your email" aria-label="Email for newsletter">
-          <button class="btn btn-primary">Subscribe</button>
-        </div>
+        <form class="newsletter-form" action="https://www.jobsyja.com/api/newsletter" method="POST" onsubmit="return handleNewsletter(event)">
+          <input type="email" name="email" placeholder="Enter your email" aria-label="Email for newsletter" required>
+          <button type="submit" class="btn btn-primary">Subscribe</button>
+        </form>
         <p class="text-sm text-muted mt-1">Free. No spam. Unsubscribe anytime.</p>
       </div>
 
@@ -173,6 +175,32 @@
 
   <script src="js/common.js"></script>
   <script>
+    function handleNewsletter(e) {
+      e.preventDefault();
+      const form = e.target;
+      const email = form.email.value.trim();
+      if (!email) return false;
+      const btn = form.querySelector('button');
+      btn.disabled = true;
+      btn.textContent = 'Subscribing...';
+      fetch(form.action, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+        signal: AbortSignal.timeout(10000),
+      }).then(res => {
+        if (res.ok) {
+          form.innerHTML = '<p style="color:var(--primary);font-weight:600">Thanks for subscribing!</p>';
+        } else {
+          throw new Error('failed');
+        }
+      }).catch(() => {
+        const mailto = 'mailto:jobsyja@jobsyja.com?subject=Newsletter%20Signup&body=Please%20add%20me%20to%20the%20newsletter:%20' + encodeURIComponent(email);
+        form.innerHTML = '<p>Signup is being set up. <a href="' + mailto + '" style="color:var(--primary);text-decoration:underline">Email us to subscribe</a></p>';
+      });
+      return false;
+    }
+
     document.addEventListener('DOMContentLoaded', async () => {
       // Render category filter pills
       const catBar = document.getElementById('category-bar');

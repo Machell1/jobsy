@@ -1,16 +1,20 @@
 """Jobsy Storage Service -- S3-compatible file storage with thumbnailing."""
 
+import asyncio
 import logging
+import signal
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from shared.logging import setup_json_logging
 from shared.middleware import setup_middleware
 
 from .routes import router
 from .s3 import ensure_bucket
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
+setup_json_logging()
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -18,7 +22,11 @@ async def lifespan(app: FastAPI):
     try:
         ensure_bucket()
     except Exception:
-        logging.warning("Could not ensure S3 bucket exists -- will retry on first upload")
+        logger.warning("Could not ensure S3 bucket exists -- will retry on first upload")
+    shutdown_event = asyncio.Event()
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        loop.add_signal_handler(sig, shutdown_event.set)
     yield
 
 

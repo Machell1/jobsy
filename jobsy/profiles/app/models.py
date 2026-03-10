@@ -26,7 +26,7 @@ class Profile(Base):
     rating_avg = Column(Numeric(3, 2), default=0)
     rating_count = Column(Integer, default=0)
     is_verified = Column(Boolean, default=False)
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=True, server_default="true")
     created_at = Column(DateTime(timezone=True), nullable=False)
     updated_at = Column(DateTime(timezone=True), nullable=False)
 

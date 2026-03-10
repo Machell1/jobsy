@@ -6,13 +6,14 @@ from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI
 
+from shared.logging import setup_json_logging
 from shared.middleware import setup_middleware
 
 from .consumer import start_consumers
 from .elasticsearch_client import close_client, ensure_indices
 from .routes import router
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
+setup_json_logging()
 
 
 @asynccontextmanager
