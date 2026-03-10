@@ -34,7 +34,7 @@ async def upload(
 
     For images, automatically generates a thumbnail variant.
     """
-    _get_user_id(request)
+    user_id = _get_user_id(request)
 
     if folder not in ALLOWED_FOLDERS:
         raise HTTPException(
@@ -52,8 +52,11 @@ async def upload(
 
     file_data = await file.read()
 
+    # Include user_id in the path for ownership tracking
+    user_folder = f"{folder}/{user_id}"
+
     try:
-        result = upload_file(file_data, content_type, folder)
+        result = upload_file(file_data, content_type, user_folder)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
@@ -63,7 +66,7 @@ async def upload(
         try:
             thumb_data = create_thumbnail(file_data, content_type)
             thumb_result = upload_file(
-                thumb_data, content_type, f"{folder}/thumbs"
+                thumb_data, content_type, f"{user_folder}/thumbs"
             )
             thumbnail_url = thumb_result["url"]
         except Exception:  # noqa: S110
@@ -106,8 +109,19 @@ async def get_presigned_url(data: PresignedRequest, request: Request):
 
 @router.delete("/{key:path}")
 async def remove_file(key: str, request: Request):
-    """Delete a stored file by its key."""
-    _get_user_id(request)
+    """Delete a stored file by its key.
+
+    Users can only delete files that contain their user_id in the key path.
+    Admin users (X-User-Role: admin) can delete any file.
+    """
+    user_id = _get_user_id(request)
+    user_role = request.headers.get("X-User-Role", "")
+
+    if user_role != "admin" and user_id not in key:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only delete your own files",
+        )
 
     if not delete_file(key):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to delete file")

@@ -2,7 +2,9 @@
 
 const SITE_NAME = 'Jobsy';
 const BASE_URL = 'https://www.jobsyja.com';
-const API_URL = 'https://api.jobsyja.com'; // Backend gateway
+const API_URL = ['localhost', '127.0.0.1'].includes(location.hostname)
+  ? 'http://localhost:8000'
+  : 'https://api.jobsyja.com';
 const ADSENSE_PUB_ID = ''; // Paste your AdSense publisher ID here
 
 /* ===== Service Categories ===== */
