@@ -21,7 +21,7 @@ from .models import Match
 
 logger = logging.getLogger(__name__)
 
-LISTINGS_SERVICE_URL = os.getenv("LISTINGS_SERVICE_URL", "http://listings:8000")
+LISTINGS_SERVICE_URL = os.getenv("LISTINGS_SERVICE_URL", "http://listings.railway.internal:8080")
 
 
 # Local mirror of the swipes table for direct DB queries (same database).

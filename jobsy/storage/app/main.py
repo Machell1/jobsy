@@ -32,6 +32,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Jobsy Storage", version="0.1.0", lifespan=lifespan)
 setup_middleware(app)
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "storage"}

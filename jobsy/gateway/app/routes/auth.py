@@ -25,7 +25,9 @@ from ..models import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-# Simple in-memory sliding window for auth endpoint rate limiting
+# Simple in-memory sliding window for auth endpoint rate limiting.
+# NOTE: This is per-instance only. In a multi-instance Railway deployment,
+# the Redis-based rate limiter in middleware handles cross-instance limiting.
 _auth_attempts: dict[str, list[float]] = defaultdict(list)
 
 
@@ -46,8 +48,8 @@ async def _check_auth_rate_limit(request: Request) -> None:
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register(request: Request, data: UserCreate, db: AsyncSession = Depends(get_db)):
-    await _check_auth_rate_limit(request)
     """Register a new user with phone number and password."""
+    await _check_auth_rate_limit(request)
     result = await db.execute(select(User).where(User.phone == data.phone))
     if result.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Phone number already registered")
@@ -77,8 +79,8 @@ async def register(request: Request, data: UserCreate, db: AsyncSession = Depend
 
 @router.post("/login", response_model=TokenResponse)
 async def login(request: Request, data: UserLogin, db: AsyncSession = Depends(get_db)):
-    await _check_auth_rate_limit(request)
     """Login with phone and password."""
+    await _check_auth_rate_limit(request)
     result = await db.execute(select(User).where(User.phone == data.phone))
     user = result.scalar_one_or_none()
 

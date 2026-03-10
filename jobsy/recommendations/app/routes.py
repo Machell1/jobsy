@@ -19,9 +19,9 @@ from .ranker import rank_candidate
 
 router = APIRouter(tags=["recommendations"])
 
-GEOSHARD_URL = os.getenv("GEOSHARD_SERVICE_URL", "http://geoshard:8000")
-LISTINGS_URL = os.getenv("LISTINGS_SERVICE_URL", "http://listings:8000")
-PROFILES_URL = os.getenv("PROFILES_SERVICE_URL", "http://profiles:8000")
+GEOSHARD_URL = os.getenv("GEOSHARD_SERVICE_URL", "http://geoshard.railway.internal:8080")
+LISTINGS_URL = os.getenv("LISTINGS_SERVICE_URL", "http://listings.railway.internal:8080")
+PROFILES_URL = os.getenv("PROFILES_SERVICE_URL", "http://profiles.railway.internal:8080")
 
 
 def _get_user_id(request: Request) -> str:

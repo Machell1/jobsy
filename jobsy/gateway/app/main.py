@@ -90,7 +90,7 @@ app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(proxy_router)
 
-CHAT_SERVICE_URL = os.getenv("CHAT_SERVICE_URL", "http://chat:8000")
+CHAT_SERVICE_URL = os.getenv("CHAT_SERVICE_URL", "http://chat.railway.internal:8080")
 
 
 @app.websocket("/ws/chat/{conversation_id}")
