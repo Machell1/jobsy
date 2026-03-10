@@ -28,7 +28,7 @@ export function useWebSocket(conversationId: string | null) {
     const token = await SecureStore.getItemAsync("access_token");
     if (!token) return;
 
-    const url = `${WS_URL}/ws/${conversationId}?token=${token}`;
+    const url = `${WS_URL}/ws/chat/${conversationId}?token=${token}`;
     const socket = new WebSocket(url);
 
     socket.onopen = () => {

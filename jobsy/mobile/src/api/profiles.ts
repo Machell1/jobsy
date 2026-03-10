@@ -14,6 +14,7 @@ export interface Profile {
   is_provider: boolean;
   rating_avg: number;
   rating_count: number;
+  is_verified: boolean;
   is_active: boolean;
   created_at: string;
 }
@@ -52,6 +53,6 @@ export async function getNearbyProfiles(params: {
   radius_km?: number;
   limit?: number;
 }): Promise<Profile[]> {
-  const res = await api.get<Profile[]>("/api/profiles/nearby", { params });
+  const res = await api.get<Profile[]>("/api/profiles/nearby/search", { params });
   return res.data;
 }

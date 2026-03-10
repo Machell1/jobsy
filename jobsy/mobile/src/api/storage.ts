@@ -1,6 +1,6 @@
 import { api } from "./client";
 
-export async function uploadFile(uri: string, bucket = "listings"): Promise<{ url: string }> {
+export async function uploadFile(uri: string, folder = "listings"): Promise<{ url: string }> {
   const formData = new FormData();
 
   const filename = uri.split("/").pop() || "photo.jpg";
@@ -12,15 +12,15 @@ export async function uploadFile(uri: string, bucket = "listings"): Promise<{ ur
     name: filename,
     type,
   } as unknown as Blob);
-  formData.append("bucket", bucket);
 
   const res = await api.post("/api/storage/upload", formData, {
     headers: { "Content-Type": "multipart/form-data" },
+    params: { folder },
   });
   return res.data;
 }
 
-export async function getPresignedUrl(key: string, bucket = "listings"): Promise<string> {
-  const res = await api.get("/api/storage/presigned-url", { params: { key, bucket } });
+export async function getPresignedUrl(folder: string, contentType: string): Promise<string> {
+  const res = await api.post("/api/storage/presigned", { folder, content_type: contentType });
   return res.data.url;
 }

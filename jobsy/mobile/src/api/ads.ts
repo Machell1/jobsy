@@ -1,13 +1,11 @@
 import { api } from "./client";
 
 export interface Ad {
-  id: string;
   campaign_id: string;
   title: string;
   description: string;
   image_url: string;
   click_url: string;
-  placement: string;
 }
 
 /**
@@ -19,10 +17,10 @@ export async function fetchAd(
   category?: string,
 ): Promise<Ad | null> {
   try {
-    const res = await api.get<Ad>(`/api/ads/serve/${placement}`, {
+    const res = await api.get<{ ad: Ad | null; placement: string }>(`/api/ads/serve/${placement}`, {
       params: { parish, category },
     });
-    return res.data;
+    return res.data.ad;
   } catch {
     // No ad available or server error, silently return null
     return null;
@@ -38,9 +36,8 @@ export async function recordImpression(
   placementId?: string,
 ): Promise<void> {
   try {
-    await api.post("/api/ads/impressions", {
-      campaign_id: campaignId,
-      placement_id: placementId,
+    await api.post("/api/ads/impression", null, {
+      params: { campaign_id: campaignId, placement_id: placementId },
     });
   } catch {
     // Silently ignore, impression tracking should not block UI

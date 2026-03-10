@@ -26,8 +26,6 @@ export async function updateMatchStatus(
   id: string,
   newStatus: "completed" | "cancelled"
 ): Promise<{ id: string; status: string }> {
-  const res = await api.put(`/api/matches/${id}/status`, null, {
-    params: { new_status: newStatus },
-  });
+  const res = await api.put(`/api/matches/${id}/status`, { status: newStatus });
   return res.data;
 }

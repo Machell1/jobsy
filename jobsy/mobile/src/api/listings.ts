@@ -10,6 +10,9 @@ export interface Listing {
   budget_min: number | null;
   budget_max: number | null;
   currency: string;
+  latitude: number | null;
+  longitude: number | null;
+  geohash: string | null;
   parish: string | null;
   address_text: string | null;
   status: string;

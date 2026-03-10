@@ -34,7 +34,7 @@ export default function AdBanner({ placement, parish, category }: AdBannerProps)
   // Track impression once when ad becomes visible
   useEffect(() => {
     if (ad && !impressionTracked) {
-      recordImpression(ad.campaign_id, ad.id);
+      recordImpression(ad.campaign_id);
       setImpressionTracked(true);
     }
   }, [ad, impressionTracked]);
