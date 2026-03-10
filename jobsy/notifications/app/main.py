@@ -1,7 +1,6 @@
 """Jobsy Notification Service -- push notifications and notification history."""
 
 import asyncio
-import logging
 from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI

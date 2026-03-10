@@ -7,10 +7,10 @@ WORKDIR /app
 COPY shared /shared
 RUN pip install --no-cache-dir /shared
 
-COPY requirements.txt .
+COPY gateway/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY app/ ./app/
+COPY gateway/app/ ./app/
 
 USER appuser
 

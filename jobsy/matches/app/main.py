@@ -1,7 +1,6 @@
 """Jobsy Match Service -- API + event consumer."""
 
 import asyncio
-import logging
 from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI

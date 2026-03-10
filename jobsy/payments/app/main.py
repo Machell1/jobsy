@@ -1,7 +1,6 @@
 """Jobsy Payments Service -- Stripe-based payments for service marketplace."""
 
 import asyncio
-import logging
 import signal
 from contextlib import asynccontextmanager
 

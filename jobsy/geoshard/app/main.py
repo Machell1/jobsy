@@ -1,7 +1,6 @@
 """Jobsy Geoshard Indexer -- spatial index service with S2 cells."""
 
 import asyncio
-import logging
 from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI

@@ -1,7 +1,6 @@
 """Jobsy Profile Service."""
 
 import asyncio
-import logging
 import signal
 from contextlib import asynccontextmanager
 

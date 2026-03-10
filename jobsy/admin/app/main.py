@@ -1,7 +1,6 @@
 """Jobsy Admin Service -- dashboard, moderation, user management, audit logging."""
 
 import asyncio
-import logging
 import signal
 from contextlib import asynccontextmanager
 

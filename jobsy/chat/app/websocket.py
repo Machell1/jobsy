@@ -5,7 +5,6 @@ messages reach users regardless of which server instance they're
 connected to.
 """
 
-import contextlib
 import json
 import logging
 import uuid

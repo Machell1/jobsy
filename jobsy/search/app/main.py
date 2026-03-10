@@ -1,7 +1,6 @@
 """Jobsy Search Service -- Elasticsearch-powered full-text search."""
 
 import asyncio
-import logging
 from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI

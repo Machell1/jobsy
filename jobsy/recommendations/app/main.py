@@ -1,7 +1,6 @@
 """Jobsy Recommendation Service -- ranked feed and user preference management."""
 
 import asyncio
-import logging
 from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI
