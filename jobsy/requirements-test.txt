@@ -1,10 +1,11 @@
+# Test framework
 pytest>=7.4.0
 pytest-asyncio>=0.23.0
 pytest-cov>=4.1.0
 httpx>=0.25.0
 aiosqlite>=0.19.0
 factory-boy>=3.3.0
-# Shared library dependencies (needed by conftest.py and service tests)
+# Shared library dependencies
 sqlalchemy[asyncio]>=2.0.23
 asyncpg>=0.29.0
 GeoAlchemy2>=0.14.0
@@ -14,6 +15,19 @@ python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
 aio-pika>=9.3.0
 python-dotenv>=1.0.0
-# Service dependencies (needed by service app imports in tests)
+# Core service framework
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
+# Service-specific dependencies
+redis>=5.0.0
+stripe>=7.0.0
+websockets>=12.0
+email-validator>=2.1.0
+prometheus-fastapi-instrumentator>=6.0
+s2sphere>=0.2.5
+pygeohash>=1.2.0
+firebase-admin>=6.2.0
+elasticsearch[async]>=8.11.0
+boto3>=1.34.0
+Pillow>=10.1.0
+python-multipart>=0.0.6
