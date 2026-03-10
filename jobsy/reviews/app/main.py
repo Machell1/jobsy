@@ -1,7 +1,6 @@
 """Jobsy Reviews Service -- ratings, reviews, and reputation management."""
 
 import asyncio
-import logging
 import signal
 from contextlib import asynccontextmanager
 

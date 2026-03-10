@@ -1,7 +1,6 @@
 """Jobsy Advertising Service -- ad serving, campaign management, and Revive integration."""
 
 import asyncio
-import logging
 import signal
 from contextlib import asynccontextmanager
 

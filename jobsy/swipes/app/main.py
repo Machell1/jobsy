@@ -1,7 +1,6 @@
 """Jobsy Swipe Service."""
 
 import asyncio
-import logging
 import signal
 from contextlib import asynccontextmanager
 

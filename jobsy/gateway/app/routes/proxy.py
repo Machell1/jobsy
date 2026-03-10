@@ -48,10 +48,16 @@ async def _proxy_request(service: str, path: str, request: Request, user: dict) 
         )
     except httpx.ConnectError:
         logger.error("Cannot connect to %s service at %s", service, base_url)
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Service {service} is unavailable")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Service {service} is unavailable",
+        ) from None
     except httpx.TimeoutException:
         logger.error("Timeout connecting to %s service at %s", service, base_url)
-        raise HTTPException(status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail=f"Service {service} timed out")
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail=f"Service {service} timed out",
+        ) from None
 
     resp_headers = {k: v for k, v in response.headers.items() if k.lower() not in _HOP_BY_HOP}
 
@@ -130,5 +136,5 @@ async def proxy_search(path: str, request: Request, user: dict = Depends(get_cur
 @router.api_route("/admin/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
 async def proxy_admin(path: str, request: Request, user: dict = Depends(get_current_user)):
     if user.get("role") != "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required") from None
     return await _proxy_request("admin", f"/{path}", request, user)

@@ -1,7 +1,6 @@
 """Jobsy Chat Service -- real-time messaging for matched users."""
 
 import asyncio
-import logging
 from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI
