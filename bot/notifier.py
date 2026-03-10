@@ -213,8 +213,12 @@ def send_admin_message(text):
     try:
         asyncio.run(_send_admin_message(text))
     except RuntimeError:
-        # Event loop already running (called from async context)
-        pass
+        logger.warning("Cannot send admin message from async context, use send_admin_message_async instead")
+
+
+async def send_admin_message_async(text):
+    """Send a status message to all admins (async version for use within event loop)."""
+    await _send_admin_message(text)
 
 
 def send_deal_alert(product, old_price, new_price, drop_percent, deal_id=None):

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -17,13 +17,25 @@ export default function EditProfileScreen() {
     queryFn: getMyProfile,
   });
 
-  const [displayName, setDisplayName] = useState(profile?.display_name || "");
-  const [bio, setBio] = useState(profile?.bio || "");
-  const [serviceCategory, setServiceCategory] = useState(profile?.service_category || "");
-  const [skills, setSkills] = useState(profile?.skills?.join(", ") || "");
-  const [hourlyRate, setHourlyRate] = useState(profile?.hourly_rate?.toString() || "");
-  const [parish, setParish] = useState(profile?.parish || null);
-  const [photos, setPhotos] = useState<string[]>(profile?.photos || []);
+  const [displayName, setDisplayName] = useState("");
+  const [bio, setBio] = useState("");
+  const [serviceCategory, setServiceCategory] = useState("");
+  const [skills, setSkills] = useState("");
+  const [hourlyRate, setHourlyRate] = useState("");
+  const [parish, setParish] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (profile) {
+      setDisplayName(profile.display_name || "");
+      setBio(profile.bio || "");
+      setServiceCategory(profile.service_category || "");
+      setSkills(profile.skills?.join(", ") || "");
+      setHourlyRate(profile.hourly_rate?.toString() || "");
+      setParish(profile.parish || null);
+      setPhotos(profile.photos || []);
+    }
+  }, [profile]);
 
   const mutation = useMutation({
     mutationFn: (data: ProfileUpdate) => updateMyProfile(data),

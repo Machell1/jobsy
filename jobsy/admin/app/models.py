@@ -1,6 +1,6 @@
 """SQLAlchemy ORM models for the admin service."""
 
-from sqlalchemy import Column, DateTime, Index, String, Text
+from sqlalchemy import Boolean, Column, DateTime, Index, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 
 from shared.database import Base
@@ -16,7 +16,7 @@ class AuditLog(Base):
     action = Column(String(100), nullable=False)  # user.suspend, review.remove, listing.delete, etc.
     target_type = Column(String(50), nullable=False)  # user, listing, review, campaign
     target_id = Column(String, nullable=False)
-    details = Column(JSONB, default={})
+    details = Column(JSONB, default=dict)
     reason = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False)
 
@@ -55,7 +55,7 @@ class VerificationRequest(Base):
 
     id = Column(String, primary_key=True)
     user_id = Column(String, nullable=False)
-    document_urls = Column(JSONB, default=[])
+    document_urls = Column(JSONB, default=list)
     status = Column(String(20), default="pending")
     reviewer_notes = Column(String, nullable=True)
     submitted_at = Column(DateTime(timezone=True), nullable=False)
@@ -70,3 +70,5 @@ class Profile(Base):
 
     id = Column(String, primary_key=True)
     user_id = Column(String, nullable=False)
+    is_verified = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True)

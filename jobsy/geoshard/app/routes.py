@@ -18,7 +18,6 @@ async def find_nearby(
     lng: float = Query(..., ge=-180, le=180),
     radius_km: float = Query(default=25.0, ge=0.5, le=200),
     entity_type: str | None = Query(default=None, pattern=r"^(profile|listing)$"),
-    category: str | None = None,
     limit: int = Query(default=50, le=200),
     db: AsyncSession = Depends(get_db),
 ):

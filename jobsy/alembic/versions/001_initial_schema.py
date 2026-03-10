@@ -345,6 +345,80 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("user_id"),
     )
 
+    # ── Geoshard: geoshard_index ────────────────────────────────────────
+    op.create_table(
+        "geoshard_index",
+        sa.Column("id", sa.String(), nullable=False),
+        sa.Column("entity_id", sa.String(), nullable=False),
+        sa.Column("entity_type", sa.String(20), nullable=False),
+        sa.Column("geohash", sa.String(12), nullable=False),
+        sa.Column("s2_cell_id", sa.BigInteger(), nullable=False),
+        sa.Column("latitude", sa.Numeric(10, 7), nullable=False),
+        sa.Column("longitude", sa.Numeric(10, 7), nullable=False),
+        sa.Column("parish", sa.String(50), nullable=True),
+        sa.Column("is_active", sa.String(5), server_default="true"),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index("idx_geoshard_hash", "geoshard_index", ["geohash"])
+    op.create_index("idx_geoshard_s2", "geoshard_index", ["s2_cell_id"])
+    op.create_index("idx_geoshard_entity", "geoshard_index", ["entity_id", "entity_type"], unique=True)
+    op.create_index("idx_geoshard_parish", "geoshard_index", ["parish"])
+
+    # ── Recommendations: user_preferences ────────────────────────────
+    op.create_table(
+        "user_preferences",
+        sa.Column("user_id", sa.String(), nullable=False),
+        sa.Column("preferred_categories", postgresql.JSONB(), server_default="[]"),
+        sa.Column("preferred_parishes", postgresql.JSONB(), server_default="[]"),
+        sa.Column("budget_range", postgresql.JSONB(), server_default="{}"),
+        sa.Column("max_distance_km", sa.Numeric(6, 1), server_default="25.0"),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.PrimaryKeyConstraint("user_id"),
+    )
+
+    # ── Recommendations: interaction_scores ──────────────────────────
+    op.create_table(
+        "interaction_scores",
+        sa.Column("user_id", sa.String(), nullable=False),
+        sa.Column("target_id", sa.String(), nullable=False),
+        sa.Column("score", sa.Numeric(5, 4), nullable=False),
+        sa.Column("factors", postgresql.JSONB(), server_default="{}"),
+        sa.Column("computed_at", sa.DateTime(timezone=True), nullable=False),
+        sa.PrimaryKeyConstraint("user_id", "target_id"),
+    )
+    op.create_index("idx_interaction_user", "interaction_scores", ["user_id"])
+    op.create_index("idx_interaction_score", "interaction_scores", ["user_id", "score"])
+
+    # ── Recommendations: interaction_logs ────────────────────────────
+    op.create_table(
+        "interaction_logs",
+        sa.Column("id", sa.String(), nullable=False),
+        sa.Column("user_id", sa.String(), nullable=False),
+        sa.Column("target_id", sa.String(), nullable=False),
+        sa.Column("target_type", sa.String(20), nullable=False),
+        sa.Column("action", sa.String(20), nullable=False),
+        sa.Column("duration_ms", sa.Integer(), nullable=True),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index("ix_interaction_logs_user_id", "interaction_logs", ["user_id"])
+
+    # ── Profiles: verification_requests ──────────────────────────────
+    op.create_table(
+        "verification_requests",
+        sa.Column("id", sa.String(), nullable=False),
+        sa.Column("user_id", sa.String(), nullable=False),
+        sa.Column("document_urls", postgresql.JSONB(), server_default="[]"),
+        sa.Column("status", sa.String(20), server_default="pending"),
+        sa.Column("reviewer_notes", sa.String(), nullable=True),
+        sa.Column("submitted_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("reviewed_at", sa.DateTime(timezone=True), nullable=True),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index("ix_verification_requests_user_id", "verification_requests", ["user_id"])
+
     # ── Admin: audit_log ────────────────────────────────────────────────
     op.create_table(
         "audit_log",
@@ -383,6 +457,11 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_table("moderation_queue")
     op.drop_table("audit_log")
+    op.drop_table("verification_requests")
+    op.drop_table("interaction_logs")
+    op.drop_table("interaction_scores")
+    op.drop_table("user_preferences")
+    op.drop_table("geoshard_index")
     op.drop_table("user_ratings")
     op.drop_table("review_responses")
     op.drop_table("reviews")

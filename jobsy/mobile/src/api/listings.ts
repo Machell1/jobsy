@@ -55,6 +55,15 @@ export async function getListingFeed(limit = 20): Promise<Listing[]> {
   return res.data;
 }
 
+export async function getMyListings(params?: {
+  status?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<Listing[]> {
+  const res = await api.get<Listing[]>("/api/listings/mine", { params });
+  return res.data;
+}
+
 export async function getListing(id: string): Promise<Listing> {
   const res = await api.get<Listing>(`/api/listings/${id}`);
   return res.data;

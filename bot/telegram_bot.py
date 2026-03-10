@@ -35,7 +35,7 @@ from config import (
     TELEGRAM_CHANNEL_HANDLE, CHECK_INTERVAL_MINUTES, ADMIN_USER_IDS,
 )
 from database import init_db, remove_product, record_referral, log_click, get_deal_by_id
-from notifier import send_admin_message
+from notifier import send_admin_message, send_admin_message_async
 from tracker import (
     check_all_prices, add_new_product, scan_deals,
     scan_all_deals, scan_lifestyle, scan_category, get_status_text,
@@ -358,7 +358,7 @@ async def menu_button_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         await loop.run_in_executor(None, scan_category, "party")
     elif action == "holidays":
         await query.message.reply_text("Checking holiday packages...")
-        await loop.run_in_executor(None, scan_category, "holidays")
+        await loop.run_in_executor(None, scan_category, "holiday_packages")
     else:
         await query.message.reply_text("Not sure what that was. Try /start to see the menu again.")
 
@@ -425,7 +425,7 @@ async def scheduled_earnings_report(context: ContextTypes.DEFAULT_TYPE):
     logger.info("Generating daily earnings report...")
     loop = asyncio.get_event_loop()
     report = await loop.run_in_executor(None, format_earnings_report, 1)
-    send_admin_message(report)
+    await send_admin_message_async(report)
     logger.info("Daily earnings report sent.")
 
 
@@ -434,7 +434,7 @@ async def scheduled_weekly_report(context: ContextTypes.DEFAULT_TYPE):
     logger.info("Generating weekly earnings report...")
     loop = asyncio.get_event_loop()
     report = await loop.run_in_executor(None, format_earnings_report, 7)
-    send_admin_message(report)
+    await send_admin_message_async(report)
     logger.info("Weekly earnings report sent.")
 
 

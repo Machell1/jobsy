@@ -1,8 +1,10 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { getListingFeed, Listing } from "@/api/listings";
 import { recordSwipe, SwipeCreate } from "@/api/swipes";
+import { api } from "@/api/client";
+import { queueSwipe, flushQueue } from "@/utils/offlineQueue";
 
 export function useSwipeDeck() {
   const queryClient = useQueryClient();
@@ -13,6 +15,13 @@ export function useSwipeDeck() {
     queryKey: ["listing-feed"],
     queryFn: () => getListingFeed(50),
   });
+
+  // Flush any queued offline swipes when the feed loads
+  useEffect(() => {
+    if (listings.length > 0) {
+      flushQueue(api).catch(() => {});
+    }
+  }, [listings.length]);
 
   const visibleListings = listings.filter((l) => !swipedIds.current.has(l.id));
 
@@ -30,11 +39,15 @@ export function useSwipeDeck() {
       try {
         await recordSwipe(swipeData);
         if (direction === "right") {
-          // Invalidate matches to check for new match
           queryClient.invalidateQueries({ queryKey: ["matches"] });
         }
       } catch {
-        // Swipe already recorded (409) is fine
+        // Network error -- queue for later
+        await queueSwipe({
+          target_id: listing.id,
+          target_type: "listing",
+          direction,
+        }).catch(() => {});
       }
 
       // Refetch when running low on cards

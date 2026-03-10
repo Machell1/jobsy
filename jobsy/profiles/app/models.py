@@ -14,13 +14,13 @@ class Profile(Base):
     display_name = Column(String(100), nullable=False)
     bio = Column(String, nullable=True)
     avatar_url = Column(String(500), nullable=True)
-    photos = Column(JSONB, default=[])
+    photos = Column(JSONB, default=list)
     parish = Column(String(50), nullable=True)
     latitude = Column(Numeric(10, 7), nullable=True)
     longitude = Column(Numeric(10, 7), nullable=True)
     geohash = Column(String(12), nullable=True)
     service_category = Column(String(50), nullable=True)
-    skills = Column(JSONB, default=[])
+    skills = Column(JSONB, default=list)
     hourly_rate = Column(Numeric(10, 2), nullable=True)
     is_provider = Column(Boolean, default=False)
     rating_avg = Column(Numeric(3, 2), default=0)
@@ -36,7 +36,7 @@ class VerificationRequest(Base):
 
     id = Column(String, primary_key=True)
     user_id = Column(String, nullable=False, index=True)
-    document_urls = Column(JSONB, default=[])  # list of uploaded document URLs
+    document_urls = Column(JSONB, default=list)  # list of uploaded document URLs
     status = Column(String(20), default="pending")  # pending, approved, rejected
     reviewer_notes = Column(String, nullable=True)
     submitted_at = Column(DateTime(timezone=True), nullable=False)

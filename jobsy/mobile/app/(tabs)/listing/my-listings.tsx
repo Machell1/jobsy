@@ -3,7 +3,7 @@ import { Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 
-import { getListings } from "@/api/listings";
+import { getMyListings } from "@/api/listings";
 import { EmptyState } from "@/components/EmptyState";
 import { ListingCard } from "@/components/ListingCard";
 import { LoadingScreen } from "@/components/LoadingScreen";
@@ -15,7 +15,7 @@ export default function MyListingsScreen() {
   // Fetch all statuses for user's own listings
   const { data: listings = [], isLoading } = useQuery({
     queryKey: ["my-listings"],
-    queryFn: () => getListings({ limit: 50 }),
+    queryFn: () => getMyListings({ limit: 50 }),
   });
 
   if (isLoading) return <LoadingScreen />;

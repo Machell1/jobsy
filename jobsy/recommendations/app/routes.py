@@ -1,5 +1,6 @@
 """Recommendation service API routes."""
 
+import asyncio
 import os
 import uuid
 from datetime import UTC, datetime
@@ -18,9 +19,9 @@ from .ranker import rank_candidate
 
 router = APIRouter(tags=["recommendations"])
 
-GEOSHARD_URL = os.getenv("GEOSHARD_SERVICE_URL", "http://geoshard.railway.internal:8000")
-LISTINGS_URL = os.getenv("LISTINGS_SERVICE_URL", "http://listings.railway.internal:8000")
-PROFILES_URL = os.getenv("PROFILES_SERVICE_URL", "http://profiles.railway.internal:8000")
+GEOSHARD_URL = os.getenv("GEOSHARD_SERVICE_URL", "http://geoshard:8000")
+LISTINGS_URL = os.getenv("LISTINGS_SERVICE_URL", "http://listings:8000")
+PROFILES_URL = os.getenv("PROFILES_SERVICE_URL", "http://profiles:8000")
 
 
 def _get_user_id(request: Request) -> str:
@@ -91,18 +92,19 @@ async def get_recommendation_feed(
         except httpx.RequestError:
             pass  # Fall back to unranked results
 
-    # 3. Fetch listing details for nearby entities
+    # 3. Fetch listing details for nearby entities (concurrently)
     ranked_results = []
     if nearby_entities:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            for entity in nearby_entities:
+
+            async def _fetch_and_score(entity):
                 try:
                     resp = await client.get(
                         f"{LISTINGS_URL}/{entity['entity_id']}",
                         headers={"X-User-ID": user_id},
                     )
                     if resp.status_code != 200:
-                        continue
+                        return None
                     listing = resp.json()
 
                     # 4. Score the candidate
@@ -117,14 +119,17 @@ async def get_recommendation_feed(
                         user_budget_range=budget_range,
                     )
 
-                    ranked_results.append({
+                    return {
                         **listing,
                         "distance_km": entity.get("distance_km"),
                         "score": score_result["total_score"],
                         "score_factors": score_result["factors"],
-                    })
+                    }
                 except httpx.RequestError:
-                    continue
+                    return None
+
+            results = await asyncio.gather(*[_fetch_and_score(e) for e in nearby_entities])
+            ranked_results = [r for r in results if r is not None]
 
     # 5. Sort by score descending
     ranked_results.sort(key=lambda x: x.get("score", 0), reverse=True)

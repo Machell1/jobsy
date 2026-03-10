@@ -52,3 +52,4 @@ jobsy/**/dist/
 jobsy/**/.env
 jobsy/**/alembic/versions/*.pyc
 jobsy/**/*.egg-info/
+bot/.env

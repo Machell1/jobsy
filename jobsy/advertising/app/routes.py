@@ -1,12 +1,14 @@
 """Advertising service API routes -- ad serving, impression/click tracking, campaigns."""
 
+import json
 import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import cast, func, select
+from sqlalchemy.dialects.postgresql import JSONB as JSONB_TYPE
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.database import get_db
@@ -62,16 +64,20 @@ async def serve_ad(
     # Geo-targeting: match user's parish
     if parish:
         # Campaigns targeting this parish OR targeting all (empty array)
+        parish_json = cast(json.dumps([parish]), JSONB_TYPE)
+        empty_json = cast("[]", JSONB_TYPE)
         query = query.where(
-            AdCampaign.target_parishes.op("@>")(f'["{parish}"]')
-            | (AdCampaign.target_parishes == [])
+            AdCampaign.target_parishes.op("@>")(parish_json)
+            | (AdCampaign.target_parishes == empty_json)
         )
 
     # Category targeting
     if category:
+        cat_json = cast(json.dumps([category]), JSONB_TYPE)
+        empty_json = cast("[]", JSONB_TYPE)
         query = query.where(
-            AdCampaign.target_categories.op("@>")(f'["{category}"]')
-            | (AdCampaign.target_categories == [])
+            AdCampaign.target_categories.op("@>")(cat_json)
+            | (AdCampaign.target_categories == empty_json)
         )
 
     query = query.limit(1)
@@ -182,8 +188,18 @@ class CampaignCreate(BaseModel):
     cost_per_impression: float | None = None
 
 
+def _require_auth(request: Request) -> str:
+    """Require an authenticated user for campaign management."""
+    user_id = request.headers.get("X-User-ID")
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
+    return user_id
+
+
 @router.post("/campaigns", status_code=status.HTTP_201_CREATED)
-async def create_campaign(data: CampaignCreate, db: AsyncSession = Depends(get_db)):
+async def create_campaign(
+    data: CampaignCreate, request: Request, user_id: str = Depends(_require_auth), db: AsyncSession = Depends(get_db),
+):
     """Create a new advertising campaign."""
     now = datetime.now(UTC)
     campaign = AdCampaign(

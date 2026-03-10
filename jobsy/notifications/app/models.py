@@ -28,7 +28,7 @@ class NotificationLog(Base):
     user_id = Column(String, nullable=False, index=True)
     title = Column(String(200), nullable=True)
     body = Column(String, nullable=True)
-    data = Column(JSONB, default={})
+    data = Column(JSONB, default=dict)
     notification_type = Column(String(30), nullable=False)  # match, message, listing_expired
     is_read = Column(Boolean, default=False)
     delivered = Column(Boolean, default=False)

@@ -3,7 +3,7 @@
 import uuid
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -180,6 +180,15 @@ async def admin_user_action(
     Actions: suspend, unsuspend, warn, delete.
     All actions are logged in the audit trail.
     """
+    # Update profile state
+    profile_result = await db.execute(select(Profile).where(Profile.user_id == user_id))
+    profile = profile_result.scalar_one_or_none()
+
+    if data.action == "suspend" and profile:
+        profile.is_active = False
+    elif data.action == "unsuspend" and profile:
+        profile.is_active = True
+
     await _log_action(
         db, admin_id,
         action=f"user.{data.action}",
@@ -188,6 +197,12 @@ async def admin_user_action(
         reason=data.reason,
     )
     await db.flush()
+
+    await publish_event(f"user.{data.action}", {
+        "user_id": user_id,
+        "admin_id": admin_id,
+        "reason": data.reason,
+    })
 
     return {
         "status": "ok",
@@ -355,18 +370,27 @@ class ReportCreate(BaseModel):
     reason: str = Field(..., max_length=200)
 
 
+def _get_user_id(request: Request) -> str:
+    """Extract user ID -- any authenticated user can submit reports."""
+    user_id = request.headers.get("X-User-ID")
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
+    return user_id
+
+
 @router.post("/report", status_code=status.HTTP_201_CREATED)
 async def submit_report(
     data: ReportCreate,
-    admin_id: str = Depends(require_admin),
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
-    """Add an item to the moderation queue (can also be called internally)."""
+    """Submit a report -- any authenticated user can flag content for review."""
+    reporter_id = _get_user_id(request)
     item = ModerationQueue(
         id=str(uuid.uuid4()),
         item_type=data.item_type,
         item_id=data.item_id,
-        reported_by=admin_id,
+        reported_by=reporter_id,
         reason=data.reason,
         created_at=datetime.now(UTC),
     )

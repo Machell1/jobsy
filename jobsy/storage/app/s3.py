@@ -108,7 +108,8 @@ def create_thumbnail(image_data: bytes, content_type: str) -> bytes:
     img.thumbnail(THUMBNAIL_SIZE)
 
     output = io.BytesIO()
-    fmt = "JPEG" if content_type == "image/jpeg" else "PNG"
+    format_map = {"image/jpeg": "JPEG", "image/png": "PNG", "image/webp": "WEBP"}
+    fmt = format_map.get(content_type, "PNG")
     img.save(output, format=fmt)
     return output.getvalue()
 
