@@ -45,6 +45,7 @@ class ProfileResponse(BaseModel):
     is_provider: bool
     rating_avg: Decimal
     rating_count: int
+    is_verified: bool = False
     is_active: bool
     created_at: datetime
 

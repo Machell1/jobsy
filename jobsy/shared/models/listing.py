@@ -39,6 +39,9 @@ class ListingResponse(BaseModel):
     budget_min: Decimal | None
     budget_max: Decimal | None
     currency: str
+    latitude: float | None = None
+    longitude: float | None = None
+    geohash: str | None = None
     parish: str | None
     address_text: str | None
     status: str

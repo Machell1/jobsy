@@ -146,6 +146,7 @@ async def chat_websocket(websocket: WebSocket, conversation_id: str):
         _start_redis_listener(conversation_id, websocket, user_id)
     )
 
+    redis_client = await _get_redis()
     try:
         while True:
             data = await websocket.receive_json()
@@ -161,9 +162,7 @@ async def chat_websocket(websocket: WebSocket, conversation_id: str):
             # Broadcast via Redis pub/sub (reaches all instances including local).
             # The Redis listener filters out messages from the sender, so each
             # participant receives the message exactly once.
-            redis_client = await _get_redis()
             await redis_client.publish(f"chat:{conversation_id}", json.dumps(msg))
-            await redis_client.close()
 
             # Emit event for notifications service
             await publish_event("message.new", {
@@ -177,6 +176,7 @@ async def chat_websocket(websocket: WebSocket, conversation_id: str):
     except Exception:
         logger.exception("WebSocket error for user %s in conversation %s", user_id, conversation_id)
     finally:
+        await redis_client.close()
         listener_task.cancel()
         if conversation_id in _connections:
             _connections[conversation_id].pop(user_id, None)
