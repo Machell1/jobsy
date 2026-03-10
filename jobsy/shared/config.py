@@ -8,6 +8,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://jobsy:localdev@localhost:5432/jobsy")
+# Railway provides DATABASE_URL with 'postgresql://' prefix, but SQLAlchemy async
+# requires 'postgresql+asyncpg://'. Auto-convert for compatibility.
+if DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/")
 
