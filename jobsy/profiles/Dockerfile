@@ -2,8 +2,9 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY shared /shared
-RUN pip install --no-cache-dir /shared
+COPY shared/pyproject.toml /build/pyproject.toml
+COPY shared/ /build/shared/
+RUN pip install --no-cache-dir /build
 
 COPY profiles/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
