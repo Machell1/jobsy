@@ -1,6 +1,6 @@
 """SQLAlchemy ORM models for the admin service."""
 
-from sqlalchemy import Column, DateTime, Index, String, Text
+from sqlalchemy import Boolean, Column, DateTime, Index, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 
 from shared.database import Base
@@ -70,3 +70,5 @@ class Profile(Base):
 
     id = Column(String, primary_key=True)
     user_id = Column(String, nullable=False)
+    is_verified = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True)
