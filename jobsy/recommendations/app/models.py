@@ -10,9 +10,9 @@ class UserPreference(Base):
     __tablename__ = "user_preferences"
 
     user_id = Column(String, primary_key=True)
-    preferred_categories = Column(JSONB, default=[])
-    preferred_parishes = Column(JSONB, default=[])
-    budget_range = Column(JSONB, default={})  # {"min": 0, "max": 50000}
+    preferred_categories = Column(JSONB, default=list)
+    preferred_parishes = Column(JSONB, default=list)
+    budget_range = Column(JSONB, default=dict)  # {"min": 0, "max": 50000}
     max_distance_km = Column(Numeric(6, 1), default=25.0)
     updated_at = Column(DateTime(timezone=True), nullable=False)
 
@@ -23,7 +23,7 @@ class InteractionScore(Base):
     user_id = Column(String, primary_key=True)
     target_id = Column(String, primary_key=True)
     score = Column(Numeric(5, 4), nullable=False)  # 0.0000 to 1.0000
-    factors = Column(JSONB, default={})  # breakdown of scoring components
+    factors = Column(JSONB, default=dict)  # breakdown of scoring components
     computed_at = Column(DateTime(timezone=True), nullable=False)
 
     __table_args__ = (

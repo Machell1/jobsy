@@ -88,15 +88,6 @@ async def update_or_create_profile(
     return profile
 
 
-@router.get("/{user_id}", response_model=ProfileResponse)
-async def get_profile(user_id: str, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Profile).where(Profile.user_id == user_id, Profile.is_active.is_(True)))
-    profile = result.scalar_one_or_none()
-    if not profile:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
-    return profile
-
-
 @router.get("/nearby/search")
 async def get_nearby_profiles(
     lat: float,
@@ -186,3 +177,14 @@ async def verification_status(request: Request, db: AsyncSession = Depends(get_d
         "reviewed_at": verification.reviewed_at.isoformat() if verification.reviewed_at else None,
         "reviewer_notes": verification.reviewer_notes,
     }
+
+
+# NOTE: This catch-all route MUST be declared after all fixed-path routes
+# (e.g., /nearby/search, /verification/*) to avoid capturing them as {user_id}.
+@router.get("/{user_id}", response_model=ProfileResponse)
+async def get_profile(user_id: str, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Profile).where(Profile.user_id == user_id, Profile.is_active.is_(True)))
+    profile = result.scalar_one_or_none()
+    if not profile:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
+    return profile

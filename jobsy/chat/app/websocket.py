@@ -91,6 +91,8 @@ async def _save_message(conversation_id: str, sender_id: str, content: str, mess
 
 async def _start_redis_listener(conversation_id: str, websocket: WebSocket, user_id: str):
     """Subscribe to Redis channel for cross-instance message delivery."""
+    redis_client = None
+    pubsub = None
     try:
         redis_client = await _get_redis()
         pubsub = redis_client.pubsub()
@@ -100,14 +102,16 @@ async def _start_redis_listener(conversation_id: str, websocket: WebSocket, user
             if raw_message["type"] != "message":
                 continue
             data = json.loads(raw_message["data"])
-            # Don't echo back to the sender on the same instance
+            # Don't echo back to the sender
             if data.get("sender_id") != user_id:
                 await websocket.send_json(data)
     except Exception:
         logger.exception("Redis listener error for conversation %s", conversation_id)
     finally:
-        await pubsub.unsubscribe(f"chat:{conversation_id}")
-        await redis_client.close()
+        if pubsub:
+            await pubsub.unsubscribe(f"chat:{conversation_id}")
+        if redis_client:
+            await redis_client.close()
 
 
 async def chat_websocket(websocket: WebSocket, conversation_id: str):
@@ -155,16 +159,12 @@ async def chat_websocket(websocket: WebSocket, conversation_id: str):
             # Save to database
             msg = await _save_message(conversation_id, user_id, content, message_type)
 
-            # Broadcast via Redis pub/sub (reaches other instances)
+            # Broadcast via Redis pub/sub (reaches all instances including local).
+            # The Redis listener filters out messages from the sender, so each
+            # participant receives the message exactly once.
             redis_client = await _get_redis()
             await redis_client.publish(f"chat:{conversation_id}", json.dumps(msg))
             await redis_client.close()
-
-            # Send to local connections (same instance)
-            for uid, ws in _connections.get(conversation_id, {}).items():
-                if uid != user_id:
-                    with contextlib.suppress(Exception):
-                        await ws.send_json(msg)
 
             # Emit event for notifications service
             await publish_event("message.new", {

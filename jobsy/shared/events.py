@@ -93,13 +93,22 @@ async def consume_events(queue_name: str, routing_key: str, callback: Callable) 
                 await message.nack(requeue=True)
                 raise
             except Exception:
-                retry_count = (message.headers or {}).get("x-retry-count", 0)
+                retry_count = int((message.headers or {}).get("x-retry-count", 0))
                 if retry_count < MAX_RETRIES:
                     logger.warning(
                         "Retrying event from %s (attempt %d/%d)",
                         routing_key, retry_count + 1, MAX_RETRIES,
                     )
-                    await message.nack(requeue=True)
+                    # Republish with incremented retry count (nack+requeue
+                    # does not update headers, causing infinite loops).
+                    await message.ack()
+                    retry_msg = aio_pika.Message(
+                        body=message.body,
+                        content_type=message.content_type,
+                        delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+                        headers={"x-retry-count": retry_count + 1},
+                    )
+                    await exchange.publish(retry_msg, routing_key=routing_key)
                 else:
                     logger.exception(
                         "Event from %s failed after %d retries, sending to DLQ",

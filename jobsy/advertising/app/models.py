@@ -32,8 +32,8 @@ class AdCampaign(Base):
     description = Column(String, nullable=True)
     image_url = Column(String(500), nullable=True)
     click_url = Column(String(500), nullable=False)  # destination URL
-    target_parishes = Column(JSONB, default=[])  # geo-targeting
-    target_categories = Column(JSONB, default=[])  # profession targeting
+    target_parishes = Column(JSONB, default=list)  # geo-targeting
+    target_categories = Column(JSONB, default=list)  # profession targeting
     budget_total = Column(Numeric(10, 2), nullable=True)  # JMD
     budget_daily = Column(Numeric(10, 2), nullable=True)
     cost_per_click = Column(Numeric(8, 4), nullable=True)

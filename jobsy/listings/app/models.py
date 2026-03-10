@@ -23,7 +23,7 @@ class Listing(Base):
     geohash = Column(String(12), nullable=True)
     parish = Column(String(50), nullable=True)
     address_text = Column(String(255), nullable=True)
-    photos = Column(JSONB, default=[])
+    photos = Column(JSONB, default=list)
     status = Column(String(20), default="active")
     expires_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False)
