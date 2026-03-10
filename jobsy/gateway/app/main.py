@@ -35,7 +35,7 @@ async def lifespan(app: FastAPI):
     except Exception:
         app.state.redis = None
         logger.warning("Redis unavailable, rate limiting disabled")
-    app.state.http_client = httpx.AsyncClient(timeout=30.0, transport=httpx.AsyncHTTPTransport(local_address="::", retries=1))
+    app.state.http_client = httpx.AsyncClient(timeout=30.0)
     yield
     await app.state.http_client.aclose()
     if app.state.redis:
