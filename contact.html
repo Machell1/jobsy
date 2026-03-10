@@ -217,11 +217,12 @@
               'Services: ' + services + '\n'
             );
             const mailto = 'mailto:jobsyja@jobsyja.com?subject=' + subject + '&body=' + body;
-            showMessageHTML(
-              'Our online registration is being set up. To register now, please ' +
-              '<a href="' + mailto + '" style="color:#2563eb;text-decoration:underline">click here to email us your details</a>' +
-              ' and we will get you set up right away.',
-              'info'
+            window.location.href = mailto;
+            showMessage(
+              'Your email app should open with your registration details pre-filled. ' +
+              'Please send the email and we will get you set up within 24 hours. ' +
+              'If your email app did not open, please email jobsyja@jobsyja.com directly.',
+              'success'
             );
           } else {
             showMessage(err.message || 'Registration failed. Please try again or email us directly.', 'error');
