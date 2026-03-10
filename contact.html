@@ -179,7 +179,32 @@
           showMessage('Registration successful! You can now log in through the Jobsy mobile app to set up your profile and list your services.', 'success');
           form.reset();
         } catch (err) {
-          showMessage(err.message || 'Registration failed. Please try again or email us directly.', 'error');
+          const isNetworkError = err.message === 'Failed to fetch' || err.name === 'TypeError' || err.name === 'AbortError';
+          if (isNetworkError) {
+            const parish = document.getElementById('reg-parish').value;
+            const category = document.getElementById('reg-category').value;
+            const services = document.getElementById('reg-services').value.trim();
+            const subject = encodeURIComponent('New Provider Registration');
+            const body = encodeURIComponent(
+              'Hi Jobsy team,\n\n' +
+              'I would like to register as a service provider.\n\n' +
+              'Name: ' + name + '\n' +
+              'Phone: ' + phone + '\n' +
+              'Email: ' + email + '\n' +
+              'Parish: ' + parish + '\n' +
+              'Category: ' + category + '\n' +
+              'Services: ' + services + '\n'
+            );
+            const mailto = 'mailto:jobsyja@jobsyja.com?subject=' + subject + '&body=' + body;
+            showMessageHTML(
+              'Our online registration is being set up. To register now, please ' +
+              '<a href="' + mailto + '" style="color:#2563eb;text-decoration:underline">click here to email us your details</a>' +
+              ' and we will get you set up right away.',
+              'info'
+            );
+          } else {
+            showMessage(err.message || 'Registration failed. Please try again or email us directly.', 'error');
+          }
         } finally {
           btn.disabled = false;
           btn.textContent = 'Register Your Business';
@@ -188,6 +213,13 @@
 
       function showMessage(text, type) {
         msgEl.textContent = text;
+        msgEl.className = 'form-message ' + type;
+        msgEl.style.display = 'block';
+        msgEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+
+      function showMessageHTML(html, type) {
+        msgEl.innerHTML = html;
         msgEl.className = 'form-message ' + type;
         msgEl.style.display = 'block';
         msgEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
