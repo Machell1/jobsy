@@ -7,7 +7,7 @@ from shared.database import get_db
 
 
 @pytest_asyncio.fixture
-async def client(db_override):
+async def client(db_override, mock_publish_event):
     from admin.app.main import app
 
     app.dependency_overrides[get_db] = db_override

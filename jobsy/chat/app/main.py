@@ -7,13 +7,14 @@ from contextlib import asynccontextmanager, suppress
 from fastapi import FastAPI
 
 from shared.database import init_db
+from shared.logging import setup_json_logging
 from shared.middleware import setup_middleware
 
 from .consumer import start_consumer
 from .routes import router
 from .websocket import chat_websocket
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
+setup_json_logging()
 
 
 @asynccontextmanager

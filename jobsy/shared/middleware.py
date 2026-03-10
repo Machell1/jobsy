@@ -1,5 +1,6 @@
 """Common FastAPI middleware for CORS, request logging, and error handling."""
 
+import json
 import logging
 import time
 import uuid
@@ -32,17 +33,28 @@ def setup_middleware(app: FastAPI, allowed_origins: list[str] | None = None) -> 
         response = await call_next(request)
         duration_ms = round((time.time() - start) * 1000, 1)
         logger.info(
-            "%s %s %s %sms [%s]",
-            request.method,
-            request.url.path,
-            response.status_code,
-            duration_ms,
-            request_id,
+            json.dumps({
+                "event": "request",
+                "method": request.method,
+                "path": request.url.path,
+                "status": response.status_code,
+                "duration_ms": duration_ms,
+                "request_id": request_id,
+            }),
         )
         response.headers["X-Request-ID"] = request_id
         return response
 
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):
-        logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+        request_id = getattr(request.state, "request_id", "unknown")
+        logger.exception(
+            json.dumps({
+                "event": "unhandled_error",
+                "method": request.method,
+                "path": request.url.path,
+                "request_id": request_id,
+                "error": str(exc),
+            }),
+        )
         return JSONResponse(status_code=500, content={"detail": "Internal server error"})
