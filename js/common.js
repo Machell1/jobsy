@@ -302,7 +302,7 @@ function initNewsletter() {
   const input = form.querySelector('input[type="email"]');
   if (!btn || !input) return;
 
-  btn.addEventListener('click', (e) => {
+  btn.addEventListener('click', async (e) => {
     e.preventDefault();
     const email = input.value.trim();
     if (!email || !email.includes('@')) {
@@ -310,8 +310,17 @@ function initNewsletter() {
       return;
     }
     input.style.borderColor = '';
-    btn.textContent = 'Subscribed!';
     btn.disabled = true;
+    btn.textContent = 'Subscribing...';
+    try {
+      await fetch(`${API_URL}/api/notifications/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+        signal: AbortSignal.timeout(5000),
+      });
+    } catch { /* best-effort */ }
+    btn.textContent = 'Subscribed!';
     input.disabled = true;
     input.value = email;
   });

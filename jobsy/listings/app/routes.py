@@ -106,6 +106,24 @@ async def listing_feed(
     return result.scalars().all()
 
 
+@router.get("/mine", response_model=list[ListingResponse])
+async def my_listings(
+    request: Request,
+    status_filter: str = Query(default=None, alias="status"),
+    limit: int = Query(default=50, le=100),
+    offset: int = 0,
+    db: AsyncSession = Depends(get_db),
+):
+    """List all listings created by the current user."""
+    user_id = _get_user_id(request)
+    query = select(Listing).where(Listing.poster_id == user_id)
+    if status_filter:
+        query = query.where(Listing.status == status_filter)
+    query = query.order_by(Listing.created_at.desc()).offset(offset).limit(limit)
+    result = await db.execute(query)
+    return result.scalars().all()
+
+
 @router.get("/{listing_id}", response_model=ListingResponse)
 async def get_listing(listing_id: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Listing).where(Listing.id == listing_id))

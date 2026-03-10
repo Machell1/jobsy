@@ -218,8 +218,8 @@ def scan_category(category):
             url = deal.get("url", "")
             source = deal.get("site", "unknown")
 
-            category = deal.get("category")
-            is_new = save_aggregator_deal(source, title, price, original_price, store, url, category)
+            deal_category = deal.get("category", category)
+            is_new = save_aggregator_deal(source, title, price, original_price, store, url, deal_category)
             if is_new and (price or title):
                 deal_id = _log_posted_deal(deal, source)
                 send_aggregator_deal(deal, deal_id=deal_id)
