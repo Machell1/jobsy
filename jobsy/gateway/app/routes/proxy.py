@@ -1,9 +1,14 @@
 """Reverse proxy routes to internal microservices."""
 
+import logging
+
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from ..config import SERVICE_URLS
 from ..deps import get_current_user
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["proxy"])
 
@@ -33,13 +38,20 @@ async def _proxy_request(service: str, path: str, request: Request, user: dict) 
     body = await request.body()
     client = request.app.state.http_client
 
-    response = await client.request(
-        method=request.method,
-        url=url,
-        headers=headers,
-        content=body,
-        params=dict(request.query_params),
-    )
+    try:
+        response = await client.request(
+            method=request.method,
+            url=url,
+            headers=headers,
+            content=body,
+            params=dict(request.query_params),
+        )
+    except httpx.ConnectError:
+        logger.error("Cannot connect to %s service at %s", service, base_url)
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Service {service} is unavailable")
+    except httpx.TimeoutException:
+        logger.error("Timeout connecting to %s service at %s", service, base_url)
+        raise HTTPException(status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail=f"Service {service} timed out")
 
     resp_headers = {k: v for k, v in response.headers.items() if k.lower() not in _HOP_BY_HOP}
 
