@@ -4,7 +4,6 @@ import asyncio
 from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
 
 from shared.logging import setup_json_logging
 from shared.middleware import setup_middleware
@@ -36,10 +35,10 @@ async def health():
     client = await get_client()
     if client:
         return {"status": "ok", "service": "search"}
-    return JSONResponse(
-        {"status": "degraded", "service": "search", "error": "elasticsearch unavailable"},
-        status_code=503,
-    )
+    # Return 200 with degraded status so Railway healthcheck passes.
+    # The service is running; Elasticsearch being unavailable is a
+    # dependency issue, not a service crash.
+    return {"status": "degraded", "service": "search", "detail": "elasticsearch unavailable"}
 
 
 app.include_router(router)
