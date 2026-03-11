@@ -68,6 +68,10 @@ async def get_client() -> AsyncElasticsearch | None:
     if _client is not None:
         return _client
 
+    if not ELASTICSEARCH_URL:
+        logger.warning("ELASTICSEARCH_URL not configured, search unavailable")
+        return None
+
     try:
         kwargs: dict[str, Any] = {"hosts": [ELASTICSEARCH_URL]}
         if ES_USERNAME:

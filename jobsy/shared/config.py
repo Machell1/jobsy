@@ -20,14 +20,14 @@ elif DATABASE_URL.startswith("postgresql://"):
 REDIS_URL = os.getenv("REDIS_URL", "")
 if not REDIS_URL:
     if os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PRODUCTION"):
-        raise RuntimeError("REDIS_URL environment variable must be set in production")
+        logging.warning("REDIS_URL not set in production — Redis features will be unavailable")
     else:
         REDIS_URL = "redis://localhost:6379/0"
 
 RABBITMQ_URL = os.getenv("RABBITMQ_URL", "")
 if not RABBITMQ_URL:
     if os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PRODUCTION"):
-        raise RuntimeError("RABBITMQ_URL environment variable must be set in production")
+        logging.warning("RABBITMQ_URL not set in production — event publishing will be disabled")
     else:
         RABBITMQ_URL = "amqp://guest:guest@localhost:5672/"
 
@@ -54,7 +54,7 @@ APPLE_BUNDLE_ID = os.getenv("APPLE_BUNDLE_ID", "com.jobsy.app")
 ELASTICSEARCH_URL = os.getenv("ELASTICSEARCH_URL", "")
 if not ELASTICSEARCH_URL:
     if os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PRODUCTION"):
-        raise RuntimeError("ELASTICSEARCH_URL environment variable must be set in production")
+        logging.warning("ELASTICSEARCH_URL not set in production — search will be unavailable")
     else:
         ELASTICSEARCH_URL = "http://localhost:9200"
 
