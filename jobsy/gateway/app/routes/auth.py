@@ -1,13 +1,16 @@
-"""Authentication routes: register, login, refresh."""
+"""Authentication routes: register, login, refresh, OAuth, password reset."""
 
+import logging
+import secrets
 import time
 import uuid
 from collections import defaultdict
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.auth import (
@@ -18,10 +21,21 @@ from shared.auth import (
     verify_password,
 )
 from shared.database import get_db
-from shared.models.user import TokenResponse, UserCreate, UserLogin
+from shared.models.user import (
+    ForgotPasswordRequest,
+    OAuthRequest,
+    ResetPasswordRequest,
+    TokenResponse,
+    UserCreate,
+    UserLogin,
+)
+from shared.oauth import verify_apple_token, verify_google_token
+from shared.sms import send_sms
 
 from ..config import RATE_LIMIT_AUTH_ENDPOINTS
-from ..models import User
+from ..models import PasswordResetOTP, User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -84,7 +98,7 @@ async def login(request: Request, data: UserLogin, db: AsyncSession = Depends(ge
     result = await db.execute(select(User).where(User.phone == data.phone))
     user = result.scalar_one_or_none()
 
-    if not user or not verify_password(data.password, user.password_hash):
+    if not user or not user.password_hash or not verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     return TokenResponse(
@@ -113,6 +127,169 @@ async def refresh_token(body: _RefreshRequest, db: AsyncSession = Depends(get_db
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
+    return TokenResponse(
+        access_token=create_access_token(user.id, user.role),
+        refresh_token=create_refresh_token(user.id),
+    )
+
+
+# --- OAuth ---
+
+
+@router.post("/oauth", response_model=TokenResponse)
+async def oauth_authenticate(request: Request, data: OAuthRequest, db: AsyncSession = Depends(get_db)):
+    """Authenticate via Google or Apple OAuth. Creates account if needed."""
+    await _check_auth_rate_limit(request)
+
+    # Verify the ID token with the provider
+    try:
+        if data.provider == "google":
+            info = verify_google_token(data.id_token)
+        else:
+            info = verify_apple_token(data.id_token)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(exc),
+        ) from None
+
+    oauth_sub = info["sub"]
+    email = info.get("email")
+
+    # 1. Look up by OAuth provider + ID (returning user)
+    result = await db.execute(
+        select(User).where(
+            and_(User.oauth_provider == data.provider, User.oauth_id == oauth_sub)
+        )
+    )
+    user = result.scalar_one_or_none()
+
+    if user:
+        return TokenResponse(
+            access_token=create_access_token(user.id, user.role),
+            refresh_token=create_refresh_token(user.id),
+        )
+
+    # 2. Look up by email to link accounts
+    if email:
+        result = await db.execute(select(User).where(User.email == email))
+        user = result.scalar_one_or_none()
+        if user:
+            user.oauth_provider = data.provider
+            user.oauth_id = oauth_sub
+            user.updated_at = datetime.now(UTC)
+            await db.flush()
+            return TokenResponse(
+                access_token=create_access_token(user.id, user.role),
+                refresh_token=create_refresh_token(user.id),
+            )
+
+    # 3. Create new user
+    user = User(
+        id=str(uuid.uuid4()),
+        phone=None,
+        email=email,
+        password_hash=None,
+        role=data.role,
+        oauth_provider=data.provider,
+        oauth_id=oauth_sub,
+        is_verified=True,  # OAuth email is provider-verified
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    )
+    db.add(user)
+    await db.flush()
+
+    return JSONResponse(
+        status_code=status.HTTP_201_CREATED,
+        content=TokenResponse(
+            access_token=create_access_token(user.id, user.role),
+            refresh_token=create_refresh_token(user.id),
+        ).model_dump(),
+    )
+
+
+# --- Password Reset ---
+
+_OTP_EXPIRY_MINUTES = 10
+
+
+@router.post("/forgot-password")
+async def forgot_password(request: Request, data: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)):
+    """Request a password reset OTP via SMS."""
+    await _check_auth_rate_limit(request)
+
+    # Always return success to prevent user enumeration
+    generic_response = {"message": "If this phone is registered, you will receive a reset code."}
+
+    result = await db.execute(select(User).where(User.phone == data.phone))
+    user = result.scalar_one_or_none()
+    if not user:
+        return generic_response
+
+    # Generate a 6-digit OTP
+    otp = f"{secrets.randbelow(900000) + 100000}"
+
+    otp_record = PasswordResetOTP(
+        phone=data.phone,
+        otp_hash=hash_password(otp),
+        expires_at=datetime.now(UTC) + timedelta(minutes=_OTP_EXPIRY_MINUTES),
+        created_at=datetime.now(UTC),
+    )
+    db.add(otp_record)
+    await db.flush()
+
+    send_sms(
+        to=data.phone,
+        body=f"Your Jobsy password reset code is: {otp}. Expires in {_OTP_EXPIRY_MINUTES} minutes.",
+    )
+
+    return generic_response
+
+
+@router.post("/reset-password", response_model=TokenResponse)
+async def reset_password(request: Request, data: ResetPasswordRequest, db: AsyncSession = Depends(get_db)):
+    """Verify OTP and set a new password."""
+    await _check_auth_rate_limit(request)
+
+    # Find the most recent unused OTP for this phone
+    result = await db.execute(
+        select(PasswordResetOTP)
+        .where(
+            and_(
+                PasswordResetOTP.phone == data.phone,
+                PasswordResetOTP.used == False,  # noqa: E712
+                PasswordResetOTP.expires_at > datetime.now(UTC),
+            )
+        )
+        .order_by(PasswordResetOTP.created_at.desc())
+        .limit(1)
+    )
+    otp_record = result.scalar_one_or_none()
+
+    if not otp_record or not verify_password(data.otp, otp_record.otp_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset code.",
+        )
+
+    # Mark OTP as used
+    otp_record.used = True
+
+    # Update user password
+    result = await db.execute(select(User).where(User.phone == data.phone))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset code.",
+        )
+
+    user.password_hash = hash_password(data.new_password)
+    user.updated_at = datetime.now(UTC)
+    await db.flush()
+
+    # Auto-login after successful reset
     return TokenResponse(
         access_token=create_access_token(user.id, user.role),
         refresh_token=create_refresh_token(user.id),

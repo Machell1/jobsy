@@ -16,6 +16,16 @@ interface AuthState {
   initialize: () => Promise<void>;
   login: (phone: string, password: string) => Promise<void>;
   register: (data: authApi.RegisterData) => Promise<void>;
+  oauthLogin: (
+    provider: "google" | "apple",
+    idToken: string,
+    role?: "user" | "provider",
+  ) => Promise<void>;
+  resetPassword: (data: {
+    phone: string;
+    otp: string;
+    new_password: string;
+  }) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -35,6 +45,21 @@ function isTokenExpired(payload: Record<string, unknown>): boolean {
   const exp = payload.exp;
   if (typeof exp !== "number") return true;
   return Date.now() >= exp * 1000;
+}
+
+function setAuthFromTokens(
+  tokens: authApi.TokenResponse,
+  set: (state: Partial<AuthState>) => void,
+  fallbackRole = "user",
+) {
+  const payload = parseJwt(tokens.access_token);
+  set({
+    user: {
+      id: (payload?.sub as string) || "",
+      role: (payload?.role as string) || fallbackRole,
+    },
+    isAuthenticated: true,
+  });
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -69,30 +94,32 @@ export const useAuthStore = create<AuthState>((set) => ({
     const tokens = await authApi.login({ phone, password });
     await SecureStore.setItemAsync("access_token", tokens.access_token);
     await SecureStore.setItemAsync("refresh_token", tokens.refresh_token);
-
-    const payload = parseJwt(tokens.access_token);
-    set({
-      user: {
-        id: (payload?.sub as string) || "",
-        role: (payload?.role as string) || "user",
-      },
-      isAuthenticated: true,
-    });
+    setAuthFromTokens(tokens, set);
   },
 
   register: async (data) => {
     const tokens = await authApi.register(data);
     await SecureStore.setItemAsync("access_token", tokens.access_token);
     await SecureStore.setItemAsync("refresh_token", tokens.refresh_token);
+    setAuthFromTokens(tokens, set, data.role);
+  },
 
-    const payload = parseJwt(tokens.access_token);
-    set({
-      user: {
-        id: (payload?.sub as string) || "",
-        role: (payload?.role as string) || data.role,
-      },
-      isAuthenticated: true,
+  oauthLogin: async (provider, idToken, role = "user") => {
+    const tokens = await authApi.oauthAuthenticate({
+      provider,
+      id_token: idToken,
+      role,
     });
+    await SecureStore.setItemAsync("access_token", tokens.access_token);
+    await SecureStore.setItemAsync("refresh_token", tokens.refresh_token);
+    setAuthFromTokens(tokens, set, role);
+  },
+
+  resetPassword: async (data) => {
+    const tokens = await authApi.resetPassword(data);
+    await SecureStore.setItemAsync("access_token", tokens.access_token);
+    await SecureStore.setItemAsync("refresh_token", tokens.refresh_token);
+    setAuthFromTokens(tokens, set);
   },
 
   logout: async () => {
