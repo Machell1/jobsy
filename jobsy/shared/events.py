@@ -29,6 +29,8 @@ _publish_connection: aio_pika.abc.AbstractRobustConnection | None = None
 async def get_connection():
     """Get or create a reusable RabbitMQ connection for publishing."""
     global _publish_connection
+    if not RABBITMQ_URL:
+        return None
     if _publish_connection is None or _publish_connection.is_closed:
         _publish_connection = await aio_pika.connect_robust(RABBITMQ_URL)
     return _publish_connection
@@ -50,6 +52,9 @@ async def publish_event(routing_key: str, data: dict[str, Any]) -> None:
     """
     try:
         connection = await get_connection()
+        if connection is None:
+            logger.info("RabbitMQ not configured, event %s skipped", routing_key)
+            return
         channel = await connection.channel()
         exchange = await channel.declare_exchange(EXCHANGE_NAME, aio_pika.ExchangeType.TOPIC, durable=True)
         message = aio_pika.Message(
@@ -76,6 +81,10 @@ async def consume_events(queue_name: str, routing_key: str, callback: Callable) 
     Messages that fail after MAX_RETRIES are routed to a dead-letter queue.
     The callback receives the parsed JSON data dict.
     """
+    if not RABBITMQ_URL:
+        logger.warning("RABBITMQ_URL not configured, consumer %s will not start", queue_name)
+        return
+
     while True:
         try:
             connection = await aio_pika.connect_robust(RABBITMQ_URL)
