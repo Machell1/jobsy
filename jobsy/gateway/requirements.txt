@@ -13,3 +13,5 @@ python-dotenv>=1.0.0
 email-validator>=2.1.0
 websockets>=12.0
 prometheus-fastapi-instrumentator>=6.0
+google-auth>=2.23.0
+twilio>=9.0.0
