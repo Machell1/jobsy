@@ -4,12 +4,13 @@ import asyncio
 from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 
 from shared.logging import setup_json_logging
 from shared.middleware import setup_middleware
 
 from .consumer import start_consumers
-from .elasticsearch_client import close_client, ensure_indices
+from .elasticsearch_client import close_client, ensure_indices, get_client
 from .routes import router
 
 setup_json_logging()
@@ -32,7 +33,13 @@ setup_middleware(app)
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "search"}
+    client = await get_client()
+    if client:
+        return {"status": "ok", "service": "search"}
+    return JSONResponse(
+        {"status": "degraded", "service": "search", "error": "elasticsearch unavailable"},
+        status_code=503,
+    )
 
 
 app.include_router(router)
