@@ -10,7 +10,8 @@ restartPolicyMaxRetries = 5
 [environment]
 # These are overridden per-service in Railway dashboard
 # Listed here as documentation of required environment variables
+# All four are REQUIRED in production — services will refuse to start without them.
 # DATABASE_URL = "provided by Railway Postgres plugin"
 # REDIS_URL = "provided by Railway Redis plugin"
-# RABBITMQ_URL = "provided by Railway or CloudAMQP"
+# RABBITMQ_URL = "REQUIRED: provide via CloudAMQP plugin or self-hosted RabbitMQ service URL"
 # JWT_SECRET = "set in Railway secrets"
