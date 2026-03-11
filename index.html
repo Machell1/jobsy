@@ -52,7 +52,7 @@
     },
     "sameAs": [
       "https://t.me/JobsyDealBot",
-      "https://x.com/MachellWil66296",
+      "https://x.com/JobsyJamaica",
       "https://github.com/Machell1/jobsy"
     ]
   }
@@ -64,6 +64,7 @@
       <h1>Find Service Providers in Jamaica</h1>
       <p>Search for plumbers, electricians, cleaners, tutors, and more across all 14 parishes.</p>
       <div class="hero-search">
+        <label for="hero-search" class="sr-only">Search services</label>
         <input type="text" id="hero-search" placeholder="Search services... (e.g. plumber, cleaner, tutor)" aria-label="Search services">
       </div>
       <div class="hero-stats">
@@ -74,7 +75,7 @@
     </div>
   </section>
 
-  <main>
+  <main id="main-content">
     <div class="container">
       <!-- Category Pills -->
       <div class="category-bar" id="category-bar"></div>
@@ -104,7 +105,7 @@
         <div class="how-step">
           <div class="how-step-num">3</div>
           <h3>Connect</h3>
-          <p>Contact the provider directly through the Jobsy app.</p>
+          <p>Contact the provider directly through Jobsy.</p>
         </div>
       </div>
 
@@ -127,10 +128,10 @@
 
       <!-- App Download Banner -->
       <div class="app-banner">
-        <h2>Get the Jobsy App</h2>
-        <p>Swipe through services, chat with providers, and book jobs from your phone.</p>
+        <h2>Jobsy App - Coming Soon</h2>
+        <p>We're building a mobile app so you can swipe through services, chat with providers, and book jobs from your phone.</p>
         <div class="app-banner-actions">
-          <a href="contact.html" class="btn btn-accent btn-lg">Download the App</a>
+          <a href="contact.html#register" class="btn btn-accent btn-lg">Register as a Provider</a>
           <a href="https://t.me/JobsyDealBot" class="btn btn-white btn-lg">Telegram Bot</a>
         </div>
       </div>
@@ -141,8 +142,9 @@
       <div class="newsletter">
         <h2>Stay Updated</h2>
         <p>We send updates when new providers join or when there are deals worth knowing about.</p>
-        <form class="newsletter-form" action="https://www.jobsyja.com/api/newsletter" method="POST" onsubmit="return handleNewsletter(event)">
-          <input type="email" name="email" placeholder="Enter your email" aria-label="Email for newsletter" required>
+        <form class="newsletter-form" action="https://api.jobsyja.com/api/notifications/subscribe" method="POST" onsubmit="return handleNewsletter(event)">
+          <label for="newsletter-email" class="sr-only">Email for newsletter</label>
+          <input type="email" name="email" id="newsletter-email" placeholder="Enter your email" aria-label="Email for newsletter" required>
           <button type="submit" class="btn btn-primary">Subscribe</button>
         </form>
         <p class="text-sm text-muted mt-1">Free. No spam. Unsubscribe anytime.</p>

@@ -116,6 +116,13 @@ function categorySlug(name) {
 
 /* ===== Navigation ===== */
 function renderNav() {
+  // Skip navigation link for accessibility
+  const skipLink = document.createElement('a');
+  skipLink.href = '#main-content';
+  skipLink.className = 'skip-link';
+  skipLink.textContent = 'Skip to main content';
+  document.body.prepend(skipLink);
+
   const nav = document.createElement('nav');
   nav.className = 'nav';
   nav.innerHTML = `
@@ -158,7 +165,7 @@ function renderFooter() {
           <p>${SITE_NAME} is a Jamaican service marketplace. Find local professionals by category and parish.</p>
           <div class="footer-social" style="margin-top:0.75rem">
             <a href="https://t.me/JobsyDealBot" target="_blank" rel="noopener">Telegram</a>
-            <a href="https://x.com/MachellWil66296" target="_blank" rel="noopener">X / Twitter</a>
+            <a href="https://x.com/JobsyJamaica" target="_blank" rel="noopener">X / Twitter</a>
           </div>
         </div>
         <div>
@@ -175,6 +182,7 @@ function renderFooter() {
           <a href="about.html">About</a>
           <a href="contact.html">Contact</a>
           <a href="privacy.html">Privacy Policy</a>
+          <a href="terms.html">Terms of Service</a>
           <a href="disclosure.html">Affiliate Disclosure</a>
         </div>
       </div>
