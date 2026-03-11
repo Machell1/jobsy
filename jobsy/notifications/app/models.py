@@ -21,6 +21,15 @@ class DeviceToken(Base):
     )
 
 
+class NewsletterSubscriber(Base):
+    __tablename__ = "newsletter_subscribers"
+
+    id = Column(String, primary_key=True)
+    email = Column(String(255), unique=True, nullable=False)
+    subscribed_at = Column(DateTime(timezone=True), nullable=False)
+    is_active = Column(Boolean, default=True)
+
+
 class NotificationLog(Base):
     __tablename__ = "notification_log"
 

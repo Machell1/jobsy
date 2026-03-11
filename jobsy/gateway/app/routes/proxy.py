@@ -6,7 +6,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from ..config import SERVICE_URLS
-from ..deps import get_current_user
+from ..deps import get_current_user, get_optional_user
 
 logger = logging.getLogger(__name__)
 
@@ -68,13 +68,27 @@ async def _proxy_request(service: str, path: str, request: Request, user: dict) 
     )
 
 
-@router.api_route("/profiles/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
-async def proxy_profiles(path: str, request: Request, user: dict = Depends(get_current_user)):
+@router.api_route("/profiles/{path:path}", methods=["GET"])
+async def proxy_profiles_read(path: str, request: Request, user: dict = Depends(get_optional_user)):
+    """Public read access to profiles."""
     return await _proxy_request("profiles", f"/{path}", request, user)
 
 
-@router.api_route("/listings/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
-async def proxy_listings(path: str, request: Request, user: dict = Depends(get_current_user)):
+@router.api_route("/profiles/{path:path}", methods=["POST", "PUT", "DELETE"])
+async def proxy_profiles_write(path: str, request: Request, user: dict = Depends(get_current_user)):
+    """Authenticated write access to profiles."""
+    return await _proxy_request("profiles", f"/{path}", request, user)
+
+
+@router.api_route("/listings/{path:path}", methods=["GET"])
+async def proxy_listings_read(path: str, request: Request, user: dict = Depends(get_optional_user)):
+    """Public read access to listings (browse, search, view)."""
+    return await _proxy_request("listings", f"/{path}", request, user)
+
+
+@router.api_route("/listings/{path:path}", methods=["POST", "PUT", "DELETE"])
+async def proxy_listings_write(path: str, request: Request, user: dict = Depends(get_current_user)):
+    """Authenticated write access to listings."""
     return await _proxy_request("listings", f"/{path}", request, user)
 
 
@@ -103,6 +117,13 @@ async def proxy_chat(path: str, request: Request, user: dict = Depends(get_curre
     return await _proxy_request("chat", f"/{path}", request, user)
 
 
+@router.post("/notifications/subscribe")
+async def proxy_newsletter_subscribe(request: Request):
+    """Public newsletter subscription (no auth required)."""
+    user = {"user_id": "anonymous", "role": "anonymous"}
+    return await _proxy_request("notifications", "/subscribe", request, user)
+
+
 @router.api_route("/notifications/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
 async def proxy_notifications(path: str, request: Request, user: dict = Depends(get_current_user)):
     return await _proxy_request("notifications", f"/{path}", request, user)
@@ -123,13 +144,21 @@ async def proxy_payments(path: str, request: Request, user: dict = Depends(get_c
     return await _proxy_request("payments", f"/{path}", request, user)
 
 
-@router.api_route("/reviews/{path:path}", methods=["GET", "POST", "PUT"])
-async def proxy_reviews(path: str, request: Request, user: dict = Depends(get_current_user)):
+@router.api_route("/reviews/{path:path}", methods=["GET"])
+async def proxy_reviews_read(path: str, request: Request, user: dict = Depends(get_optional_user)):
+    """Public read access to reviews."""
+    return await _proxy_request("reviews", f"/{path}", request, user)
+
+
+@router.api_route("/reviews/{path:path}", methods=["POST", "PUT"])
+async def proxy_reviews_write(path: str, request: Request, user: dict = Depends(get_current_user)):
+    """Authenticated write access to reviews."""
     return await _proxy_request("reviews", f"/{path}", request, user)
 
 
 @router.api_route("/search/{path:path}", methods=["GET"])
-async def proxy_search(path: str, request: Request, user: dict = Depends(get_current_user)):
+async def proxy_search(path: str, request: Request, user: dict = Depends(get_optional_user)):
+    """Public search access (browse without login)."""
     return await _proxy_request("search", f"/{path}", request, user)
 
 

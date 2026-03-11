@@ -10,9 +10,34 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.database import get_db
 
-from .models import DeviceToken, NotificationLog
+from .models import DeviceToken, NewsletterSubscriber, NotificationLog
 
 router = APIRouter(tags=["notifications"])
+
+
+class SubscribeRequest(BaseModel):
+    email: str = Field(..., max_length=255)
+
+
+@router.post("/subscribe", status_code=status.HTTP_201_CREATED)
+async def subscribe_newsletter(data: SubscribeRequest, db: AsyncSession = Depends(get_db)):
+    """Subscribe an email to the newsletter (no auth required)."""
+    result = await db.execute(
+        select(NewsletterSubscriber).where(NewsletterSubscriber.email == data.email)
+    )
+    existing = result.scalar_one_or_none()
+    if existing:
+        if not existing.is_active:
+            existing.is_active = True
+        return {"status": "subscribed", "email": data.email}
+
+    subscriber = NewsletterSubscriber(
+        id=str(uuid.uuid4()),
+        email=data.email,
+        subscribed_at=datetime.now(UTC),
+    )
+    db.add(subscriber)
+    return {"status": "subscribed", "email": data.email}
 
 
 def _get_user_id(request: Request) -> str:
