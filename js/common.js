@@ -39,29 +39,85 @@ const FALLBACK_LISTINGS = [
   { id: 'fb-12', title: 'Bathroom Renovation', description: 'Complete bathroom remodel including tiling, fixtures, and plumbing.', category: 'Construction', parish: 'St. Ann', budget: 120000, currency: 'JMD' }
 ];
 
+/* ===== Auth Helpers ===== */
+function getAuthToken() {
+  return localStorage.getItem('jobsy_access_token');
+}
+
+function setAuthTokens(access, refresh) {
+  localStorage.setItem('jobsy_access_token', access);
+  if (refresh) localStorage.setItem('jobsy_refresh_token', refresh);
+}
+
+function clearAuth() {
+  localStorage.removeItem('jobsy_access_token');
+  localStorage.removeItem('jobsy_refresh_token');
+}
+
+function isLoggedIn() {
+  const token = getAuthToken();
+  if (!token) return false;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.exp * 1000 > Date.now();
+  } catch { return false; }
+}
+
+function _authHeaders() {
+  const token = getAuthToken();
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+}
+
 /* ===== API Client ===== */
 const api = {
   async fetchListings(params = {}) {
     const qs = new URLSearchParams(params).toString();
-    const res = await fetch(`${API_URL}/api/listings${qs ? '?' + qs : ''}`, { signal: AbortSignal.timeout(5000) });
+    const res = await fetch(`${API_URL}/api/listings${qs ? '?' + qs : ''}`, {
+      headers: _authHeaders(),
+      signal: AbortSignal.timeout(5000),
+    });
     if (!res.ok) throw new Error(`API ${res.status}`);
     return res.json();
   },
   async fetchListing(id) {
-    const res = await fetch(`${API_URL}/api/listings/${id}`, { signal: AbortSignal.timeout(5000) });
+    const res = await fetch(`${API_URL}/api/listings/${id}`, {
+      headers: _authHeaders(),
+      signal: AbortSignal.timeout(5000),
+    });
     if (!res.ok) throw new Error(`API ${res.status}`);
     return res.json();
   },
   async searchListings(query, params = {}) {
     const qs = new URLSearchParams({ q: query, ...params }).toString();
-    const res = await fetch(`${API_URL}/api/search/listings?${qs}`, { signal: AbortSignal.timeout(5000) });
+    const res = await fetch(`${API_URL}/api/search/listings?${qs}`, {
+      headers: _authHeaders(),
+      signal: AbortSignal.timeout(5000),
+    });
     if (!res.ok) throw new Error(`API ${res.status}`);
     return res.json();
   },
   async fetchProfile(userId) {
-    const res = await fetch(`${API_URL}/api/profiles/${userId}`, { signal: AbortSignal.timeout(5000) });
+    const res = await fetch(`${API_URL}/api/profiles/${userId}`, {
+      headers: _authHeaders(),
+      signal: AbortSignal.timeout(5000),
+    });
     if (!res.ok) throw new Error(`API ${res.status}`);
     return res.json();
+  },
+  async login(phone, password) {
+    const res = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, password }),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Login failed: ${res.status}`);
+    }
+    const tokens = await res.json();
+    setAuthTokens(tokens.access_token, tokens.refresh_token);
+    return tokens;
   },
   async register(data) {
     const res = await fetch(`${API_URL}/auth/register`, {
@@ -74,7 +130,9 @@ const api = {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || `Registration failed: ${res.status}`);
     }
-    return res.json();
+    const tokens = await res.json();
+    setAuthTokens(tokens.access_token, tokens.refresh_token);
+    return tokens;
   }
 };
 
@@ -134,6 +192,9 @@ function renderNav() {
         <a href="about.html">About</a>
         <a href="contact.html">Contact</a>
         <a href="https://t.me/JobsyDealBot" target="_blank" rel="noopener" class="btn btn-sm btn-accent">Telegram Bot</a>
+        ${isLoggedIn()
+          ? '<a href="#" class="btn btn-sm btn-outline" id="nav-logout">Log Out</a>'
+          : '<a href="login.html" class="btn btn-sm btn-outline">Log In</a>'}
       </div>
       <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">&#9776;</button>
     </div>
@@ -151,6 +212,16 @@ function renderNav() {
   menu.querySelectorAll('a').forEach(link => {
     link.addEventListener('click', () => menu.classList.remove('open'));
   });
+
+  // Logout handler
+  const logoutBtn = nav.querySelector('#nav-logout');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      clearAuth();
+      window.location.reload();
+    });
+  }
 }
 
 /* ===== Footer ===== */
@@ -217,8 +288,9 @@ function listingCardHTML(listing) {
   const icon = cat ? cat.icon : '💼';
   const catName = listing.category || 'Service';
   const parish = listing.parish || '';
-  const price = listing.budget
-    ? `J$${Number(listing.budget).toLocaleString()}`
+  const budgetVal = listing.budget_max || listing.budget_min || listing.budget;
+  const price = budgetVal
+    ? `J$${Number(budgetVal).toLocaleString()}`
     : 'Get Quote';
 
   return `

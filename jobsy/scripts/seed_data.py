@@ -397,12 +397,13 @@ async def seed():
                 listing_id = _uid()
                 session.add(Listing(
                     id=listing_id,
-                    user_id=user_id,
+                    poster_id=user_id,
                     title=lst["title"],
                     description=lst["description"],
                     category=p["category"],
                     parish=p["parish"],
-                    budget=lst["budget"],
+                    budget_min=lst["budget"],
+                    budget_max=lst["budget"],
                     currency="JMD",
                     status="active",
                     created_at=_now(),
