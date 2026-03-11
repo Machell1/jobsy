@@ -14,9 +14,10 @@ from typing import Any
 
 from elasticsearch import AsyncElasticsearch
 
+from shared.config import ELASTICSEARCH_URL
+
 logger = logging.getLogger(__name__)
 
-ES_URL = os.getenv("ELASTICSEARCH_URL", "http://elasticsearch:9200")
 ES_USERNAME = os.getenv("ELASTICSEARCH_USERNAME", "")
 ES_PASSWORD = os.getenv("ELASTICSEARCH_PASSWORD", "")
 
@@ -68,7 +69,7 @@ async def get_client() -> AsyncElasticsearch | None:
         return _client
 
     try:
-        kwargs: dict[str, Any] = {"hosts": [ES_URL]}
+        kwargs: dict[str, Any] = {"hosts": [ELASTICSEARCH_URL]}
         if ES_USERNAME:
             kwargs["basic_auth"] = (ES_USERNAME, ES_PASSWORD)
 
@@ -77,7 +78,7 @@ async def get_client() -> AsyncElasticsearch | None:
         logger.info("Connected to Elasticsearch %s", info["version"]["number"])
         return _client
     except Exception:
-        logger.warning("Elasticsearch not available at %s", ES_URL)
+        logger.warning("Elasticsearch not available at %s", ELASTICSEARCH_URL)
         _client = None
         return None
 

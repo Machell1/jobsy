@@ -1,10 +1,18 @@
 """Health check endpoint for Railway."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 router = APIRouter(tags=["health"])
 
 
 @router.get("/health", summary="Gateway health check", response_description="Service status")
-async def health_check():
-    return {"status": "ok", "service": "gateway"}
+async def health_check(request: Request):
+    status = {"status": "ok", "service": "gateway"}
+    redis = getattr(request.app.state, "redis", None)
+    if redis:
+        try:
+            await redis.ping()
+        except Exception:
+            status["status"] = "degraded"
+            status["redis"] = "unavailable"
+    return status

@@ -7,10 +7,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://jobsy:localdev@localhost:5432/jobsy")
-# Railway provides DATABASE_URL with 'postgresql://' prefix, but SQLAlchemy async
-# requires 'postgresql+asyncpg://'. Auto-convert for compatibility.
-if DATABASE_URL.startswith("postgresql://"):
+DATABASE_URL = os.getenv("DATABASE_URL", "")
+if not DATABASE_URL:
+    if os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PRODUCTION"):
+        raise RuntimeError("DATABASE_URL environment variable must be set in production")
+    else:
+        DATABASE_URL = "postgresql+asyncpg://jobsy:localdev@localhost:5432/jobsy"
+elif DATABASE_URL.startswith("postgresql://"):
+    # Railway provides DATABASE_URL with 'postgresql://' prefix, but SQLAlchemy async
+    # requires 'postgresql+asyncpg://'. Auto-convert for compatibility.
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
 REDIS_URL = os.getenv("REDIS_URL", "")
 if not REDIS_URL:
@@ -44,6 +49,14 @@ JWT_REFRESH_EXPIRY_DAYS = int(os.getenv("JWT_REFRESH_EXPIRY_DAYS", "30"))
 # OAuth
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 APPLE_BUNDLE_ID = os.getenv("APPLE_BUNDLE_ID", "com.jobsy.app")
+
+# Elasticsearch
+ELASTICSEARCH_URL = os.getenv("ELASTICSEARCH_URL", "")
+if not ELASTICSEARCH_URL:
+    if os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PRODUCTION"):
+        raise RuntimeError("ELASTICSEARCH_URL environment variable must be set in production")
+    else:
+        ELASTICSEARCH_URL = "http://localhost:9200"
 
 # Twilio SMS
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")

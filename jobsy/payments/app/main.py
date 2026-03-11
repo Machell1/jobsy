@@ -5,8 +5,10 @@ import signal
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from sqlalchemy import text
 
-from shared.database import init_db
+from shared.database import async_session_factory, init_db
 from shared.logging import setup_json_logging
 from shared.middleware import setup_middleware
 
@@ -29,7 +31,15 @@ app = FastAPI(title="Jobsy Payments", version="0.1.0", lifespan=lifespan)
 setup_middleware(app)
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "payments"}
+    try:
+        async with async_session_factory() as session:
+            await session.execute(text("SELECT 1"))
+        return {"status": "ok", "service": "payments"}
+    except Exception:
+        return JSONResponse(
+            {"status": "degraded", "service": "payments", "error": "database unavailable"},
+            status_code=503,
+        )
 
 
 app.include_router(router)
