@@ -84,7 +84,8 @@
               ${listing.status ? `<span>Status: ${escapeHtml(listing.status)}</span>` : ''}
             </div>
             <div class="service-detail-actions">
-              <a href="contact.html" class="btn btn-primary">Contact Provider</a>
+              <a href="mailto:jobsyja@jobsyja.com?subject=${encodeURIComponent('Inquiry: ' + listing.title)}&body=${encodeURIComponent('Hi,\n\nI am interested in the following service listed on Jobsy:\n\nService: ' + listing.title + '\nCategory: ' + (listing.category || 'N/A') + '\nParish: ' + (listing.parish || 'N/A') + '\n\nPlease connect me with this provider.\n\nThank you')}" class="btn btn-primary">Contact Provider</a>
+              <a href="contact.html?service=${encodeURIComponent(listing.title)}&parish=${encodeURIComponent(listing.parish || '')}" class="btn btn-outline">Send Inquiry</a>
               ${listing.category ? `<a href="category.html?cat=${categorySlug(listing.category)}" class="btn btn-outline">More ${escapeHtml(listing.category)}</a>` : ''}
             </div>
           </div>
@@ -124,8 +125,8 @@
 
             <div class="cta-box">
               <h3>Need This Service?</h3>
-              <p>Download the Jobsy app to message this provider directly.</p>
-              <a href="contact.html" class="btn btn-white" style="width:100%;justify-content:center">Get Started</a>
+              <p>Send an inquiry and we'll connect you with this provider.</p>
+              <a href="mailto:jobsyja@jobsyja.com?subject=${encodeURIComponent('Inquiry: ' + listing.title)}&body=${encodeURIComponent('Hi,\n\nI am interested in: ' + listing.title + '\nParish: ' + (listing.parish || 'N/A') + '\n\nPlease connect me with this provider.\n\nThank you')}" class="btn btn-white" style="width:100%;justify-content:center">Email Inquiry</a>
             </div>
           </div>
         </div>

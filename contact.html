@@ -29,6 +29,18 @@
           <p><strong>Location:</strong> Mandeville, Manchester, Jamaica</p>
         </div>
 
+        <!-- Service Inquiry (shown when arriving from a provider page) -->
+        <div class="content-section" id="inquiry-section" style="display:none">
+          <h2>Service Inquiry</h2>
+          <div class="sidebar-card" style="background:var(--primary-light);border-color:var(--primary-mid)">
+            <p style="margin-bottom:0.5rem"><strong>You're inquiring about:</strong></p>
+            <p id="inquiry-service" style="font-size:1.125rem;font-weight:600;color:var(--primary);margin-bottom:0.25rem"></p>
+            <p id="inquiry-parish" class="text-muted" style="margin-bottom:1rem"></p>
+            <a id="inquiry-mailto" href="#" class="btn btn-primary" style="width:100%;justify-content:center">Send Inquiry via Email</a>
+            <p class="text-sm text-muted mt-1">We'll connect you with the provider within 24 hours.</p>
+          </div>
+        </div>
+
         <!-- Registration Form -->
         <div class="content-section" id="register">
           <h2>Register as a Service Provider</h2>
@@ -130,6 +142,26 @@
   <script src="js/common.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      // Show service inquiry section if arriving from a provider page
+      const urlParams = new URLSearchParams(window.location.search);
+      const inquiryService = urlParams.get('service');
+      const inquiryParish = urlParams.get('parish');
+      if (inquiryService) {
+        const section = document.getElementById('inquiry-section');
+        section.style.display = '';
+        document.getElementById('inquiry-service').textContent = inquiryService;
+        document.getElementById('inquiry-parish').textContent = inquiryParish ? '📍 ' + inquiryParish + ', Jamaica' : '';
+        const subject = encodeURIComponent('Inquiry: ' + inquiryService);
+        const body = encodeURIComponent(
+          'Hi,\n\nI am interested in the following service listed on Jobsy:\n\n' +
+          'Service: ' + inquiryService + '\n' +
+          (inquiryParish ? 'Parish: ' + inquiryParish + '\n' : '') +
+          '\nPlease connect me with this provider.\n\nThank you'
+        );
+        document.getElementById('inquiry-mailto').href = 'mailto:jobsyja@jobsyja.com?subject=' + subject + '&body=' + body;
+        section.scrollIntoView({ behavior: 'smooth' });
+      }
+
       // Populate category dropdown
       const catSelect = document.getElementById('reg-category');
       CATEGORIES.forEach(c => {
@@ -200,7 +232,7 @@
               signal: AbortSignal.timeout(10000),
             });
           } catch { /* profile creation is best-effort; user can complete it in the app */ }
-          showMessage('Registration successful! You can now log in through the Jobsy mobile app to set up your profile and list your services.', 'success');
+          showMessage('Registration successful! We\'ll contact you within 24 hours to help you complete your profile and start receiving customers.', 'success');
           form.reset();
         } catch (err) {
           const isNetworkError = err.message === 'Failed to fetch' || err.name === 'TypeError' || err.name === 'AbortError';
