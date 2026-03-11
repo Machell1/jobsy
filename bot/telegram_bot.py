@@ -26,6 +26,7 @@ import asyncio
 import datetime
 import logging
 import functools
+import sys
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 from telegram.constants import ParseMode
@@ -467,12 +468,18 @@ async def post_init(application):
 
 def run_bot():
     """Initialize and run the Telegram bot."""
-    if not TELEGRAM_BOT_TOKEN:
-        print("ERROR: TELEGRAM_BOT_TOKEN not set. Check your .env file.")
-        return
+    logger.info("Deal Bot starting up...")
 
-    init_db()
-    logger.info("Database initialized.")
+    if not TELEGRAM_BOT_TOKEN:
+        logger.error("TELEGRAM_BOT_TOKEN not set. Check your environment variables.")
+        sys.exit(1)
+
+    try:
+        init_db()
+        logger.info("Database initialized.")
+    except Exception as e:
+        logger.error("Database initialization failed: %s", e)
+        sys.exit(1)
 
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).post_init(post_init).build()
 
