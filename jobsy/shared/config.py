@@ -32,14 +32,16 @@ elif DATABASE_URL.startswith("postgresql://"):
 REDIS_URL = os.getenv("REDIS_URL", "")
 if not REDIS_URL:
     if _is_production():
-        logging.warning("REDIS_URL not set in production — Redis features will be unavailable")
+        REDIS_URL = "redis://redis.railway.internal:6379/0"
+        logging.info("REDIS_URL not set — using Railway private networking: redis.railway.internal")
     else:
         REDIS_URL = "redis://localhost:6379/0"
 
 RABBITMQ_URL = os.getenv("RABBITMQ_URL", "")
 if not RABBITMQ_URL:
     if _is_production():
-        logging.warning("RABBITMQ_URL not set in production — event publishing will be disabled")
+        RABBITMQ_URL = "amqp://guest:guest@rabbitmq.railway.internal:5672/"
+        logging.info("RABBITMQ_URL not set — using Railway private networking: rabbitmq.railway.internal")
     else:
         RABBITMQ_URL = "amqp://guest:guest@localhost:5672/"
 
@@ -66,7 +68,8 @@ APPLE_BUNDLE_ID = os.getenv("APPLE_BUNDLE_ID", "com.jobsy.app")
 ELASTICSEARCH_URL = os.getenv("ELASTICSEARCH_URL", "")
 if not ELASTICSEARCH_URL:
     if _is_production():
-        logging.warning("ELASTICSEARCH_URL not set in production — search will be unavailable")
+        ELASTICSEARCH_URL = "http://elasticsearch.railway.internal:9200"
+        logging.info("ELASTICSEARCH_URL not set — using Railway private networking: elasticsearch.railway.internal")
     else:
         ELASTICSEARCH_URL = "http://localhost:9200"
 
