@@ -12,8 +12,19 @@ DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://jobsy:localdev@lo
 # requires 'postgresql+asyncpg://'. Auto-convert for compatibility.
 if DATABASE_URL.startswith("postgresql://"):
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/")
+REDIS_URL = os.getenv("REDIS_URL", "")
+if not REDIS_URL:
+    if os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PRODUCTION"):
+        raise RuntimeError("REDIS_URL environment variable must be set in production")
+    else:
+        REDIS_URL = "redis://localhost:6379/0"
+
+RABBITMQ_URL = os.getenv("RABBITMQ_URL", "")
+if not RABBITMQ_URL:
+    if os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PRODUCTION"):
+        raise RuntimeError("RABBITMQ_URL environment variable must be set in production")
+    else:
+        RABBITMQ_URL = "amqp://guest:guest@localhost:5672/"
 
 _jwt_secret = os.getenv("JWT_SECRET", "")
 if not _jwt_secret:
