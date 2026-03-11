@@ -143,10 +143,7 @@ async def oauth_authenticate(request: Request, data: OAuthRequest, db: AsyncSess
 
     # Verify the ID token with the provider
     try:
-        if data.provider == "google":
-            info = verify_google_token(data.id_token)
-        else:
-            info = verify_apple_token(data.id_token)
+        info = verify_google_token(data.id_token) if data.provider == "google" else verify_apple_token(data.id_token)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
