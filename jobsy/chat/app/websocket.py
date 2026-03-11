@@ -29,6 +29,8 @@ _connections: dict[str, dict[str, WebSocket]] = {}
 
 
 async def _get_redis():
+    if not REDIS_URL:
+        return None
     return aioredis.from_url(REDIS_URL, decode_responses=True)
 
 
@@ -90,6 +92,8 @@ async def _save_message(conversation_id: str, sender_id: str, content: str, mess
 
 async def _start_redis_listener(conversation_id: str, websocket: WebSocket, user_id: str):
     """Subscribe to Redis channel for cross-instance message delivery."""
+    if not REDIS_URL:
+        return
     redis_client = None
     pubsub = None
     try:
@@ -162,7 +166,8 @@ async def chat_websocket(websocket: WebSocket, conversation_id: str):
             # Broadcast via Redis pub/sub (reaches all instances including local).
             # The Redis listener filters out messages from the sender, so each
             # participant receives the message exactly once.
-            await redis_client.publish(f"chat:{conversation_id}", json.dumps(msg))
+            if redis_client:
+                await redis_client.publish(f"chat:{conversation_id}", json.dumps(msg))
 
             # Emit event for notifications service
             await publish_event("message.new", {
@@ -176,7 +181,8 @@ async def chat_websocket(websocket: WebSocket, conversation_id: str):
     except Exception:
         logger.exception("WebSocket error for user %s in conversation %s", user_id, conversation_id)
     finally:
-        await redis_client.close()
+        if redis_client:
+            await redis_client.close()
         listener_task.cancel()
         if conversation_id in _connections:
             _connections[conversation_id].pop(user_id, None)
