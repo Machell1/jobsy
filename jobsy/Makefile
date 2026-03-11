@@ -1,4 +1,4 @@
-.PHONY: help dev down build test lint format migrate migrate-create logs clean
+.PHONY: help dev down build test lint format migrate migrate-create logs clean setup deploy seed-prod
 
 SHELL := /bin/bash
 
@@ -85,6 +85,20 @@ clean: ## Remove Python cache files
 
 status: ## Show status of all services
 	docker compose ps
+
+# ── Deployment ──────────────────────────────────────────────
+
+setup: ## Set up local development environment (DB + seed)
+	bash scripts/setup-local.sh
+
+deploy: ## Deploy to Railway (interactive)
+	bash scripts/deploy.sh
+
+seed-prod: ## Seed production database via Railway
+	bash scripts/seed.sh --railway
+
+seed: ## Seed local database
+	bash scripts/seed.sh
 
 # ── Mobile App ──────────────────────────────────────────────
 
