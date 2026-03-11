@@ -452,6 +452,19 @@ async def scheduled_api_poll(context: ContextTypes.DEFAULT_TYPE):
 
 # --- Main ---
 
+async def post_init(application):
+    """Send startup notification after bot is initialized."""
+    await send_admin_message_async(
+        f"🤖 <b>Deal Bot started</b>\n"
+        f"📊 Price checks: every {CHECK_INTERVAL_MINUTES} min\n"
+        f"🔍 Deal scans: every {CHECK_INTERVAL_MINUTES * 2} min\n"
+        f"✈️ Lifestyle scans: every {CHECK_INTERVAL_MINUTES * 3} min\n"
+        f"🏆 Daily summary: 6:00 PM UTC\n"
+        f"💰 Earnings report: 9:00 PM UTC\n"
+        f"📋 Weekly report: Mondays 10:00 AM UTC"
+    )
+
+
 def run_bot():
     """Initialize and run the Telegram bot."""
     if not TELEGRAM_BOT_TOKEN:
@@ -461,7 +474,7 @@ def run_bot():
     init_db()
     logger.info("Database initialized.")
 
-    app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+    app = Application.builder().token(TELEGRAM_BOT_TOKEN).post_init(post_init).build()
 
     # Register command handlers
     app.add_handler(CommandHandler("start", start_command))
@@ -524,16 +537,6 @@ def run_bot():
         CHECK_INTERVAL_MINUTES,
         CHECK_INTERVAL_MINUTES * 2,
         CHECK_INTERVAL_MINUTES * 3,
-    )
-
-    send_admin_message(
-        f"🤖 <b>Deal Bot started</b>\n"
-        f"📊 Price checks: every {CHECK_INTERVAL_MINUTES} min\n"
-        f"🔍 Deal scans: every {CHECK_INTERVAL_MINUTES * 2} min\n"
-        f"✈️ Lifestyle scans: every {CHECK_INTERVAL_MINUTES * 3} min\n"
-        f"🏆 Daily summary: 6:00 PM UTC\n"
-        f"💰 Earnings report: 9:00 PM UTC\n"
-        f"📋 Weekly report: Mondays 10:00 AM UTC"
     )
 
     app.run_polling(drop_pending_updates=True)
