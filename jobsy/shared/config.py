@@ -7,9 +7,21 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
+def _is_production() -> bool:
+    """Detect production/Railway environment from common env vars."""
+    return bool(
+        os.getenv("RAILWAY_ENVIRONMENT")
+        or os.getenv("RAILWAY_ENVIRONMENT_NAME")
+        or os.getenv("RAILWAY_PROJECT_ID")
+        or os.getenv("RAILWAY_SERVICE_ID")
+        or os.getenv("PRODUCTION")
+    )
+
+
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 if not DATABASE_URL:
-    if os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PRODUCTION"):
+    if _is_production():
         raise RuntimeError("DATABASE_URL environment variable must be set in production")
     else:
         DATABASE_URL = "postgresql+asyncpg://jobsy:localdev@localhost:5432/jobsy"
@@ -19,14 +31,14 @@ elif DATABASE_URL.startswith("postgresql://"):
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
 REDIS_URL = os.getenv("REDIS_URL", "")
 if not REDIS_URL:
-    if os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PRODUCTION"):
+    if _is_production():
         logging.warning("REDIS_URL not set in production — Redis features will be unavailable")
     else:
         REDIS_URL = "redis://localhost:6379/0"
 
 RABBITMQ_URL = os.getenv("RABBITMQ_URL", "")
 if not RABBITMQ_URL:
-    if os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PRODUCTION"):
+    if _is_production():
         logging.warning("RABBITMQ_URL not set in production — event publishing will be disabled")
     else:
         RABBITMQ_URL = "amqp://guest:guest@localhost:5672/"
@@ -35,7 +47,7 @@ _jwt_secret = os.getenv("JWT_SECRET", "")
 if not _jwt_secret:
     if os.getenv("TESTING"):
         _jwt_secret = "test-secret"  # noqa: S105
-    elif os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PRODUCTION"):
+    elif _is_production():
         raise RuntimeError("JWT_SECRET environment variable must be set in production")
     else:
         logging.warning("JWT_SECRET not set, using insecure default. Set JWT_SECRET in production!")
@@ -53,7 +65,7 @@ APPLE_BUNDLE_ID = os.getenv("APPLE_BUNDLE_ID", "com.jobsy.app")
 # Elasticsearch
 ELASTICSEARCH_URL = os.getenv("ELASTICSEARCH_URL", "")
 if not ELASTICSEARCH_URL:
-    if os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PRODUCTION"):
+    if _is_production():
         logging.warning("ELASTICSEARCH_URL not set in production — search will be unavailable")
     else:
         ELASTICSEARCH_URL = "http://localhost:9200"
