@@ -245,6 +245,21 @@ function initSearch() {
   const searchInput = document.getElementById('hero-search');
   if (!searchInput) return;
 
+  const searchBtn = document.getElementById('hero-search-btn');
+  if (searchBtn) {
+    searchBtn.addEventListener('click', () => {
+      clearTimeout(_searchTimeout);
+      searchInput.dispatchEvent(new Event('input'));
+    });
+  }
+
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      clearTimeout(_searchTimeout);
+      searchInput.dispatchEvent(new Event('input'));
+    }
+  });
+
   searchInput.addEventListener('input', () => {
     clearTimeout(_searchTimeout);
     const q = searchInput.value.trim();
