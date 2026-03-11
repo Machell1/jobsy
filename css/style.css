@@ -48,6 +48,21 @@ h2 { font-size: clamp(1.25rem, 3vw, 1.75rem); font-weight: 700; margin-bottom: 0
 h3 { font-size: 1.125rem; font-weight: 600; margin-bottom: 0.25rem; }
 p { margin-bottom: 1rem; }
 
+/* ===== Screen Reader Only ===== */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+
+/* ===== Skip Navigation ===== */
+.skip-link {
+  position: absolute; top: -100%; left: 50%; transform: translateX(-50%);
+  background: var(--primary); color: white; padding: 0.75rem 1.5rem;
+  border-radius: 0 0 var(--radius) var(--radius); z-index: 200;
+  font-weight: 600; text-decoration: none;
+}
+.skip-link:focus { top: 0; }
+
 /* ===== Navigation ===== */
 .nav { background: var(--bg); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
 .nav-inner {

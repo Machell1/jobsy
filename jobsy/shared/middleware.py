@@ -43,6 +43,10 @@ def setup_middleware(app: FastAPI, allowed_origins: list[str] | None = None) -> 
             }),
         )
         response.headers["X-Request-ID"] = request_id
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
         return response
 
     @app.exception_handler(Exception)
