@@ -32,16 +32,32 @@ elif DATABASE_URL.startswith("postgresql://"):
 REDIS_URL = os.getenv("REDIS_URL", "")
 if not REDIS_URL:
     if _is_production():
-        REDIS_URL = "redis://redis.railway.internal:6379/0"
-        logging.info("REDIS_URL not set — using Railway private networking: redis.railway.internal")
+        _redis_host = os.getenv("REDIS_HOST", "")
+        _redis_port = os.getenv("REDIS_PORT", "6379")
+        if _redis_host:
+            REDIS_URL = f"redis://{_redis_host}:{_redis_port}/0"
+            logging.info("REDIS_URL built from REDIS_HOST=%s", _redis_host)
+        else:
+            logging.warning("REDIS_URL not set in production — Redis features will be unavailable")
     else:
         REDIS_URL = "redis://localhost:6379/0"
 
-RABBITMQ_URL = os.getenv("RABBITMQ_URL", "")
+RABBITMQ_URL = os.getenv("RABBITMQ_URL") or os.getenv("CLOUDAMQP_URL", "")
 if not RABBITMQ_URL:
     if _is_production():
-        RABBITMQ_URL = "amqp://guest:guest@rabbitmq.railway.internal:5672/"
-        logging.info("RABBITMQ_URL not set — using Railway private networking: rabbitmq.railway.internal")
+        _rmq_host = os.getenv("RABBITMQ_HOST", "")
+        _rmq_port = os.getenv("RABBITMQ_PORT", "5672")
+        _rmq_user = os.getenv("RABBITMQ_USER", os.getenv("RABBITMQ_DEFAULT_USER", "guest"))
+        _rmq_pass = os.getenv("RABBITMQ_PASS", os.getenv("RABBITMQ_DEFAULT_PASS", "guest"))
+        _rmq_vhost = os.getenv("RABBITMQ_VHOST", "/")
+        if _rmq_host:
+            RABBITMQ_URL = f"amqp://{_rmq_user}:{_rmq_pass}@{_rmq_host}:{_rmq_port}/{_rmq_vhost}"
+            logging.info("RABBITMQ_URL built from RABBITMQ_HOST=%s", _rmq_host)
+        else:
+            logging.warning(
+                "RABBITMQ_URL not set in production. Set RABBITMQ_URL, CLOUDAMQP_URL, "
+                "or RABBITMQ_HOST. Event publishing will retry until available."
+            )
     else:
         RABBITMQ_URL = "amqp://guest:guest@localhost:5672/"
 
@@ -68,8 +84,13 @@ APPLE_BUNDLE_ID = os.getenv("APPLE_BUNDLE_ID", "com.jobsy.app")
 ELASTICSEARCH_URL = os.getenv("ELASTICSEARCH_URL", "")
 if not ELASTICSEARCH_URL:
     if _is_production():
-        ELASTICSEARCH_URL = "http://elasticsearch.railway.internal:9200"
-        logging.info("ELASTICSEARCH_URL not set — using Railway private networking: elasticsearch.railway.internal")
+        _es_host = os.getenv("ELASTICSEARCH_HOST", "")
+        _es_port = os.getenv("ELASTICSEARCH_PORT", "9200")
+        if _es_host:
+            ELASTICSEARCH_URL = f"http://{_es_host}:{_es_port}"
+            logging.info("ELASTICSEARCH_URL built from ELASTICSEARCH_HOST=%s", _es_host)
+        else:
+            logging.warning("ELASTICSEARCH_URL not set in production — search will be unavailable")
     else:
         ELASTICSEARCH_URL = "http://localhost:9200"
 
