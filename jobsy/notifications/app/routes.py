@@ -29,6 +29,7 @@ async def subscribe_newsletter(data: SubscribeRequest, db: AsyncSession = Depend
     if existing:
         if not existing.is_active:
             existing.is_active = True
+            await db.flush()
         return {"status": "subscribed", "email": data.email}
 
     subscriber = NewsletterSubscriber(
@@ -37,6 +38,7 @@ async def subscribe_newsletter(data: SubscribeRequest, db: AsyncSession = Depend
         subscribed_at=datetime.now(UTC),
     )
     db.add(subscriber)
+    await db.flush()
     return {"status": "subscribed", "email": data.email}
 
 

@@ -1,5 +1,6 @@
 """Payments service API routes -- transactions, accounts, webhooks, payouts."""
 
+import os
 import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -319,13 +320,19 @@ async def request_payout(data: PayoutRequest, request: Request, db: AsyncSession
 
 
 @router.get("/payouts")
-async def list_payouts(request: Request, limit: int = Query(default=20, le=100), db: AsyncSession = Depends(get_db)):
+async def list_payouts(
+    request: Request,
+    limit: int = Query(default=20, le=100),
+    offset: int = 0,
+    db: AsyncSession = Depends(get_db),
+):
     """List payout history."""
     user_id = _get_user_id(request)
     query = (
         select(Payout)
         .where(Payout.user_id == user_id)
         .order_by(Payout.requested_at.desc())
+        .offset(offset)
         .limit(limit)
     )
     result = await db.execute(query)
@@ -362,8 +369,12 @@ async def stripe_webhook(
     event = verify_webhook_signature(body, stripe_signature)
 
     if not event:
-        # In dev without webhook secret, try to parse raw
         if not is_configured():
+            if os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PRODUCTION"):
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Stripe not configured in production",
+                )
             return {"status": "skipped", "reason": "stripe not configured"}
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid webhook signature")
 

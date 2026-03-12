@@ -73,8 +73,8 @@
 
       const cat = findCategory(listing.category);
       const icon = cat ? cat.icon : '💼';
-      const budgetVal = listing.budget_max || listing.budget_min || listing.budget;
-      const price = budgetVal
+      const budgetVal = listing.budget_max ?? listing.budget_min ?? listing.budget;
+      const price = budgetVal != null
         ? `J$${Number(budgetVal).toLocaleString()} ${listing.currency || 'JMD'}`
         : 'Get Quote';
 

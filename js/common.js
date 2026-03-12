@@ -288,8 +288,8 @@ function listingCardHTML(listing) {
   const icon = cat ? cat.icon : '💼';
   const catName = listing.category || 'Service';
   const parish = listing.parish || '';
-  const budgetVal = listing.budget_max || listing.budget_min || listing.budget;
-  const price = budgetVal
+  const budgetVal = listing.budget_max ?? listing.budget_min ?? listing.budget;
+  const price = budgetVal != null
     ? `J$${Number(budgetVal).toLocaleString()}`
     : 'Get Quote';
 
@@ -344,7 +344,7 @@ function initSearch() {
     _searchTimeout = setTimeout(async () => {
       try {
         const results = await api.searchListings(q);
-        renderListingGrid(results.results || results);
+        renderListingGrid(results.hits || results.results || results);
       } catch {
         const listings = await getListings();
         const lower = q.toLowerCase();
@@ -397,7 +397,7 @@ function initNewsletter() {
   const input = form.querySelector('input[type="email"]');
   if (!btn || !input) return;
 
-  btn.addEventListener('click', async (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = input.value.trim();
     if (!email || !email.includes('@')) {
@@ -408,16 +408,21 @@ function initNewsletter() {
     btn.disabled = true;
     btn.textContent = 'Subscribing...';
     try {
-      await fetch(`${API_URL}/api/notifications/subscribe`, {
+      const res = await fetch(`${API_URL}/api/notifications/subscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
         signal: AbortSignal.timeout(5000),
       });
-    } catch { /* best-effort */ }
-    btn.textContent = 'Subscribed!';
-    input.disabled = true;
-    input.value = email;
+      if (res.ok) {
+        form.innerHTML = '<p style="color:var(--primary);font-weight:600">Thanks for subscribing!</p>';
+      } else {
+        throw new Error('failed');
+      }
+    } catch {
+      const mailto = 'mailto:jobsyja@jobsyja.com?subject=Newsletter%20Signup&body=Please%20add%20me%20to%20the%20newsletter:%20' + encodeURIComponent(email);
+      form.innerHTML = '<p>Signup is being set up. <a href="' + mailto + '" style="color:var(--primary);text-decoration:underline">Email us to subscribe</a></p>';
+    }
   });
 }
 

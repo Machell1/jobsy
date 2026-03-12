@@ -39,12 +39,16 @@ async def rate_limit_check(request: Request) -> None:
     now = time.time()
     window_start = now - 60
 
-    pipe = redis.pipeline()
-    pipe.zremrangebyscore(key, 0, window_start)
-    pipe.zadd(key, {str(now): now})
-    pipe.zcard(key)
-    pipe.expire(key, 120)
-    results = await pipe.execute()
+    try:
+        pipe = redis.pipeline()
+        pipe.zremrangebyscore(key, 0, window_start)
+        pipe.zadd(key, {str(now): now})
+        pipe.zcard(key)
+        pipe.expire(key, 120)
+        results = await pipe.execute()
+    except Exception:
+        logger.warning("Redis error during rate limit check, allowing request through")
+        return
 
     request_count = results[2]
     if request_count > limit:

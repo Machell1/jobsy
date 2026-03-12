@@ -51,7 +51,10 @@ async def send_push_notification(
     Returns True if sent successfully, False otherwise.
     """
     if not _init_fcm():
-        logger.info("Push (dry-run): [%s] %s - %s", device_token[:20], title, body)
+        if os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PRODUCTION"):
+            logger.error("Push notification not sent (Firebase not configured): [%s] %s", device_token[:20], title)
+        else:
+            logger.info("Push (dry-run): [%s] %s - %s", device_token[:20], title, body)
         return False
 
     try:

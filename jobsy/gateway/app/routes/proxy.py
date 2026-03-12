@@ -23,7 +23,10 @@ async def _proxy_request(service: str, path: str, request: Request, user: dict) 
     """Forward a request to an internal service with user context."""
     base_url = SERVICE_URLS.get(service)
     if not base_url:
-        return Response(status_code=404, content=f"Service {service} not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Service {service} not found",
+        )
 
     url = f"{base_url}{path}"
     # Forward request ID for distributed tracing
@@ -58,6 +61,12 @@ async def _proxy_request(service: str, path: str, request: Request, user: dict) 
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
             detail=f"Service {service} timed out",
         ) from None
+    except httpx.HTTPError:
+        logger.error("HTTP error proxying to %s service at %s", service, base_url)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Service {service} is unavailable",
+        ) from None
 
     resp_headers = {k: v for k, v in response.headers.items() if k.lower() not in _HOP_BY_HOP}
 
@@ -66,6 +75,12 @@ async def _proxy_request(service: str, path: str, request: Request, user: dict) 
         status_code=response.status_code,
         headers=resp_headers,
     )
+
+
+@router.api_route("/profiles", methods=["GET"])
+async def proxy_profiles_root_read(request: Request, user: dict = Depends(get_optional_user)):
+    """Public read access to profiles root."""
+    return await _proxy_request("profiles", "/", request, user)
 
 
 @router.api_route("/profiles/{path:path}", methods=["GET"])
@@ -78,6 +93,12 @@ async def proxy_profiles_read(path: str, request: Request, user: dict = Depends(
 async def proxy_profiles_write(path: str, request: Request, user: dict = Depends(get_current_user)):
     """Authenticated write access to profiles."""
     return await _proxy_request("profiles", f"/{path}", request, user)
+
+
+@router.api_route("/listings", methods=["GET"])
+async def proxy_listings_root_read(request: Request, user: dict = Depends(get_optional_user)):
+    """Public read access to listings root."""
+    return await _proxy_request("listings", "/", request, user)
 
 
 @router.api_route("/listings/{path:path}", methods=["GET"])

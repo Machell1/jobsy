@@ -38,7 +38,10 @@ if not REDIS_URL:
             REDIS_URL = f"redis://{_redis_host}:{_redis_port}/0"
             logging.info("REDIS_URL built from REDIS_HOST=%s", _redis_host)
         else:
-            logging.warning("REDIS_URL not set in production — Redis features will be unavailable")
+            raise RuntimeError(
+                "REDIS_URL environment variable must be set in production. "
+                "Set REDIS_URL or REDIS_HOST."
+            )
     else:
         REDIS_URL = "redis://localhost:6379/0"
 

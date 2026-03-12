@@ -53,6 +53,7 @@ def upgrade() -> None:
         sa.Column("is_provider", sa.Boolean(), server_default=sa.text("false")),
         sa.Column("rating_avg", sa.Numeric(3, 2), server_default="0"),
         sa.Column("rating_count", sa.Integer(), server_default="0"),
+        sa.Column("is_verified", sa.Boolean(), server_default=sa.text("false")),
         sa.Column("is_active", sa.Boolean(), server_default=sa.text("true")),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
@@ -171,6 +172,17 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("ix_notification_log_user_id", "notification_log", ["user_id"])
+
+    # ── Notifications: newsletter_subscribers ────────────────────────────
+    op.create_table(
+        "newsletter_subscribers",
+        sa.Column("id", sa.String(), nullable=False),
+        sa.Column("email", sa.String(255), nullable=False),
+        sa.Column("subscribed_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("is_active", sa.Boolean(), server_default=sa.text("true")),
+        sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint("email"),
+    )
 
     # ── Advertising: ad_placements ──────────────────────────────────────
     op.create_table(
@@ -472,6 +484,7 @@ def downgrade() -> None:
     op.drop_table("ad_impressions")
     op.drop_table("ad_campaigns")
     op.drop_table("ad_placements")
+    op.drop_table("newsletter_subscribers")
     op.drop_table("notification_log")
     op.drop_table("device_tokens")
     op.drop_table("messages")

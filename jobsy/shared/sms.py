@@ -1,6 +1,7 @@
 """SMS delivery via Twilio."""
 
 import logging
+import os
 
 from shared.config import TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER
 
@@ -14,6 +15,9 @@ def send_sms(to: str, body: str) -> bool:
     logs the message body instead of sending.
     """
     if not all([TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER]):
+        if os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PRODUCTION"):
+            logger.error("Twilio not configured in production — SMS to %s not sent", to)
+            return False
         logger.info("SMS (dev mode) to %s: %s", to, body)
         return True
 

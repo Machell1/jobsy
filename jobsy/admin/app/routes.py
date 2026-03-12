@@ -1,18 +1,24 @@
 """Admin service API routes -- dashboard stats, user management, moderation, audit log."""
 
+import json
+import logging
 import uuid
 from datetime import UTC, datetime
 
+import redis.asyncio as aioredis
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from shared.config import REDIS_URL
 from shared.database import get_db
 from shared.events import publish_event
 
 from .deps import require_admin
 from .models import AuditLog, ModerationQueue, Profile, VerificationRequest
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["admin"])
 
@@ -48,15 +54,27 @@ async def get_dashboard_stats(
     admin_id: str = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get platform overview statistics.
+    """Get platform overview statistics with Redis caching."""
+    cache_key = "admin:dashboard:stats"
+    cache_ttl = 60  # seconds
 
-    Queries aggregate counts from the shared database.
-    In production, these would be cached or pre-computed.
-    """
-    # These queries hit the shared database tables from other services
+    # Try Redis cache first
+    if REDIS_URL:
+        try:
+            redis_client = aioredis.from_url(REDIS_URL, decode_responses=True)
+            cached = await redis_client.get(cache_key)
+            if cached:
+                await redis_client.close()
+                return json.loads(cached)
+        except Exception:
+            logger.warning("Redis cache unavailable for dashboard stats")
+            redis_client = None
+    else:
+        redis_client = None
+
+    # Query database
     stats = {}
 
-    # Moderation queue stats
     pending_result = await db.execute(
         select(func.count()).select_from(ModerationQueue).where(ModerationQueue.status == "pending")
     )
@@ -67,11 +85,18 @@ async def get_dashboard_stats(
     )
     stats["resolved_moderation"] = resolved_result.scalar() or 0
 
-    # Recent admin actions
     actions_result = await db.execute(
         select(func.count()).select_from(AuditLog)
     )
     stats["total_admin_actions"] = actions_result.scalar() or 0
+
+    # Cache results
+    if redis_client:
+        try:
+            await redis_client.setex(cache_key, cache_ttl, json.dumps(stats))
+            await redis_client.close()
+        except Exception:
+            logger.warning("Failed to cache dashboard stats in Redis")
 
     return stats
 

@@ -26,7 +26,7 @@
           <form id="login-form" novalidate>
             <div class="form-group">
               <label for="login-phone">Phone Number</label>
-              <input type="tel" id="login-phone" required placeholder="+1 876 123 4567">
+              <input type="tel" id="login-phone" required placeholder="+18761234567">
               <p class="hint">Jamaican mobile number used during registration</p>
             </div>
 
@@ -85,7 +85,7 @@
         e.preventDefault();
         msgEl.style.display = 'none';
 
-        const phone = document.getElementById('login-phone').value.trim();
+        const phone = document.getElementById('login-phone').value.trim().replace(/[\s\-()]/g, '');
         const password = document.getElementById('login-password').value;
 
         if (!phone || !password) {
@@ -104,7 +104,7 @@
         } catch (err) {
           const isNetworkError = err.message === 'Failed to fetch' || err.name === 'TypeError' || err.name === 'AbortError';
           if (isNetworkError) {
-            showMessage(
+            showMessageHTML(
               'Cannot reach the server. For account help, email <a href="mailto:jobsyja@jobsyja.com" style="color:var(--primary);text-decoration:underline">jobsyja@jobsyja.com</a>.',
               'error'
             );
@@ -117,7 +117,14 @@
         }
       });
 
-      function showMessage(html, type) {
+      function showMessage(text, type) {
+        msgEl.textContent = text;
+        msgEl.className = 'form-message ' + type;
+        msgEl.style.display = 'block';
+        msgEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+
+      function showMessageHTML(html, type) {
         msgEl.innerHTML = html;
         msgEl.className = 'form-message ' + type;
         msgEl.style.display = 'block';
