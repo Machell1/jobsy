@@ -52,6 +52,8 @@ ALLOWED_ORIGINS = [
     "exp://localhost:19000",
     "https://www.jobsyja.com",
     "https://jobsyja.com",
+    "http://www.jobsyja.com",
+    "http://jobsyja.com",
     "jobsy://",
     "com.jobsy.app://",
 ]
