@@ -4,13 +4,13 @@ import json
 import logging
 from datetime import datetime
 from decimal import Decimal
+from uuid import UUID
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.database import get_db
+from shared.database import engine
 
 from ..config import SERVICE_URLS
 from ..deps import get_current_user, get_optional_user
@@ -201,7 +201,6 @@ async def proxy_reviews_write(path: str, request: Request, user: dict = Depends(
 async def proxy_search_listings(
     request: Request,
     user: dict = Depends(get_optional_user),
-    db: AsyncSession = Depends(get_db),
 ):
     """Search listings -- proxy to search service with local DB fallback."""
     # Try the dedicated search microservice first
@@ -212,37 +211,47 @@ async def proxy_search_listings(
 
     # Fallback: direct SQL ILIKE search against listings table
     q = request.query_params.get("q", "").strip()
-    if not q:
-        # Return all active listings when no query
-        result = await db.execute(
-            text(
-                "SELECT id, poster_id, title, description, category, subcategory, "
-                "budget_min, budget_max, currency, parish, status, created_at, updated_at "
-                "FROM listings WHERE status = 'active' ORDER BY created_at DESC LIMIT 50"
-            )
-        )
-    else:
-        pattern = f"%{q}%"
-        result = await db.execute(
-            text(
-                "SELECT id, poster_id, title, description, category, subcategory, "
-                "budget_min, budget_max, currency, parish, status, created_at, updated_at "
-                "FROM listings "
-                "WHERE status = 'active' AND ("
-                "  title ILIKE :pattern OR description ILIKE :pattern "
-                "  OR category ILIKE :pattern OR parish ILIKE :pattern"
-                ") ORDER BY created_at DESC LIMIT 50"
-            ),
-            {"pattern": pattern},
-        )
-    rows = result.mappings().all()
 
     def _serialize(val):
+        if isinstance(val, UUID):
+            return str(val)
         if isinstance(val, Decimal):
             return float(val)
         if isinstance(val, datetime):
             return val.isoformat()
         return val
+
+    try:
+        async with engine.connect() as conn:
+            if not q:
+                result = await conn.execute(
+                    text(
+                        "SELECT id, poster_id, title, description, category, subcategory, "
+                        "budget_min, budget_max, currency, parish, status, created_at, updated_at "
+                        "FROM listings WHERE status = 'active' ORDER BY created_at DESC LIMIT 50"
+                    )
+                )
+            else:
+                pattern = f"%{q}%"
+                result = await conn.execute(
+                    text(
+                        "SELECT id, poster_id, title, description, category, subcategory, "
+                        "budget_min, budget_max, currency, parish, status, created_at, updated_at "
+                        "FROM listings "
+                        "WHERE status = 'active' AND ("
+                        "  title ILIKE :pattern OR description ILIKE :pattern "
+                        "  OR category ILIKE :pattern OR parish ILIKE :pattern"
+                        ") ORDER BY created_at DESC LIMIT 50"
+                    ),
+                    {"pattern": pattern},
+                )
+            rows = result.mappings().all()
+    except Exception:
+        logger.exception("Search fallback SQL query failed")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Search is temporarily unavailable",
+        ) from None
 
     items = [{k: _serialize(v) for k, v in row.items()} for row in rows]
     return Response(content=json.dumps(items), media_type="application/json")
