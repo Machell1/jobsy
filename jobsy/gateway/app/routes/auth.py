@@ -52,6 +52,14 @@ async def _check_auth_rate_limit(request: Request) -> None:
     window_start = now - 60
     attempts = _auth_attempts[client_ip]
     _auth_attempts[client_ip] = [t for t in attempts if t > window_start]
+    if not _auth_attempts[client_ip]:
+        del _auth_attempts[client_ip]
+        # Also prune stale IPs periodically (every ~100 requests)
+        if len(_auth_attempts) > 100:
+            stale = [ip for ip, ts in _auth_attempts.items() if not ts or ts[-1] < window_start]
+            for ip in stale:
+                del _auth_attempts[ip]
+        _auth_attempts[client_ip] = []
     if len(_auth_attempts[client_ip]) >= RATE_LIMIT_AUTH_ENDPOINTS:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,

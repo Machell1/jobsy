@@ -68,6 +68,12 @@ async def _proxy_request(service: str, path: str, request: Request, user: dict) 
     )
 
 
+@router.api_route("/profiles", methods=["GET"])
+async def proxy_profiles_root_read(request: Request, user: dict = Depends(get_optional_user)):
+    """Public read access to profiles root."""
+    return await _proxy_request("profiles", "/", request, user)
+
+
 @router.api_route("/profiles/{path:path}", methods=["GET"])
 async def proxy_profiles_read(path: str, request: Request, user: dict = Depends(get_optional_user)):
     """Public read access to profiles."""
@@ -78,6 +84,12 @@ async def proxy_profiles_read(path: str, request: Request, user: dict = Depends(
 async def proxy_profiles_write(path: str, request: Request, user: dict = Depends(get_current_user)):
     """Authenticated write access to profiles."""
     return await _proxy_request("profiles", f"/{path}", request, user)
+
+
+@router.api_route("/listings", methods=["GET"])
+async def proxy_listings_root_read(request: Request, user: dict = Depends(get_optional_user)):
+    """Public read access to listings root."""
+    return await _proxy_request("listings", "/", request, user)
 
 
 @router.api_route("/listings/{path:path}", methods=["GET"])
