@@ -26,6 +26,7 @@ google-auth>=2.23.0
 websockets>=12.0
 email-validator>=2.1.0
 prometheus-fastapi-instrumentator>=6.0
+stream-chat>=4.0.0
 s2sphere>=0.2.5
 pygeohash>=1.2.0
 firebase-admin>=6.2.0
