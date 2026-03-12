@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | Jobsy Jamaica</title>
+  <meta name="description" content="Manage your Jobsy provider account, listings, and messages.">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="X-Frame-Options" content="DENY">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://pagead2.googlesyndication.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' https://api.jobsyja.com http://localhost:8000; frame-src 'none'">
+  <link rel="icon" type="image/svg+xml" href="images/logo.svg">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+    .dash-stat { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; text-align: center; }
+    .dash-stat .stat-value { font-size: 2rem; font-weight: 700; color: var(--primary); }
+    .dash-stat .stat-label { color: var(--text-light); font-size: 0.875rem; margin-top: 0.25rem; }
+    .dash-actions { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem; }
+    .listing-row { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 0.75rem; background: var(--card-bg); }
+    .listing-row:hover { border-color: var(--primary-mid); }
+    .listing-info h4 { margin: 0 0 0.25rem; }
+    .listing-info p { margin: 0; color: var(--text-light); font-size: 0.875rem; }
+    .listing-actions { display: flex; gap: 0.5rem; align-items: center; }
+    .badge-status { font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 999px; font-weight: 600; }
+    .badge-active { background: var(--primary-light); color: var(--primary); }
+    .badge-cancelled { background: #fef2f2; color: #dc2626; }
+    @media (max-width: 600px) { .dash-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main id="main-content">
+    <div class="container">
+      <div class="service-detail" style="max-width:900px">
+        <div id="dash-loading" style="text-align:center;padding:3rem">
+          <p class="text-muted">Loading your dashboard...</p>
+        </div>
+        <div id="dash-content" style="display:none">
+          <h1 id="dash-greeting">Dashboard</h1>
+
+          <div class="dash-grid" id="dash-stats">
+            <div class="dash-stat">
+              <div class="stat-value" id="stat-listings">0</div>
+              <div class="stat-label">Active Listings</div>
+            </div>
+            <div class="dash-stat">
+              <div class="stat-value" id="stat-messages">0</div>
+              <div class="stat-label">Conversations</div>
+            </div>
+          </div>
+
+          <div class="dash-actions">
+            <a href="create-listing.html" class="btn btn-primary">+ Create Listing</a>
+            <a href="edit-profile.html" class="btn btn-outline">Edit Profile</a>
+            <a href="messages.html" class="btn btn-outline">Messages</a>
+          </div>
+
+          <div class="content-section" id="profile-section">
+            <h2>Your Profile</h2>
+            <div id="profile-summary" class="sidebar-card">
+              <p class="text-muted">No profile found. <a href="edit-profile.html">Create your profile</a></p>
+            </div>
+          </div>
+
+          <div class="content-section">
+            <h2>Your Listings</h2>
+            <div id="listings-container">
+              <p class="text-muted">No listings yet. <a href="create-listing.html">Create your first listing</a></p>
+            </div>
+          </div>
+        </div>
+
+        <div id="dash-login" style="display:none;text-align:center;padding:3rem">
+          <h2>Please Log In</h2>
+          <p class="text-muted">You need to be logged in to access your dashboard.</p>
+          <a href="login.html" class="btn btn-primary" style="margin-top:1rem">Log In</a>
+          <a href="contact.html#register" class="btn btn-outline" style="margin-top:0.5rem">Register</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const loading = document.getElementById('dash-loading');
+      const content = document.getElementById('dash-content');
+      const loginPrompt = document.getElementById('dash-login');
+
+      if (!isLoggedIn()) {
+        loading.style.display = 'none';
+        loginPrompt.style.display = '';
+        return;
+      }
+
+      try {
+        const [profile, listings, conversations] = await Promise.allSettled([
+          api.fetchMyProfile(),
+          api.fetchMyListings(),
+          api.getConversations(),
+        ]);
+
+        loading.style.display = 'none';
+        content.style.display = '';
+
+        // Profile
+        if (profile.status === 'fulfilled' && profile.value) {
+          const p = profile.value;
+          document.getElementById('dash-greeting').textContent =
+            `Welcome, ${escapeHtml(p.display_name || 'Provider')}`;
+          document.getElementById('profile-summary').innerHTML = `
+            <p><strong>${escapeHtml(p.display_name || '')}</strong></p>
+            ${p.parish ? `<p>📍 ${escapeHtml(p.parish)}</p>` : ''}
+            ${p.service_category ? `<p>📂 ${escapeHtml(p.service_category)}</p>` : ''}
+            ${p.bio ? `<p style="color:var(--text-light);margin-top:0.5rem">${escapeHtml(p.bio)}</p>` : ''}
+            <a href="edit-profile.html" class="btn btn-sm btn-outline" style="margin-top:0.75rem">Edit Profile</a>
+          `;
+        }
+
+        // Listings
+        const listingsContainer = document.getElementById('listings-container');
+        if (listings.status === 'fulfilled') {
+          const items = Array.isArray(listings.value) ? listings.value : (listings.value.items || []);
+          document.getElementById('stat-listings').textContent =
+            items.filter(l => l.status === 'active').length;
+
+          if (items.length > 0) {
+            listingsContainer.innerHTML = items.map(l => {
+              const statusClass = l.status === 'active' ? 'badge-active' : 'badge-cancelled';
+              const budgetVal = l.budget_max ?? l.budget_min;
+              const price = budgetVal != null ? `J$${Number(budgetVal).toLocaleString()}` : '';
+              return `
+                <div class="listing-row">
+                  <div class="listing-info">
+                    <h4><a href="provider.html?id=${encodeURIComponent(l.id)}">${escapeHtml(l.title)}</a></h4>
+                    <p>${escapeHtml(l.category || '')} ${l.parish ? '· ' + escapeHtml(l.parish) : ''} ${price ? '· ' + price : ''}</p>
+                  </div>
+                  <div class="listing-actions">
+                    <span class="badge-status ${statusClass}">${l.status}</span>
+                    <a href="create-listing.html?edit=${encodeURIComponent(l.id)}" class="btn btn-sm btn-outline">Edit</a>
+                  </div>
+                </div>`;
+            }).join('');
+          }
+        }
+
+        // Conversations count
+        if (conversations.status === 'fulfilled') {
+          const convos = Array.isArray(conversations.value) ? conversations.value : [];
+          document.getElementById('stat-messages').textContent = convos.length;
+        }
+      } catch (err) {
+        loading.innerHTML = `<p class="text-muted">Error loading dashboard. <a href="javascript:location.reload()">Retry</a></p>`;
+      }
+    });
+  </script>
+</body>
+</html>

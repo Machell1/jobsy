@@ -10,6 +10,12 @@ class UserCreate(BaseModel):
     email: EmailStr | None = None
     password: str = Field(..., min_length=8)
     role: str = Field(default="user", pattern=r"^(user|provider)$")
+    # Optional profile fields — when provided, a Profile is created atomically
+    display_name: str | None = None
+    parish: str | None = None
+    service_category: str | None = None
+    bio: str | None = None
+    is_provider: bool | None = None
 
 
 class UserLogin(BaseModel):

@@ -181,6 +181,20 @@ async def verification_status(request: Request, db: AsyncSession = Depends(get_d
     }
 
 
+@router.delete("/me", status_code=status.HTTP_200_OK)
+async def delete_my_profile(request: Request, db: AsyncSession = Depends(get_db)):
+    """Soft-delete the current user's profile (sets is_active=False)."""
+    user_id = _get_user_id(request)
+    result = await db.execute(select(Profile).where(Profile.user_id == user_id))
+    profile = result.scalar_one_or_none()
+    if not profile:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
+    profile.is_active = False
+    profile.updated_at = datetime.now(UTC)
+    await db.flush()
+    return {"status": "deleted"}
+
+
 # NOTE: This catch-all route MUST be declared after all fixed-path routes
 # (e.g., /nearby/search, /verification/*) to avoid capturing them as {user_id}.
 @router.get("/{user_id}", response_model=ProfileResponse)
