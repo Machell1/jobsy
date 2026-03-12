@@ -18,3 +18,4 @@ restartPolicyMaxRetries = 5
 # RABBITMQ_HOST = "alternative: hostname for Railway private networking (e.g. rabbitmq.railway.internal)"
 # ELASTICSEARCH_URL = "provide via Elasticsearch plugin, or set ELASTICSEARCH_HOST for private networking"
 # JWT_SECRET = "set in Railway secrets"
+
