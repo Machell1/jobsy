@@ -224,25 +224,14 @@
         btn.textContent = 'Registering...';
 
         try {
-          const tokens = await api.register({ phone, email, password, role: 'provider' });
-          // Create profile with the extra provider details
-          try {
-            await fetch(`${API_URL}/api/profiles/me`, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${tokens.access_token}`,
-              },
-              body: JSON.stringify({
-                display_name: name,
-                parish: parish || undefined,
-                service_category: category || undefined,
-                bio: services || undefined,
-                is_provider: true,
-              }),
-              signal: AbortSignal.timeout(10000),
-            });
-          } catch { /* profile creation is best-effort; user can complete it in the app */ }
+          const tokens = await api.register({
+            phone, email, password, role: 'provider',
+            display_name: name,
+            parish: parish || undefined,
+            service_category: category || undefined,
+            bio: services || undefined,
+            is_provider: true,
+          });
           showMessage('Registration successful! We\'ll contact you within 24 hours to help you complete your profile and start receiving customers.', 'success');
           form.reset();
         } catch (err) {

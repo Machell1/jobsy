@@ -4,8 +4,8 @@ Indexes:
   - jobsy-listings: Service listings with geo_point, categories, skills
   - jobsy-profiles: User profiles with skills, bio text
 
-When Elasticsearch is unavailable, search falls back to basic
-HTTP queries against the listings/profiles services.
+When Elasticsearch is unavailable, search falls back to SQL ILIKE queries
+against the shared database.
 """
 
 import logging
@@ -13,8 +13,10 @@ import os
 from typing import Any
 
 from elasticsearch import AsyncElasticsearch
+from sqlalchemy import func, or_, select
 
 from shared.config import ELASTICSEARCH_URL
+from shared.database import async_session_factory
 
 logger = logging.getLogger(__name__)
 
@@ -148,6 +150,107 @@ async def index_profile(profile: dict) -> None:
     await client.index(index=PROFILES_INDEX, id=profile["id"], document=doc)
 
 
+async def _fallback_search_listings(
+    query: str,
+    parish: str | None = None,
+    category: str | None = None,
+    listing_type: str | None = None,
+    limit: int = 20,
+    offset: int = 0,
+) -> dict:
+    """SQL fallback when Elasticsearch is unavailable."""
+    from listings.app.models import Listing
+
+    async with async_session_factory() as session:
+        stmt = select(Listing).where(Listing.status == "active")
+
+        if query:
+            pattern = f"%{query}%"
+            stmt = stmt.where(
+                or_(
+                    Listing.title.ilike(pattern),
+                    Listing.description.ilike(pattern),
+                )
+            )
+        if parish:
+            stmt = stmt.where(Listing.parish == parish)
+        if category:
+            stmt = stmt.where(Listing.category == category)
+
+        # Count total before pagination
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = (await session.execute(count_stmt)).scalar() or 0
+
+        stmt = stmt.order_by(Listing.created_at.desc()).offset(offset).limit(limit)
+        result = await session.execute(stmt)
+        rows = result.scalars().all()
+
+        hits = [
+            {
+                "id": r.id,
+                "poster_id": r.poster_id,
+                "title": r.title,
+                "description": r.description,
+                "category": r.category,
+                "parish": r.parish,
+                "budget_min": float(r.budget_min) if r.budget_min else None,
+                "budget_max": float(r.budget_max) if r.budget_max else None,
+                "status": r.status,
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+            }
+            for r in rows
+        ]
+
+        return {"hits": hits, "total": total, "source": "database"}
+
+
+async def _fallback_search_profiles(
+    query: str,
+    parish: str | None = None,
+    skills: list[str] | None = None,
+    limit: int = 20,
+    offset: int = 0,
+) -> dict:
+    """SQL fallback when Elasticsearch is unavailable."""
+    from profiles.app.models import Profile
+
+    async with async_session_factory() as session:
+        stmt = select(Profile).where(Profile.is_active.is_(True))
+
+        if query:
+            pattern = f"%{query}%"
+            stmt = stmt.where(
+                or_(
+                    Profile.display_name.ilike(pattern),
+                    Profile.bio.ilike(pattern),
+                )
+            )
+        if parish:
+            stmt = stmt.where(Profile.parish == parish)
+
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = (await session.execute(count_stmt)).scalar() or 0
+
+        stmt = stmt.order_by(Profile.rating_avg.desc()).offset(offset).limit(limit)
+        result = await session.execute(stmt)
+        rows = result.scalars().all()
+
+        hits = [
+            {
+                "id": r.id,
+                "display_name": r.display_name,
+                "bio": r.bio,
+                "skills": r.skills or [],
+                "parish": r.parish,
+                "average_rating": float(r.rating_avg) if r.rating_avg else None,
+                "total_reviews": r.rating_count or 0,
+            }
+            for r in rows
+        ]
+
+        return {"hits": hits, "total": total, "source": "database"}
+
+
 async def search_listings(
     query: str,
     parish: str | None = None,
@@ -162,7 +265,11 @@ async def search_listings(
     """Full-text search across listings with geo and facet filtering."""
     client = await get_client()
     if not client:
-        return {"hits": [], "total": 0, "source": "unavailable"}
+        logger.info("Elasticsearch unavailable, using database fallback for listings search")
+        return await _fallback_search_listings(
+            query=query, parish=parish, category=category,
+            listing_type=listing_type, limit=limit, offset=offset,
+        )
 
     must = []
     filter_clauses = []
@@ -239,7 +346,11 @@ async def search_profiles(
     """Full-text search across user profiles."""
     client = await get_client()
     if not client:
-        return {"hits": [], "total": 0, "source": "unavailable"}
+        logger.info("Elasticsearch unavailable, using database fallback for profiles search")
+        return await _fallback_search_profiles(
+            query=query, parish=parish, skills=skills,
+            limit=limit, offset=offset,
+        )
 
     must = []
     filter_clauses = []
