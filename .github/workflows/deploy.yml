@@ -29,6 +29,11 @@ jobs:
       - name: Wait for deployment
         run: sleep 30
 
+      - name: Run database migrations
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: cd jobsy && railway run alembic upgrade head
+
       - name: Verify deployment
         run: |
           for i in 1 2 3 4 5 6; do

@@ -1,9 +1,16 @@
 """Reverse proxy routes to internal microservices."""
 
+import json
 import logging
+from datetime import datetime
+from decimal import Decimal
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from shared.database import get_db
 
 from ..config import SERVICE_URLS
 from ..deps import get_current_user, get_optional_user
@@ -188,6 +195,49 @@ async def proxy_reviews_read(path: str, request: Request, user: dict = Depends(g
 async def proxy_reviews_write(path: str, request: Request, user: dict = Depends(get_current_user)):
     """Authenticated write access to reviews."""
     return await _proxy_request("reviews", f"/{path}", request, user)
+
+
+@router.api_route("/search/listings", methods=["GET"])
+async def proxy_search_listings(
+    request: Request,
+    user: dict = Depends(get_optional_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Search listings -- proxy to search service with local DB fallback."""
+    try:
+        return await _proxy_request("search", "/listings", request, user)
+    except HTTPException as exc:
+        if exc.status_code not in (502, 504):
+            raise
+    # Fallback: direct SQL ILIKE search against listings table
+    q = request.query_params.get("q", "").strip()
+    if not q:
+        return Response(content="[]", media_type="application/json")
+    pattern = f"%{q}%"
+    result = await db.execute(
+        text(
+            "SELECT id, poster_id, title, description, category, subcategory, "
+            "budget_min, budget_max, currency, latitude, longitude, geohash, "
+            "parish, address_text, photos, status, expires_at, created_at, updated_at "
+            "FROM listings "
+            "WHERE status = 'active' AND ("
+            "  title ILIKE :pattern OR description ILIKE :pattern "
+            "  OR category ILIKE :pattern OR parish ILIKE :pattern"
+            ") ORDER BY created_at DESC LIMIT 50"
+        ),
+        {"pattern": pattern},
+    )
+    rows = result.mappings().all()
+
+    def _serialize(val):
+        if isinstance(val, Decimal):
+            return float(val)
+        if isinstance(val, datetime):
+            return val.isoformat()
+        return val
+
+    items = [{k: _serialize(v) for k, v in row.items()} for row in rows]
+    return Response(content=json.dumps(items), media_type="application/json")
 
 
 @router.api_route("/search/{path:path}", methods=["GET"])
