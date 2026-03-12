@@ -78,6 +78,7 @@ async def _upsert_entry(entity_id: str, entity_type: str, lat: float, lng: float
                 latitude=lat,
                 longitude=lng,
                 parish=parish,
+                is_active="true",
                 created_at=now,
                 updated_at=now,
             )

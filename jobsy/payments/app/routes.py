@@ -319,13 +319,19 @@ async def request_payout(data: PayoutRequest, request: Request, db: AsyncSession
 
 
 @router.get("/payouts")
-async def list_payouts(request: Request, limit: int = Query(default=20, le=100), db: AsyncSession = Depends(get_db)):
+async def list_payouts(
+    request: Request,
+    limit: int = Query(default=20, le=100),
+    offset: int = 0,
+    db: AsyncSession = Depends(get_db),
+):
     """List payout history."""
     user_id = _get_user_id(request)
     query = (
         select(Payout)
         .where(Payout.user_id == user_id)
         .order_by(Payout.requested_at.desc())
+        .offset(offset)
         .limit(limit)
     )
     result = await db.execute(query)

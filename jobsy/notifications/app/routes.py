@@ -37,6 +37,7 @@ async def subscribe_newsletter(data: SubscribeRequest, db: AsyncSession = Depend
         subscribed_at=datetime.now(UTC),
     )
     db.add(subscriber)
+    await db.flush()
     return {"status": "subscribed", "email": data.email}
 
 

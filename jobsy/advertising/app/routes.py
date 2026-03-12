@@ -1,13 +1,12 @@
 """Advertising service API routes -- ad serving, impression/click tracking, campaigns."""
 
-import json
 import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
-from sqlalchemy import cast, func, select
+from sqlalchemy import func, select, type_coerce
 from sqlalchemy.dialects.postgresql import JSONB as JSONB_TYPE
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -64,8 +63,8 @@ async def serve_ad(
     # Geo-targeting: match user's parish
     if parish:
         # Campaigns targeting this parish OR targeting all (empty array)
-        parish_json = cast(json.dumps([parish]), JSONB_TYPE)
-        empty_json = cast("[]", JSONB_TYPE)
+        parish_json = type_coerce([parish], JSONB_TYPE)
+        empty_json = type_coerce([], JSONB_TYPE)
         query = query.where(
             AdCampaign.target_parishes.op("@>")(parish_json)
             | (AdCampaign.target_parishes == empty_json)
@@ -73,8 +72,8 @@ async def serve_ad(
 
     # Category targeting
     if category:
-        cat_json = cast(json.dumps([category]), JSONB_TYPE)
-        empty_json = cast("[]", JSONB_TYPE)
+        cat_json = type_coerce([category], JSONB_TYPE)
+        empty_json = type_coerce([], JSONB_TYPE)
         query = query.where(
             AdCampaign.target_categories.op("@>")(cat_json)
             | (AdCampaign.target_categories == empty_json)
