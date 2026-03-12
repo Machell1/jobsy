@@ -227,7 +227,7 @@ async def proxy_search_listings(
                 result = await conn.execute(
                     text(
                         "SELECT id, poster_id, title, description, category, subcategory, "
-                        "budget_min, budget_max, currency, parish, status, created_at, updated_at "
+                        "budget_min, budget_max, currency, parish, status, created_at "
                         "FROM listings WHERE status = 'active' ORDER BY created_at DESC LIMIT 50"
                     )
                 )
@@ -236,7 +236,7 @@ async def proxy_search_listings(
                 result = await conn.execute(
                     text(
                         "SELECT id, poster_id, title, description, category, subcategory, "
-                        "budget_min, budget_max, currency, parish, status, created_at, updated_at "
+                        "budget_min, budget_max, currency, parish, status, created_at "
                         "FROM listings "
                         "WHERE status = 'active' AND ("
                         "  title ILIKE :pattern OR description ILIKE :pattern "
