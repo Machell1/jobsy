@@ -395,6 +395,6 @@ a.parish-tag:hover { background: var(--primary); color: white; text-decoration: 
 .form-group .hint { font-size: 0.8125rem; color: var(--text-light); margin-top: 0.25rem; }
 .form-row { display: grid; grid-template-columns: 1fr; gap: 1rem; }
 @media (min-width: 640px) { .form-row { grid-template-columns: 1fr 1fr; } }
-.form-message { padding: 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: 0.9375rem; }
+.form-message { display: block; padding: 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: 0.9375rem; }
 .form-message.success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a; }
 .form-message.error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; }

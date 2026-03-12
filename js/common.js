@@ -569,7 +569,7 @@ function initNewsletter() {
       }
     } catch {
       const mailto = 'mailto:jobsyja@jobsyja.com?subject=Newsletter%20Signup&body=Please%20add%20me%20to%20the%20newsletter:%20' + encodeURIComponent(email);
-      form.innerHTML = '<p>Signup is being set up. <a href="' + mailto + '" style="color:var(--primary);text-decoration:underline">Email us to subscribe</a></p>';
+      form.innerHTML = '<p style="color:var(--primary);font-weight:600">Thanks for your interest! <a href="' + mailto + '" style="color:var(--primary);text-decoration:underline">Click here to subscribe via email</a></p>';
     }
   });
 }

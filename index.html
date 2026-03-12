@@ -283,18 +283,23 @@
           </a>`;
       }).join('');
 
-      // Category pill click: filter locally for "All", navigate for specific category
+      // Category pill click: filter service grid locally
       catBar.addEventListener('click', (e) => {
         const pill = e.target.closest('.category-pill');
         if (!pill) return;
+        e.preventDefault();
         const filter = pill.dataset.filter;
+        catBar.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
         if (filter === 'all') {
-          e.preventDefault();
-          catBar.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
-          pill.classList.add('active');
           renderListingGrid(listings);
+        } else {
+          const filtered = listings.filter(l => {
+            const slug = categorySlug(l.category);
+            return slug === filter || (l.category || '').toLowerCase() === filter;
+          });
+          renderListingGrid(filtered);
         }
-        // Other pills are links to category.html, let them navigate
       });
     });
   </script>
