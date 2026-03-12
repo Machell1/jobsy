@@ -118,6 +118,12 @@
             </div>
             ` : ''}
 
+            <div class="content-section" id="reviews-section" style="display:none">
+              <h2>Reviews</h2>
+              <div id="reviews-summary" style="margin-bottom:1rem"></div>
+              <div id="reviews-list"></div>
+            </div>
+
             <div class="content-section" id="similar-section"></div>
           </div>
 
@@ -137,6 +143,31 @@
           </div>
         </div>
       `;
+
+      // Load reviews for the provider
+      const providerId = listing.poster_id || listing.user_id;
+      if (providerId) {
+        try {
+          const reviews = await api.fetchReviews(providerId);
+          const items = Array.isArray(reviews) ? reviews : (reviews.items || []);
+          if (items.length > 0) {
+            const section = document.getElementById('reviews-section');
+            section.style.display = '';
+            const avg = items.reduce((sum, r) => sum + (r.rating || 0), 0) / items.length;
+            const stars = '&#9733;'.repeat(Math.round(avg)) + '&#9734;'.repeat(5 - Math.round(avg));
+            document.getElementById('reviews-summary').innerHTML =
+              `<span style="font-size:1.25rem;color:#F9A825">${stars}</span> <strong>${avg.toFixed(1)}</strong> (${items.length} review${items.length !== 1 ? 's' : ''})`;
+            document.getElementById('reviews-list').innerHTML = items.slice(0, 10).map(r => {
+              const rStars = '&#9733;'.repeat(r.rating || 0) + '&#9734;'.repeat(5 - (r.rating || 0));
+              const date = r.created_at ? new Date(r.created_at).toLocaleDateString() : '';
+              return `<div style="border-bottom:1px solid var(--border);padding:0.75rem 0">
+                <span style="color:#F9A825">${rStars}</span> <span class="text-muted" style="font-size:0.8rem">${date}</span>
+                ${r.body ? `<p style="margin:0.25rem 0 0">${escapeHtml(r.body)}</p>` : ''}
+              </div>`;
+            }).join('');
+          }
+        } catch { /* reviews unavailable */ }
+      }
 
       // Load similar listings
       const similar = document.getElementById('similar-section');

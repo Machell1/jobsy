@@ -74,6 +74,19 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         </button>
       </div>
+      <div style="display:flex;gap:0.75rem;margin-top:0.75rem;flex-wrap:wrap;justify-content:center">
+        <select id="filter-parish" aria-label="Filter by parish" style="padding:0.5rem 1rem;border-radius:var(--radius);border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.15);color:white;font-size:0.9rem;cursor:pointer">
+          <option value="">All Parishes</option>
+          <option>Kingston</option><option>St. Andrew</option><option>St. Thomas</option>
+          <option>Portland</option><option>St. Mary</option><option>St. Ann</option>
+          <option>Trelawny</option><option>St. James</option><option>Hanover</option>
+          <option>Westmoreland</option><option>St. Elizabeth</option><option>Manchester</option>
+          <option>Clarendon</option><option>St. Catherine</option>
+        </select>
+        <select id="filter-category" aria-label="Filter by category" style="padding:0.5rem 1rem;border-radius:var(--radius);border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.15);color:white;font-size:0.9rem;cursor:pointer">
+          <option value="">All Categories</option>
+        </select>
+      </div>
       <div class="hero-stats">
         <div><span class="hero-stat-num" id="stat-listings">12+</span> Services</div>
         <div><span class="hero-stat-num">12</span> Categories</div>
@@ -185,6 +198,56 @@
   <script src="js/common.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
+      // Populate category filter dropdown
+      const filterCat = document.getElementById('filter-category');
+      CATEGORIES.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.name;
+        opt.textContent = c.name;
+        filterCat.appendChild(opt);
+      });
+
+      // Filter change handlers
+      const filterParish = document.getElementById('filter-parish');
+      function applyFilters() {
+        const q = document.getElementById('hero-search').value.trim();
+        const parish = filterParish.value;
+        const category = filterCat.value;
+        if (q || parish || category) {
+          const params = {};
+          if (parish) params.parish = parish;
+          if (category) params.category = category;
+          if (q) {
+            api.searchListings(q, params)
+              .then(results => renderListingGrid(results.hits || results.results || results))
+              .catch(() => filterLocal(q, parish, category));
+          } else {
+            api.fetchListings(params)
+              .then(data => renderListingGrid(Array.isArray(data) ? data : (data.items || [])))
+              .catch(() => filterLocal(q, parish, category));
+          }
+        } else {
+          getListings().then(listings => renderListingGrid(listings));
+        }
+      }
+      function filterLocal(q, parish, category) {
+        getListings().then(listings => {
+          let filtered = listings;
+          if (q) {
+            const lower = q.toLowerCase();
+            filtered = filtered.filter(l =>
+              (l.title || '').toLowerCase().includes(lower) ||
+              (l.description || '').toLowerCase().includes(lower)
+            );
+          }
+          if (parish) filtered = filtered.filter(l => l.parish === parish);
+          if (category) filtered = filtered.filter(l => (l.category || '').toLowerCase() === category.toLowerCase());
+          renderListingGrid(filtered);
+        });
+      }
+      filterParish.addEventListener('change', applyFilters);
+      filterCat.addEventListener('change', applyFilters);
+
       // Render category filter pills
       const catBar = document.getElementById('category-bar');
       catBar.innerHTML = `

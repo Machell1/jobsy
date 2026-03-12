@@ -68,6 +68,49 @@ function _authHeaders() {
   return token ? { 'Authorization': `Bearer ${token}` } : {};
 }
 
+const WS_URL = API_URL.replace(/^http/, 'ws');
+
+/* ===== Token Refresh ===== */
+let _refreshPromise = null;
+
+async function _tryRefreshToken() {
+  if (_refreshPromise) return _refreshPromise;
+  const refreshToken = localStorage.getItem('jobsy_refresh_token');
+  if (!refreshToken) { clearAuth(); return false; }
+  _refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${API_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!res.ok) { clearAuth(); return false; }
+      const tokens = await res.json();
+      setAuthTokens(tokens.access_token, tokens.refresh_token);
+      return true;
+    } catch { clearAuth(); return false; }
+    finally { _refreshPromise = null; }
+  })();
+  return _refreshPromise;
+}
+
+async function _authFetch(url, options = {}) {
+  options.headers = { ..._authHeaders(), ...(options.headers || {}) };
+  if (!options.signal) options.signal = AbortSignal.timeout(10000);
+  let res = await fetch(url, options);
+  if (res.status === 401 && localStorage.getItem('jobsy_refresh_token')) {
+    const refreshed = await _tryRefreshToken();
+    if (refreshed) {
+      options.headers = { ..._authHeaders(), ...(options.headers || {}) };
+      delete options.headers['Authorization'];
+      options.headers['Authorization'] = `Bearer ${getAuthToken()}`;
+      res = await fetch(url, options);
+    }
+  }
+  return res;
+}
+
 /* ===== API Client ===== */
 const api = {
   async fetchListings(params = {}) {
@@ -87,6 +130,40 @@ const api = {
     if (!res.ok) throw new Error(`API ${res.status}`);
     return res.json();
   },
+  async fetchMyListings() {
+    const res = await _authFetch(`${API_URL}/api/listings/mine`);
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    return res.json();
+  },
+  async createListing(data) {
+    const res = await _authFetch(`${API_URL}/api/listings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Create listing failed: ${res.status}`);
+    }
+    return res.json();
+  },
+  async updateListing(id, data) {
+    const res = await _authFetch(`${API_URL}/api/listings/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Update listing failed: ${res.status}`);
+    }
+    return res.json();
+  },
+  async deleteListing(id) {
+    const res = await _authFetch(`${API_URL}/api/listings/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(`Delete listing failed: ${res.status}`);
+    return res.json();
+  },
   async searchListings(query, params = {}) {
     const qs = new URLSearchParams({ q: query, ...params }).toString();
     const res = await fetch(`${API_URL}/api/search/listings?${qs}`, {
@@ -103,6 +180,76 @@ const api = {
     });
     if (!res.ok) throw new Error(`API ${res.status}`);
     return res.json();
+  },
+  async fetchMyProfile() {
+    const res = await _authFetch(`${API_URL}/api/profiles/me`);
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    return res.json();
+  },
+  async updateProfile(data) {
+    const res = await _authFetch(`${API_URL}/api/profiles/me`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Update profile failed: ${res.status}`);
+    }
+    return res.json();
+  },
+  async fetchReviews(userId) {
+    const res = await fetch(`${API_URL}/api/reviews/user/${userId}`, {
+      headers: _authHeaders(),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    return res.json();
+  },
+  async getConversations() {
+    const res = await _authFetch(`${API_URL}/api/chat/conversations`);
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    return res.json();
+  },
+  async getMessages(conversationId) {
+    const res = await _authFetch(`${API_URL}/api/chat/conversations/${conversationId}/messages`);
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    return res.json();
+  },
+  async markRead(conversationId) {
+    const res = await _authFetch(`${API_URL}/api/chat/conversations/${conversationId}/read`, {
+      method: 'PUT',
+    });
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    return res.json();
+  },
+  async forgotPassword(phone) {
+    const res = await fetch(`${API_URL}/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone }),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Request failed: ${res.status}`);
+    }
+    return res.json();
+  },
+  async resetPassword(phone, otp, newPassword) {
+    const res = await fetch(`${API_URL}/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, otp, new_password: newPassword }),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Reset failed: ${res.status}`);
+    }
+    const tokens = await res.json();
+    setAuthTokens(tokens.access_token, tokens.refresh_token);
+    return tokens;
   },
   async login(phone, password) {
     const res = await fetch(`${API_URL}/auth/login`, {
@@ -193,7 +340,7 @@ function renderNav() {
         <a href="contact.html">Contact</a>
         <a href="https://t.me/JobsyDealBot" target="_blank" rel="noopener" class="btn btn-sm btn-accent">Telegram Bot</a>
         ${isLoggedIn()
-          ? '<a href="#" class="btn btn-sm btn-outline" id="nav-logout">Log Out</a>'
+          ? '<a href="dashboard.html">Dashboard</a><a href="messages.html">Messages</a><a href="#" class="btn btn-sm btn-outline" id="nav-logout">Log Out</a>'
           : '<a href="login.html" class="btn btn-sm btn-outline">Log In</a>'}
       </div>
       <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">&#9776;</button>

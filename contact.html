@@ -232,8 +232,9 @@
             bio: services || undefined,
             is_provider: true,
           });
-          showMessage('Registration successful! We\'ll contact you within 24 hours to help you complete your profile and start receiving customers.', 'success');
+          showMessage('Registration successful! Redirecting to your dashboard...', 'success');
           form.reset();
+          setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
         } catch (err) {
           const isNetworkError = err.message === 'Failed to fetch' || err.name === 'TypeError' || err.name === 'AbortError';
           if (isNetworkError) {
