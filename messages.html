@@ -8,7 +8,7 @@
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <meta http-equiv="X-Frame-Options" content="DENY">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://pagead2.googlesyndication.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' https://api.jobsyja.com https://*.up.railway.app http://localhost:8000 wss://api.jobsyja.com wss://*.up.railway.app ws://localhost:8000; frame-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://pagead2.googlesyndication.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' https://api.jobsyja.com https://*.up.railway.app http://localhost:8000 wss://api.jobsyja.com wss://*.up.railway.app ws://localhost:8000 https://chat.stream-io-api.com wss://chat.stream-io-api.com; frame-src 'none'">
   <link rel="icon" type="image/svg+xml" href="images/logo.svg">
   <link rel="stylesheet" href="css/style.css">
   <style>
@@ -79,6 +79,7 @@
     </div>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/stream-chat@8/dist/browser.full-bundle.min.js"></script>
   <script src="js/common.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
@@ -89,67 +90,80 @@
       }
 
       // Get current user ID from JWT
-      const token = getAuthToken();
+      const jwtToken = getAuthToken();
       let currentUserId = '';
       try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
+        const payload = JSON.parse(atob(jwtToken.split('.')[1]));
         currentUserId = payload.sub;
       } catch { window.location.href = 'login.html'; return; }
 
-      let conversations = [];
-      let profileCache = {};
-      let activeConvoId = null;
-      let ws = null;
+      let activeChannel = null;
 
-      // Load conversations
+      // Initialize Stream Chat
+      let streamClient = null;
       try {
-        conversations = await api.getConversations();
+        const streamData = await StreamChatManager.fetchToken();
+        streamClient = StreamChatManager.init(streamData.api_key);
+        await StreamChatManager.connectUser(streamClient, streamData.user_id, streamData.token);
+      } catch (err) {
+        console.error('Stream Chat init failed:', err);
+        document.getElementById('msg-loading').style.display = 'none';
+        document.getElementById('msg-empty').style.display = '';
+        return;
+      }
+
+      // Load channels the user belongs to
+      let channels = [];
+      try {
+        channels = await StreamChatManager.listChannels(streamClient, currentUserId);
       } catch {
-        conversations = [];
+        channels = [];
       }
 
       document.getElementById('msg-loading').style.display = 'none';
 
-      if (conversations.length === 0) {
+      if (channels.length === 0) {
         document.getElementById('msg-empty').style.display = '';
         return;
       }
 
       document.getElementById('chat-layout').style.display = '';
 
-      // Fetch display names for other users
-      const otherIds = [...new Set(conversations.map(c => c.other_user_id))];
-      await Promise.allSettled(otherIds.map(async (uid) => {
-        try {
-          const p = await api.fetchProfile(uid);
-          profileCache[uid] = p.display_name || uid.slice(0, 8);
-        } catch {
-          profileCache[uid] = uid.slice(0, 8);
-        }
-      }));
-
-      // Render conversation list
+      // Render conversation list from Stream channels
       const convoList = document.getElementById('convo-list');
-      convoList.innerHTML = conversations.map(c => {
-        const name = profileCache[c.other_user_id] || c.other_user_id.slice(0, 8);
-        const date = new Date(c.created_at).toLocaleDateString();
-        return `<div class="convo-item" data-id="${c.id}" data-other="${c.other_user_id}">
+      convoList.innerHTML = channels.map((ch, idx) => {
+        const members = Object.values(ch.state.members || {});
+        const other = members.find(m => m.user_id !== currentUserId);
+        const name = other?.user?.name || other?.user_id?.slice(0, 8) || `Chat ${idx + 1}`;
+        const lastMsg = ch.state.messages?.length
+          ? ch.state.messages[ch.state.messages.length - 1]
+          : null;
+        const date = lastMsg
+          ? new Date(lastMsg.created_at).toLocaleDateString()
+          : '';
+        return `<div class="convo-item" data-cid="${ch.id}" data-idx="${idx}">
           <h4>${escapeHtml(name)}</h4>
-          <p>Started ${date}</p>
+          <p>${date ? 'Last message ' + date : 'No messages yet'}</p>
         </div>`;
       }).join('');
 
       // Click handler for conversations
-      convoList.addEventListener('click', (e) => {
+      convoList.addEventListener('click', async (e) => {
         const item = e.target.closest('.convo-item');
         if (!item) return;
         convoList.querySelectorAll('.convo-item').forEach(i => i.classList.remove('active'));
         item.classList.add('active');
-        openConversation(item.dataset.id, item.dataset.other);
+        const idx = parseInt(item.dataset.idx, 10);
+        await openChannel(channels[idx]);
       });
 
-      async function openConversation(convoId, otherUserId) {
-        activeConvoId = convoId;
+      async function openChannel(channel) {
+        // Stop listening on previous channel
+        if (activeChannel) {
+          activeChannel.off('message.new');
+        }
+
+        activeChannel = channel;
         const chatPlaceholder = document.getElementById('chat-placeholder');
         const chatActive = document.getElementById('chat-active');
         chatPlaceholder.style.display = 'none';
@@ -157,23 +171,29 @@
         chatActive.style.flexDirection = 'column';
         chatActive.style.height = '100%';
 
-        const name = profileCache[otherUserId] || otherUserId.slice(0, 8);
+        const members = Object.values(channel.state.members || {});
+        const other = members.find(m => m.user_id !== currentUserId);
+        const name = other?.user?.name || other?.user_id?.slice(0, 8) || 'Chat';
         document.getElementById('chat-header').textContent = name;
 
-        // Load message history
         const messagesEl = document.getElementById('chat-messages');
         messagesEl.innerHTML = '<p class="text-muted" style="text-align:center">Loading messages...</p>';
 
         try {
-          const messages = await api.getMessages(convoId);
-          renderMessages(messages);
-          api.markRead(convoId).catch(() => {});
+          await StreamChatManager.watchChannel(channel);
+          renderMessages(channel.state.messages || []);
+          await channel.markRead();
         } catch {
           messagesEl.innerHTML = '<p class="text-muted" style="text-align:center">Could not load messages.</p>';
+          return;
         }
 
-        // Connect WebSocket
-        connectWebSocket(convoId);
+        // Listen for new messages in real-time
+        channel.on('message.new', (event) => {
+          if (event.message) {
+            addMessage(event.message);
+          }
+        });
       }
 
       function renderMessages(messages) {
@@ -183,10 +203,10 @@
           return;
         }
         messagesEl.innerHTML = messages.map(m => {
-          const isSent = m.sender_id === currentUserId;
+          const isSent = m.user?.id === currentUserId;
           const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
           return `<div class="msg ${isSent ? 'msg-sent' : 'msg-received'}">
-            <div>${escapeHtml(m.content)}</div>
+            <div>${escapeHtml(m.text || '')}</div>
             <div class="msg-time">${time}</div>
           </div>`;
         }).join('');
@@ -195,46 +215,30 @@
 
       function addMessage(msg) {
         const messagesEl = document.getElementById('chat-messages');
-        // Remove "no messages" placeholder
         const placeholder = messagesEl.querySelector('.text-muted');
         if (placeholder) placeholder.remove();
 
-        const isSent = msg.sender_id === currentUserId;
+        const isSent = msg.user?.id === currentUserId;
         const time = new Date(msg.created_at || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const div = document.createElement('div');
         div.className = `msg ${isSent ? 'msg-sent' : 'msg-received'}`;
-        div.innerHTML = `<div>${escapeHtml(msg.content)}</div><div class="msg-time">${time}</div>`;
+        div.innerHTML = `<div>${escapeHtml(msg.text || '')}</div><div class="msg-time">${time}</div>`;
         messagesEl.appendChild(div);
         messagesEl.scrollTop = messagesEl.scrollHeight;
       }
 
-      function connectWebSocket(convoId) {
-        if (ws) { ws.close(); ws = null; }
-        const wsUrl = `${WS_URL}/ws/chat/${convoId}?token=${getAuthToken()}`;
-        ws = new WebSocket(wsUrl);
-
-        ws.onmessage = (event) => {
-          try {
-            const msg = JSON.parse(event.data);
-            if (msg.conversation_id === activeConvoId || !msg.conversation_id) {
-              addMessage(msg);
-            }
-          } catch { /* ignore non-JSON */ }
-        };
-
-        ws.onclose = () => { ws = null; };
-        ws.onerror = () => { ws = null; };
-      }
-
-      // Send message
-      function sendMessage() {
+      // Send message via Stream
+      async function sendMessage() {
         const input = document.getElementById('chat-input');
         const text = input.value.trim();
-        if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+        if (!text || !activeChannel) return;
 
-        ws.send(JSON.stringify({ content: text, type: 'text' }));
-        addMessage({ sender_id: currentUserId, content: text, created_at: new Date().toISOString() });
         input.value = '';
+        try {
+          await StreamChatManager.sendMessage(activeChannel, text);
+        } catch (err) {
+          console.error('Failed to send message:', err);
+        }
       }
 
       document.getElementById('chat-send').addEventListener('click', sendMessage);
@@ -242,11 +246,11 @@
         if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
       });
 
-      // Auto-open if convo ID in URL
+      // Auto-open if channel ID in URL
       const urlParams = new URLSearchParams(window.location.search);
-      const autoOpen = urlParams.get('convo');
+      const autoOpen = urlParams.get('convo') || urlParams.get('channel');
       if (autoOpen) {
-        const item = convoList.querySelector(`[data-id="${autoOpen}"]`);
+        const item = convoList.querySelector(`[data-cid="${autoOpen}"]`);
         if (item) item.click();
       }
     });

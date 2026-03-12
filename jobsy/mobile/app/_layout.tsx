@@ -3,11 +3,13 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { OverlayProvider } from "stream-chat-expo";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAuthStore } from "@/stores/auth";
+import { useChatStore } from "@/stores/chat";
 
 import "../global.css";
 
@@ -20,14 +22,33 @@ const queryClient = new QueryClient({
   },
 });
 
+const STREAM_THEME = {
+  colors: {
+    accent_blue: "#1B5E20",
+    accent_green: "#1B5E20",
+  },
+};
+
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, initialize } = useAuthStore();
+  const initChat = useChatStore((s) => s.initialize);
+  const disconnectChat = useChatStore((s) => s.disconnect);
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
     initialize();
   }, [initialize]);
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    if (isAuthenticated) {
+      initChat();
+    } else {
+      disconnectChat();
+    }
+  }, [isAuthenticated, isLoading, initChat, disconnectChat]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -52,10 +73,12 @@ export default function RootLayout() {
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <QueryClientProvider client={queryClient}>
-          <StatusBar style="dark" />
-          <AuthGuard>
-            <Slot />
-          </AuthGuard>
+          <OverlayProvider value={{ style: STREAM_THEME }}>
+            <StatusBar style="dark" />
+            <AuthGuard>
+              <Slot />
+            </AuthGuard>
+          </OverlayProvider>
         </QueryClientProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>

@@ -21,6 +21,7 @@ from .middleware.rate_limit import rate_limit_check
 from .routes.auth import router as auth_router
 from .routes.health import router as health_router
 from .routes.proxy import router as proxy_router
+from .routes.stream_chat import router as stream_chat_router
 
 setup_json_logging()
 logger = logging.getLogger(__name__)
@@ -159,6 +160,7 @@ async def rate_limit_middleware(request: Request, call_next):
 
 app.include_router(health_router)
 app.include_router(auth_router)
+app.include_router(stream_chat_router)
 app.include_router(proxy_router)
 
 CHAT_SERVICE_URL = os.getenv("CHAT_SERVICE_URL", "http://chat.railway.internal:8080")

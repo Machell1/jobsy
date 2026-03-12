@@ -210,6 +210,11 @@ const api = {
     if (!res.ok) throw new Error(`API ${res.status}`);
     return res.json();
   },
+  async getStreamToken() {
+    const res = await _authFetch(`${API_URL}/api/chat/token`);
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    return res.json();
+  },
   async getConversations() {
     const res = await _authFetch(`${API_URL}/api/chat/conversations`);
     if (!res.ok) throw new Error(`API ${res.status}`);
@@ -285,6 +290,53 @@ const api = {
     setAuthTokens(tokens.access_token, tokens.refresh_token);
     return tokens;
   }
+};
+
+/* ===== Stream Chat Manager ===== */
+const StreamChatManager = {
+  async fetchToken() {
+    return api.getStreamToken();
+  },
+
+  init(apiKey) {
+    if (typeof StreamChat === 'undefined') {
+      throw new Error('Stream Chat SDK not loaded');
+    }
+    return StreamChat.getInstance(apiKey);
+  },
+
+  async connectUser(client, userId, token) {
+    await client.connectUser({ id: userId }, token);
+    return client;
+  },
+
+  async listChannels(client, userId) {
+    const filter = { type: 'messaging', members: { $in: [userId] } };
+    const sort = [{ last_message_at: -1 }];
+    return client.queryChannels(filter, sort, { watch: false, state: true });
+  },
+
+  async watchChannel(channel) {
+    await channel.watch();
+    return channel;
+  },
+
+  async sendMessage(channel, text) {
+    return channel.sendMessage({ text });
+  },
+
+  getChannelId(userA, userB) {
+    return [userA, userB].sort().join('_');
+  },
+
+  async getOrCreateDMChannel(client, currentUserId, otherUserId) {
+    const channelId = this.getChannelId(currentUserId, otherUserId);
+    const channel = client.channel('messaging', channelId, {
+      members: [currentUserId, otherUserId],
+    });
+    await channel.watch();
+    return channel;
+  },
 };
 
 /* ===== Data Loading (API with fallback) ===== */
