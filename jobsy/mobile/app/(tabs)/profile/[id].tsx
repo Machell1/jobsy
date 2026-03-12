@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Alert, Image, Linking, Pressable, ScrollView, Text, View } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";

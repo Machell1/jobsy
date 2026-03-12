@@ -1,6 +1,6 @@
 """SQLAlchemy ORM models for profiles."""
 
-from sqlalchemy import Boolean, Column, DateTime, Index, Integer, Numeric, String, Text
+from sqlalchemy import Boolean, Column, DateTime, Index, Integer, Numeric, String
 from sqlalchemy.dialects.postgresql import JSONB
 
 from shared.database import Base

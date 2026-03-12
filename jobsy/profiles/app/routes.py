@@ -289,7 +289,9 @@ async def tag_user(data: TagUserRequest, request: Request, db: AsyncSession = De
     tagger_id = _get_user_id(request)
 
     # Verify tagged user exists
-    result = await db.execute(select(Profile).where(Profile.user_id == data.tagged_user_id, Profile.is_active.is_(True)))
+    result = await db.execute(
+        select(Profile).where(Profile.user_id == data.tagged_user_id, Profile.is_active.is_(True))
+    )
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tagged user not found")
 
