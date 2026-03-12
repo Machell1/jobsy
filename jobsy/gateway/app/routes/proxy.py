@@ -23,7 +23,10 @@ async def _proxy_request(service: str, path: str, request: Request, user: dict) 
     """Forward a request to an internal service with user context."""
     base_url = SERVICE_URLS.get(service)
     if not base_url:
-        return Response(status_code=404, content=f"Service {service} not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Service {service} not found",
+        )
 
     url = f"{base_url}{path}"
     # Forward request ID for distributed tracing
@@ -57,6 +60,12 @@ async def _proxy_request(service: str, path: str, request: Request, user: dict) 
         raise HTTPException(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
             detail=f"Service {service} timed out",
+        ) from None
+    except httpx.HTTPError:
+        logger.error("HTTP error proxying to %s service at %s", service, base_url)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Service {service} is unavailable",
         ) from None
 
     resp_headers = {k: v for k, v in response.headers.items() if k.lower() not in _HOP_BY_HOP}
