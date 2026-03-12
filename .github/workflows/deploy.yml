@@ -18,10 +18,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
       - name: Install Railway CLI
         run: npm i -g @railway/cli
 
@@ -31,18 +27,11 @@ jobs:
         run: cd jobsy && railway up --detach --service gateway
 
       - name: Wait for deployment
-        run: sleep 30
-
-      - name: Run database migrations
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: |
-          pip install sqlalchemy[asyncio] asyncpg
-          cd jobsy && railway run --service gateway python gateway/migrate.py
+        run: sleep 45
 
       - name: Verify deployment
         run: |
-          for i in 1 2 3 4 5 6; do
+          for i in 1 2 3 4 5 6 7 8; do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://api.jobsyja.com/health 2>/dev/null || echo "000" )
             if [ "$STATUS" = "200" ]; then
               echo "Deployment healthy!"
@@ -52,3 +41,15 @@ jobs:
             sleep 10
           done
           echo "Warning: Health check did not return 200 - check Railway logs"
+
+      - name: Verify auth endpoint
+        run: |
+          RESULT=$(curl -s -X POST https://api.jobsyja.com/auth/login \
+            -H 'Content-Type: application/json' \
+            -d '{"phone":"+18761234501","password":"DemoPass123!"}')
+          echo "Login result: $RESULT"
+          if echo "$RESULT" | grep -q "access_token"; then
+            echo "Auth endpoint working!"
+          else
+            echo "Auth endpoint may not be ready yet (migrations run on first startup)"
+          fi

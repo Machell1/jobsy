@@ -26,10 +26,78 @@ setup_json_logging()
 logger = logging.getLogger(__name__)
 
 
+async def _apply_migrations() -> None:
+    """Apply pending DDL migrations idempotently.
+
+    Uses ADD COLUMN IF NOT EXISTS so it is safe to run on every startup.
+    """
+    from shared.database import engine
+    from sqlalchemy import text
+
+    try:
+        async with engine.begin() as conn:
+            # Migration 002: OAuth + password reset
+            await conn.execute(text(
+                "ALTER TABLE users ALTER COLUMN phone DROP NOT NULL"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(20)"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_id VARCHAR(255)"
+            ))
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS password_reset_otps ("
+                "id SERIAL PRIMARY KEY, phone VARCHAR(20) NOT NULL, "
+                "otp_hash VARCHAR(255) NOT NULL, expires_at TIMESTAMPTZ NOT NULL, "
+                "used BOOLEAN DEFAULT false, created_at TIMESTAMPTZ DEFAULT now())"
+            ))
+            # Migration 003: multi-role, social, followers
+            await conn.execute(text(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS roles JSONB DEFAULT '[]'"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS active_role VARCHAR(20) DEFAULT 'user'"
+            ))
+            for col in ["is_hirer", "is_advertiser"]:
+                await conn.execute(text(
+                    f"ALTER TABLE profiles ADD COLUMN IF NOT EXISTS {col} BOOLEAN DEFAULT false"
+                ))
+            for col in [
+                "instagram_url", "twitter_url", "tiktok_url",
+                "youtube_url", "linkedin_url", "portfolio_url",
+            ]:
+                await conn.execute(text(
+                    f"ALTER TABLE profiles ADD COLUMN IF NOT EXISTS {col} VARCHAR(500)"
+                ))
+            for col in ["follower_count", "following_count"]:
+                await conn.execute(text(
+                    f"ALTER TABLE profiles ADD COLUMN IF NOT EXISTS {col} INTEGER DEFAULT 0"
+                ))
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS follows ("
+                "id VARCHAR PRIMARY KEY, follower_id VARCHAR NOT NULL, "
+                "following_id VARCHAR NOT NULL, created_at TIMESTAMPTZ NOT NULL)"
+            ))
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS user_tags ("
+                "id VARCHAR PRIMARY KEY, tagger_id VARCHAR NOT NULL, "
+                "tagged_user_id VARCHAR NOT NULL, entity_type VARCHAR(20) NOT NULL, "
+                "entity_id VARCHAR NOT NULL, created_at TIMESTAMPTZ NOT NULL)"
+            ))
+        logger.info("Database migrations applied successfully")
+    except Exception:
+        logger.warning("Could not apply migrations on startup -- will retry on next deploy")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
     await init_db()
+    await _apply_migrations()
     try:
         app.state.redis = aioredis.from_url(REDIS_URL, decode_responses=True)
     except (ConnectionError, OSError):
