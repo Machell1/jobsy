@@ -26,23 +26,18 @@ jobs:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: cd jobsy && railway up --detach --service gateway
 
-      - name: Wait for deployment health
-        run: sleep 20
-
-      - name: Run migrations
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: cd jobsy && railway run --service gateway alembic upgrade head
+      - name: Wait for deployment
+        run: sleep 30
 
       - name: Verify deployment
         run: |
-          for i in 1 2 3 4 5; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://api.jobsyja.com/health 2>/dev/null || echo "000")
+          for i in 1 2 3 4 5 6; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://api.jobsyja.com/health 2>/dev/null || echo "000" )
             if [ "$STATUS" = "200" ]; then
-              echo "Deployment healthy"
+              echo "Deployment healthy!"
               exit 0
             fi
             echo "Health check attempt $i returned $STATUS, retrying..."
             sleep 10
           done
-          echo "Warning: Health check did not return 200 — check Railway logs"
+          echo "Warning: Health check did not return 200 - check Railway logs"
