@@ -157,7 +157,7 @@
       if (isLoggedIn()) {
         tabBar.style.display = 'none';
         loginPanel.style.display = 'none';
-        loggedInSection.style.display = '';
+        loggedInSection.style.display = 'block';
         document.getElementById('logout-btn').addEventListener('click', (e) => {
           e.preventDefault();
           clearAuth();
@@ -182,13 +182,13 @@
       document.getElementById('forgot-btn').addEventListener('click', () => {
         loginPanel.style.display = 'none';
         tabBar.style.display = 'none';
-        forgotPanel.style.display = '';
+        forgotPanel.style.display = 'block';
         msgEl.style.display = 'none';
       });
       document.getElementById('back-to-login').addEventListener('click', () => {
         forgotPanel.style.display = 'none';
-        loginPanel.style.display = '';
-        tabBar.style.display = '';
+        loginPanel.style.display = 'block';
+        tabBar.style.display = 'flex';
         loginPanel.classList.add('active');
         msgEl.style.display = 'none';
       });
