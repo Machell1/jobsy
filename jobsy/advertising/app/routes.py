@@ -248,6 +248,60 @@ async def list_campaigns(
     ]
 
 
+class CampaignUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    image_url: str | None = None
+    click_url: str | None = None
+    target_parishes: list[str] | None = None
+    target_categories: list[str] | None = None
+    budget_total: float | None = None
+    budget_daily: float | None = None
+    status: str | None = Field(default=None, pattern=r"^(active|paused|completed)$")
+
+
+@router.put("/campaigns/{campaign_id}")
+async def update_campaign(
+    campaign_id: str,
+    data: CampaignUpdate,
+    request: Request,
+    user_id: str = Depends(_require_auth),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update an advertising campaign."""
+    result = await db.execute(select(AdCampaign).where(AdCampaign.id == campaign_id))
+    campaign = result.scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Campaign not found")
+
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(campaign, field, value)
+    campaign.updated_at = datetime.now(UTC)
+    await db.flush()
+
+    return {"id": campaign.id, "title": campaign.title, "status": campaign.status}
+
+
+@router.delete("/campaigns/{campaign_id}")
+async def delete_campaign(
+    campaign_id: str,
+    request: Request,
+    user_id: str = Depends(_require_auth),
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete (deactivate) an advertising campaign."""
+    result = await db.execute(select(AdCampaign).where(AdCampaign.id == campaign_id))
+    campaign = result.scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Campaign not found")
+
+    campaign.status = "completed"
+    campaign.updated_at = datetime.now(UTC)
+    await db.flush()
+
+    return {"status": "deleted", "id": campaign_id}
+
+
 @router.get("/campaigns/{campaign_id}/report")
 async def campaign_report(campaign_id: str, db: AsyncSession = Depends(get_db)):
     """Get performance report for a campaign (impressions, clicks, CTR)."""

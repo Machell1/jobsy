@@ -90,6 +90,12 @@ async def proxy_profiles_read(path: str, request: Request, user: dict = Depends(
     return await _proxy_request("profiles", f"/{path}", request, user)
 
 
+@router.api_route("/profiles", methods=["POST", "PUT"])
+async def proxy_profiles_root_write(request: Request, user: dict = Depends(get_current_user)):
+    """Authenticated write access to profiles root (create/update own profile)."""
+    return await _proxy_request("profiles", "/", request, user)
+
+
 @router.api_route("/profiles/{path:path}", methods=["POST", "PUT", "DELETE"])
 async def proxy_profiles_write(path: str, request: Request, user: dict = Depends(get_current_user)):
     """Authenticated write access to profiles."""
@@ -108,7 +114,13 @@ async def proxy_listings_read(path: str, request: Request, user: dict = Depends(
     return await _proxy_request("listings", f"/{path}", request, user)
 
 
-@router.api_route("/listings/{path:path}", methods=["POST", "PUT", "DELETE"])
+@router.api_route("/listings", methods=["POST"])
+async def proxy_listings_root_write(request: Request, user: dict = Depends(get_current_user)):
+    """Authenticated create access to listings root."""
+    return await _proxy_request("listings", "/", request, user)
+
+
+@router.api_route("/listings/{path:path}", methods=["POST", "PUT", "PATCH", "DELETE"])
 async def proxy_listings_write(path: str, request: Request, user: dict = Depends(get_current_user)):
     """Authenticated write access to listings."""
     return await _proxy_request("listings", f"/{path}", request, user)
@@ -134,7 +146,7 @@ async def proxy_recommendations(path: str, request: Request, user: dict = Depend
     return await _proxy_request("recommendations", f"/{path}", request, user)
 
 
-@router.api_route("/chat/{path:path}", methods=["GET", "POST", "PUT"])
+@router.api_route("/chat/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
 async def proxy_chat(path: str, request: Request, user: dict = Depends(get_current_user)):
     return await _proxy_request("chat", f"/{path}", request, user)
 
@@ -156,7 +168,7 @@ async def proxy_storage(path: str, request: Request, user: dict = Depends(get_cu
     return await _proxy_request("storage", f"/{path}", request, user)
 
 
-@router.api_route("/ads/{path:path}", methods=["GET", "POST"])
+@router.api_route("/ads/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
 async def proxy_ads(path: str, request: Request, user: dict = Depends(get_current_user)):
     return await _proxy_request("ads", f"/{path}", request, user)
 

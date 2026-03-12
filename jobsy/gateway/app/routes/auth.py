@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from profiles.app.models import Profile  # shared DB; atomic profile creation
 from shared.auth import (
     create_access_token,
     create_refresh_token,
@@ -21,6 +22,7 @@ from shared.auth import (
     verify_password,
 )
 from shared.database import get_db
+from shared.events import publish_event
 from shared.models.user import (
     AddRoleRequest,
     ForgotPasswordRequest,
@@ -103,6 +105,7 @@ async def register(request: Request, data: UserCreate, db: AsyncSession = Depend
         if result.scalar_one_or_none():
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
 
+    now = datetime.now(UTC)
     roles = _build_roles_list(data.role, data.roles)
     user = User(
         id=str(uuid.uuid4()),
@@ -112,11 +115,38 @@ async def register(request: Request, data: UserCreate, db: AsyncSession = Depend
         role=data.role,
         roles=roles,
         active_role=data.role,
-        created_at=datetime.now(UTC),
-        updated_at=datetime.now(UTC),
+        created_at=now,
+        updated_at=now,
     )
     db.add(user)
     await db.flush()
+
+    # Auto-create profile if profile fields were provided (e.g. provider signup)
+    if data.display_name:
+        profile = Profile(
+            id=str(uuid.uuid4()),
+            user_id=user.id,
+            display_name=data.display_name,
+            parish=data.parish,
+            service_category=data.service_category,
+            bio=data.bio,
+            is_provider=data.is_provider or (data.role == "provider"),
+            is_active=True,
+            is_verified=False,
+            created_at=now,
+            updated_at=now,
+        )
+        db.add(profile)
+        await db.flush()
+
+        await publish_event("profile.updated", {
+            "id": profile.id,
+            "user_id": user.id,
+            "display_name": profile.display_name,
+            "bio": profile.bio,
+            "parish": profile.parish,
+            "service_category": profile.service_category,
+        })
 
     return _token_response(user)
 

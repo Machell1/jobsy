@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Profile | Jobsy Jamaica</title>
+  <meta name="description" content="Update your Jobsy provider profile.">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="X-Frame-Options" content="DENY">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://pagead2.googlesyndication.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' https://api.jobsyja.com http://localhost:8000; frame-src 'none'">
+  <link rel="icon" type="image/svg+xml" href="images/logo.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main id="main-content">
+    <div class="container">
+      <div class="breadcrumbs">
+        <a href="dashboard.html">Dashboard</a> <span>&rsaquo;</span> <span>Edit Profile</span>
+      </div>
+      <div class="service-detail" style="max-width:700px">
+        <h1>Edit Profile</h1>
+        <p class="text-muted">Update your business information visible to customers.</p>
+
+        <div id="form-message" style="display:none"></div>
+
+        <form id="profile-form" novalidate>
+          <div class="form-group">
+            <label for="prf-name">Display Name *</label>
+            <input type="text" id="prf-name" required placeholder="Your business or full name">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="prf-parish">Parish</label>
+              <select id="prf-parish">
+                <option value="">Select parish</option>
+                <option>Kingston</option>
+                <option>St. Andrew</option>
+                <option>St. Thomas</option>
+                <option>Portland</option>
+                <option>St. Mary</option>
+                <option>St. Ann</option>
+                <option>Trelawny</option>
+                <option>St. James</option>
+                <option>Hanover</option>
+                <option>Westmoreland</option>
+                <option>St. Elizabeth</option>
+                <option>Manchester</option>
+                <option>Clarendon</option>
+                <option>St. Catherine</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="prf-category">Service Category</label>
+              <select id="prf-category">
+                <option value="">Select a category</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="prf-bio">Bio / About</label>
+            <textarea id="prf-bio" placeholder="Tell customers about your services, experience, and certifications..." rows="5"></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-lg" id="prf-submit" style="width:100%;justify-content:center">
+            Save Profile
+          </button>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!isLoggedIn()) { window.location.href = 'login.html'; return; }
+
+      const catSelect = document.getElementById('prf-category');
+      CATEGORIES.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.name;
+        opt.textContent = c.name;
+        catSelect.appendChild(opt);
+      });
+
+      const msgEl = document.getElementById('form-message');
+
+      // Load existing profile
+      try {
+        const profile = await api.fetchMyProfile();
+        document.getElementById('prf-name').value = profile.display_name || '';
+        document.getElementById('prf-parish').value = profile.parish || '';
+        document.getElementById('prf-category').value = profile.service_category || '';
+        document.getElementById('prf-bio').value = profile.bio || '';
+      } catch {
+        // No profile yet — leave form empty for creation
+      }
+
+      document.getElementById('profile-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        msgEl.style.display = 'none';
+
+        const displayName = document.getElementById('prf-name').value.trim();
+        if (!displayName) { showMessage('Display name is required.', 'error'); return; }
+
+        const data = {
+          display_name: displayName,
+          parish: document.getElementById('prf-parish').value || undefined,
+          service_category: document.getElementById('prf-category').value || undefined,
+          bio: document.getElementById('prf-bio').value.trim() || undefined,
+          is_provider: true,
+        };
+
+        const btn = document.getElementById('prf-submit');
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+
+        try {
+          await api.updateProfile(data);
+          showMessage('Profile saved!', 'success');
+        } catch (err) {
+          showMessage(err.message || 'Failed to save profile.', 'error');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Save Profile';
+        }
+      });
+
+      function showMessage(text, type) {
+        msgEl.textContent = text;
+        msgEl.className = 'form-message ' + type;
+        msgEl.style.display = 'block';
+        msgEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+  </script>
+</body>
+</html>

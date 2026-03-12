@@ -125,3 +125,30 @@ async def mark_messages_read(
     await db.flush()
 
     return {"status": "ok"}
+
+
+@router.delete("/conversations/{conversation_id}")
+async def delete_conversation(
+    conversation_id: str,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete a conversation (only participants can delete)."""
+    user_id = _get_user_id(request)
+
+    result = await db.execute(
+        select(Conversation).where(
+            Conversation.id == conversation_id,
+            or_(Conversation.user_a_id == user_id, Conversation.user_b_id == user_id),
+        )
+    )
+    conversation = result.scalar_one_or_none()
+    if not conversation:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
+
+    from sqlalchemy import delete as sa_delete
+    await db.execute(sa_delete(Message).where(Message.conversation_id == conversation_id))
+    await db.execute(sa_delete(Conversation).where(Conversation.id == conversation_id))
+    await db.flush()
+
+    return {"status": "deleted"}

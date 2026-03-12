@@ -4,6 +4,7 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -167,6 +168,30 @@ async def update_listing(
     })
 
     return listing
+
+
+class StatusUpdate(BaseModel):
+    status: str = Field(..., pattern=r"^(active|paused|cancelled)$")
+
+
+@router.patch("/{listing_id}/status")
+async def update_listing_status(
+    listing_id: str, data: StatusUpdate, request: Request, db: AsyncSession = Depends(get_db),
+):
+    """Quick status update without requiring a full PUT."""
+    user_id = _get_user_id(request)
+    result = await db.execute(select(Listing).where(Listing.id == listing_id))
+    listing = result.scalar_one_or_none()
+    if not listing:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Listing not found")
+    if listing.poster_id != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not the listing owner")
+
+    listing.status = data.status
+    listing.updated_at = datetime.now(UTC)
+    await db.flush()
+
+    return {"id": listing.id, "status": listing.status}
 
 
 @router.delete("/{listing_id}", status_code=status.HTTP_204_NO_CONTENT)
