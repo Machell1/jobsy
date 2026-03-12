@@ -21,9 +21,21 @@ def verify_password(plain: str, hashed: str) -> bool:
     return bcrypt.checkpw(plain.encode(), hashed.encode())
 
 
-def create_access_token(user_id: str, role: str = "user") -> str:
+def create_access_token(
+    user_id: str,
+    role: str = "user",
+    roles: list[str] | None = None,
+    active_role: str | None = None,
+) -> str:
     expire = datetime.now(UTC) + timedelta(minutes=JWT_ACCESS_EXPIRY_MINUTES)
-    payload = {"sub": user_id, "role": role, "exp": expire, "type": "access"}
+    payload = {
+        "sub": user_id,
+        "role": role,
+        "roles": roles or [role],
+        "active_role": active_role or role,
+        "exp": expire,
+        "type": "access",
+    }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 

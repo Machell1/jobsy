@@ -6,11 +6,12 @@ import * as WebBrowser from "expo-web-browser";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useAuthStore } from "@/stores/auth";
+import type { UserRole } from "@/api/auth";
 
 WebBrowser.maybeCompleteAuthSession();
 
 interface OAuthButtonsProps {
-  role?: "user" | "provider";
+  role?: UserRole;
 }
 
 export function OAuthButtons({ role = "user" }: OAuthButtonsProps) {

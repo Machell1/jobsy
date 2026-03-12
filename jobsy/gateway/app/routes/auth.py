@@ -1,4 +1,4 @@
-"""Authentication routes: register, login, refresh, OAuth, password reset."""
+"""Authentication routes: register, login, refresh, OAuth, password reset, role management."""
 
 import logging
 import secrets
@@ -22,26 +22,27 @@ from shared.auth import (
 )
 from shared.database import get_db
 from shared.models.user import (
+    AddRoleRequest,
     ForgotPasswordRequest,
     OAuthRequest,
     ResetPasswordRequest,
+    SwitchRoleRequest,
     TokenResponse,
     UserCreate,
     UserLogin,
+    UserResponse,
 )
 from shared.oauth import verify_apple_token, verify_google_token
 from shared.sms import send_sms
 
 from ..config import RATE_LIMIT_AUTH_ENDPOINTS
-from ..models import PasswordResetOTP, User
+from ..models import VALID_ROLES, PasswordResetOTP, User
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 # Simple in-memory sliding window for auth endpoint rate limiting.
-# NOTE: This is per-instance only. In a multi-instance Railway deployment,
-# the Redis-based rate limiter in middleware handles cross-instance limiting.
 _auth_attempts: dict[str, list[float]] = defaultdict(list)
 
 
@@ -54,7 +55,6 @@ async def _check_auth_rate_limit(request: Request) -> None:
     _auth_attempts[client_ip] = [t for t in attempts if t > window_start]
     if not _auth_attempts[client_ip]:
         del _auth_attempts[client_ip]
-        # Also prune stale IPs periodically (every ~100 requests)
         if len(_auth_attempts) > 100:
             stale = [ip for ip, ts in _auth_attempts.items() if not ts or ts[-1] < window_start]
             for ip in stale:
@@ -66,6 +66,28 @@ async def _check_auth_rate_limit(request: Request) -> None:
             detail="Too many authentication attempts. Please try again later.",
         )
     _auth_attempts[client_ip].append(now)
+
+
+def _build_roles_list(primary_role: str, extra_roles: list[str] | None = None) -> list[str]:
+    """Build a deduplicated roles list ensuring 'user' is always included."""
+    roles = {"user", primary_role}
+    if extra_roles:
+        for r in extra_roles:
+            if r in VALID_ROLES:
+                roles.add(r)
+    return sorted(roles)
+
+
+def _token_response(user: User) -> TokenResponse:
+    """Build a token response including role information."""
+    roles = user.roles or [user.role or "user"]
+    active_role = user.active_role or user.role or "user"
+    return TokenResponse(
+        access_token=create_access_token(user.id, user.role, roles, active_role),
+        refresh_token=create_refresh_token(user.id),
+        active_role=active_role,
+        roles=roles,
+    )
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
@@ -81,22 +103,22 @@ async def register(request: Request, data: UserCreate, db: AsyncSession = Depend
         if result.scalar_one_or_none():
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
 
+    roles = _build_roles_list(data.role, data.roles)
     user = User(
         id=str(uuid.uuid4()),
         phone=data.phone,
         email=data.email,
         password_hash=hash_password(data.password),
         role=data.role,
+        roles=roles,
+        active_role=data.role,
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
     )
     db.add(user)
     await db.flush()
 
-    return TokenResponse(
-        access_token=create_access_token(user.id, user.role),
-        refresh_token=create_refresh_token(user.id),
-    )
+    return _token_response(user)
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -109,10 +131,14 @@ async def login(request: Request, data: UserLogin, db: AsyncSession = Depends(ge
     if not user or not user.password_hash or not verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
-    return TokenResponse(
-        access_token=create_access_token(user.id, user.role),
-        refresh_token=create_refresh_token(user.id),
-    )
+    # Ensure legacy users have roles populated
+    if not user.roles:
+        user.roles = _build_roles_list(user.role or "user")
+        user.active_role = user.active_role or user.role or "user"
+        user.updated_at = datetime.now(UTC)
+        await db.flush()
+
+    return _token_response(user)
 
 
 class _RefreshRequest(BaseModel):
@@ -136,10 +162,74 @@ async def refresh_token(body: _RefreshRequest, db: AsyncSession = Depends(get_db
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
-    return TokenResponse(
-        access_token=create_access_token(user.id, user.role),
-        refresh_token=create_refresh_token(user.id),
-    )
+    return _token_response(user)
+
+
+# --- Role Management ---
+
+
+def _get_user_id_from_header(request: Request) -> str:
+    """Extract user ID from gateway-forwarded header."""
+    user_id = request.headers.get("X-User-ID")
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing user context")
+    return user_id
+
+
+@router.post("/roles/add", response_model=UserResponse)
+async def add_role(data: AddRoleRequest, request: Request, db: AsyncSession = Depends(get_db)):
+    """Add an additional role to the current user's account."""
+    user_id = _get_user_id_from_header(request)
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    current_roles = set(user.roles or [user.role or "user"])
+    if data.role in current_roles:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Already have role: {data.role}")
+
+    current_roles.add(data.role)
+    current_roles.add("user")  # always keep base user role
+    user.roles = sorted(current_roles)
+    user.updated_at = datetime.now(UTC)
+    await db.flush()
+
+    return user
+
+
+@router.post("/roles/switch", response_model=TokenResponse)
+async def switch_role(data: SwitchRoleRequest, request: Request, db: AsyncSession = Depends(get_db)):
+    """Switch the active role for the current user. Returns new tokens."""
+    user_id = _get_user_id_from_header(request)
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    current_roles = set(user.roles or [user.role or "user"])
+    if data.role not in current_roles:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"You do not have the '{data.role}' role. Add it first.",
+        )
+
+    user.active_role = data.role
+    user.updated_at = datetime.now(UTC)
+    await db.flush()
+
+    return _token_response(user)
+
+
+@router.get("/me", response_model=UserResponse)
+async def get_me(request: Request, db: AsyncSession = Depends(get_db)):
+    """Get current user info including roles."""
+    user_id = _get_user_id_from_header(request)
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return user
 
 
 # --- OAuth ---
@@ -150,7 +240,6 @@ async def oauth_authenticate(request: Request, data: OAuthRequest, db: AsyncSess
     """Authenticate via Google or Apple OAuth. Creates account if needed."""
     await _check_auth_rate_limit(request)
 
-    # Verify the ID token with the provider
     try:
         info = verify_google_token(data.id_token) if data.provider == "google" else verify_apple_token(data.id_token)
     except ValueError as exc:
@@ -171,10 +260,12 @@ async def oauth_authenticate(request: Request, data: OAuthRequest, db: AsyncSess
     user = result.scalar_one_or_none()
 
     if user:
-        return TokenResponse(
-            access_token=create_access_token(user.id, user.role),
-            refresh_token=create_refresh_token(user.id),
-        )
+        if not user.roles:
+            user.roles = _build_roles_list(user.role or "user")
+            user.active_role = user.active_role or user.role or "user"
+            user.updated_at = datetime.now(UTC)
+            await db.flush()
+        return _token_response(user)
 
     # 2. Look up by email to link accounts
     if email:
@@ -183,23 +274,26 @@ async def oauth_authenticate(request: Request, data: OAuthRequest, db: AsyncSess
         if user:
             user.oauth_provider = data.provider
             user.oauth_id = oauth_sub
+            if not user.roles:
+                user.roles = _build_roles_list(user.role or "user")
+            user.active_role = user.active_role or user.role or "user"
             user.updated_at = datetime.now(UTC)
             await db.flush()
-            return TokenResponse(
-                access_token=create_access_token(user.id, user.role),
-                refresh_token=create_refresh_token(user.id),
-            )
+            return _token_response(user)
 
     # 3. Create new user
+    roles = _build_roles_list(data.role, data.roles)
     user = User(
         id=str(uuid.uuid4()),
         phone=None,
         email=email,
         password_hash=None,
         role=data.role,
+        roles=roles,
+        active_role=data.role,
         oauth_provider=data.provider,
         oauth_id=oauth_sub,
-        is_verified=True,  # OAuth email is provider-verified
+        is_verified=True,
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
     )
@@ -208,10 +302,7 @@ async def oauth_authenticate(request: Request, data: OAuthRequest, db: AsyncSess
 
     return JSONResponse(
         status_code=status.HTTP_201_CREATED,
-        content=TokenResponse(
-            access_token=create_access_token(user.id, user.role),
-            refresh_token=create_refresh_token(user.id),
-        ).model_dump(),
+        content=_token_response(user).model_dump(),
     )
 
 
@@ -225,7 +316,6 @@ async def forgot_password(request: Request, data: ForgotPasswordRequest, db: Asy
     """Request a password reset OTP via SMS."""
     await _check_auth_rate_limit(request)
 
-    # Always return success to prevent user enumeration
     generic_response = {"message": "If this phone is registered, you will receive a reset code."}
 
     result = await db.execute(select(User).where(User.phone == data.phone))
@@ -233,7 +323,6 @@ async def forgot_password(request: Request, data: ForgotPasswordRequest, db: Asy
     if not user:
         return generic_response
 
-    # Generate a 6-digit OTP
     otp = f"{secrets.randbelow(900000) + 100000}"
 
     otp_record = PasswordResetOTP(
@@ -258,7 +347,6 @@ async def reset_password(request: Request, data: ResetPasswordRequest, db: Async
     """Verify OTP and set a new password."""
     await _check_auth_rate_limit(request)
 
-    # Find the most recent unused OTP for this phone
     result = await db.execute(
         select(PasswordResetOTP)
         .where(
@@ -279,10 +367,8 @@ async def reset_password(request: Request, data: ResetPasswordRequest, db: Async
             detail="Invalid or expired reset code.",
         )
 
-    # Mark OTP as used
     otp_record.used = True
 
-    # Update user password
     result = await db.execute(select(User).where(User.phone == data.phone))
     user = result.scalar_one_or_none()
     if not user:
@@ -295,8 +381,4 @@ async def reset_password(request: Request, data: ResetPasswordRequest, db: Async
     user.updated_at = datetime.now(UTC)
     await db.flush()
 
-    # Auto-login after successful reset
-    return TokenResponse(
-        access_token=create_access_token(user.id, user.role),
-        refresh_token=create_refresh_token(user.id),
-    )
+    return _token_response(user)
