@@ -32,7 +32,7 @@ jobs:
       - name: Run database migrations
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: cd jobsy && railway run alembic upgrade head
+        run: cd jobsy && railway run --service gateway alembic upgrade head
 
       - name: Verify deployment
         run: |
