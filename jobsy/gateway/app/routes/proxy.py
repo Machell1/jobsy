@@ -198,18 +198,8 @@ async def proxy_reviews_write(path: str, request: Request, user: dict = Depends(
 
 
 @router.api_route("/search/listings", methods=["GET"])
-async def proxy_search_listings(
-    request: Request,
-    user: dict = Depends(get_optional_user),
-):
-    """Search listings -- proxy to search service with local DB fallback."""
-    # Try the dedicated search microservice first
-    try:
-        return await _proxy_request("search", "/listings", request, user)
-    except Exception:
-        logger.info("Search microservice unavailable, using local DB fallback")
-
-    # Fallback: direct SQL ILIKE search against listings table
+async def proxy_search_listings(request: Request):
+    """Search listings via direct DB query (search microservice not deployed)."""
     q = request.query_params.get("q", "").strip()
 
     def _serialize(val):
