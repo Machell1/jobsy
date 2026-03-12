@@ -2,7 +2,7 @@
 
 import json
 import logging
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 
@@ -217,9 +217,13 @@ async def proxy_search_listings(
             return str(val)
         if isinstance(val, Decimal):
             return float(val)
-        if isinstance(val, datetime):
+        if isinstance(val, (datetime, date)):
             return val.isoformat()
-        return val
+        if isinstance(val, (list, dict)):
+            return val
+        if val is None or isinstance(val, (str, int, float, bool)):
+            return val
+        return str(val)
 
     try:
         async with engine.connect() as conn:
@@ -246,14 +250,15 @@ async def proxy_search_listings(
                     {"pattern": pattern},
                 )
             rows = result.mappings().all()
+        items = [{k: _serialize(v) for k, v in row.items()} for row in rows]
     except Exception:
-        logger.exception("Search fallback SQL query failed")
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Search is temporarily unavailable",
-        ) from None
+        logger.exception("Search fallback query failed")
+        return Response(
+            content=json.dumps({"detail": "Search is temporarily unavailable"}),
+            status_code=503,
+            media_type="application/json",
+        )
 
-    items = [{k: _serialize(v) for k, v in row.items()} for row in rows]
     return Response(content=json.dumps(items), media_type="application/json")
 
 
