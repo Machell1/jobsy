@@ -2,7 +2,7 @@
 
 const SITE_NAME = 'Jobsy';
 const BASE_URL = 'https://www.jobsyja.com';
-const RAILWAY_API_URL = ''; // Set to Railway domain if custom domain not ready, e.g. 'https://gateway-production-xxxx.up.railway.app'
+const RAILWAY_API_URL = ''; // Only needed if api.jobsyja.com DNS isn't ready yet — find your Railway URL at: Railway dashboard → your service → Settings → Public Networking
 const API_URL = ['localhost', '127.0.0.1'].includes(location.hostname)
   ? 'http://localhost:8000'
   : (RAILWAY_API_URL || 'https://api.jobsyja.com');
