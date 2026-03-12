@@ -10,10 +10,9 @@ from datetime import UTC, datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from sqlalchemy import and_, select
+from sqlalchemy import and_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from profiles.app.models import Profile  # shared DB; atomic profile creation
 from shared.auth import (
     create_access_token,
     create_refresh_token,
@@ -121,31 +120,39 @@ async def register(request: Request, data: UserCreate, db: AsyncSession = Depend
     db.add(user)
     await db.flush()
 
-    # Auto-create profile if profile fields were provided (e.g. provider signup)
+    # Auto-create profile if profile fields were provided (e.g. provider signup).
+    # Uses raw SQL to avoid importing the Profile model from the profiles service,
+    # since each service runs in its own container on Railway.
     if data.display_name:
-        profile = Profile(
-            id=str(uuid.uuid4()),
-            user_id=user.id,
-            display_name=data.display_name,
-            parish=data.parish,
-            service_category=data.service_category,
-            bio=data.bio,
-            is_provider=data.is_provider or (data.role == "provider"),
-            is_active=True,
-            is_verified=False,
-            created_at=now,
-            updated_at=now,
+        profile_id = str(uuid.uuid4())
+        await db.execute(
+            text(
+                "INSERT INTO profiles "
+                "(id, user_id, display_name, parish, service_category, bio, "
+                "is_provider, is_active, is_verified, created_at, updated_at) "
+                "VALUES (:id, :user_id, :display_name, :parish, :service_category, "
+                ":bio, :is_provider, true, false, :created_at, :updated_at)"
+            ),
+            {
+                "id": profile_id,
+                "user_id": user.id,
+                "display_name": data.display_name,
+                "parish": data.parish,
+                "service_category": data.service_category,
+                "bio": data.bio,
+                "is_provider": data.is_provider or (data.role == "provider"),
+                "created_at": now,
+                "updated_at": now,
+            },
         )
-        db.add(profile)
-        await db.flush()
 
         await publish_event("profile.updated", {
-            "id": profile.id,
+            "id": profile_id,
             "user_id": user.id,
-            "display_name": profile.display_name,
-            "bio": profile.bio,
-            "parish": profile.parish,
-            "service_category": profile.service_category,
+            "display_name": data.display_name,
+            "bio": data.bio,
+            "parish": data.parish,
+            "service_category": data.service_category,
         })
 
     return _token_response(user)
