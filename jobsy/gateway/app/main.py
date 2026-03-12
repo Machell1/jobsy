@@ -31,8 +31,9 @@ async def _apply_migrations() -> None:
 
     Uses ADD COLUMN IF NOT EXISTS so it is safe to run on every startup.
     """
-    from shared.database import engine
     from sqlalchemy import text
+
+    from shared.database import engine
 
     try:
         async with engine.begin() as conn:
