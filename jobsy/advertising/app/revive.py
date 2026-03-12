@@ -73,7 +73,7 @@ async def report_impression_to_revive(zone_id: int, banner_id: int | None = None
                 params={"zoneid": zone_id, "bannerid": banner_id or 0},
             )
     except httpx.RequestError:
-        pass
+        logger.warning("Failed to report impression to Revive for zone %d", zone_id)
 
 
 async def report_click_to_revive(zone_id: int, banner_id: int | None = None) -> None:
@@ -88,4 +88,4 @@ async def report_click_to_revive(zone_id: int, banner_id: int | None = None) -> 
                 params={"zoneid": zone_id, "bannerid": banner_id or 0},
             )
     except httpx.RequestError:
-        pass
+        logger.warning("Failed to report click to Revive for zone %d", zone_id)

@@ -1,5 +1,6 @@
 """Payments service API routes -- transactions, accounts, webhooks, payouts."""
 
+import os
 import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -368,8 +369,12 @@ async def stripe_webhook(
     event = verify_webhook_signature(body, stripe_signature)
 
     if not event:
-        # In dev without webhook secret, try to parse raw
         if not is_configured():
+            if os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PRODUCTION"):
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Stripe not configured in production",
+                )
             return {"status": "skipped", "reason": "stripe not configured"}
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid webhook signature")
 

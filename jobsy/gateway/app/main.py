@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI):
     await init_db()
     try:
         app.state.redis = aioredis.from_url(REDIS_URL, decode_responses=True)
-    except Exception:
+    except (ConnectionError, OSError):
         app.state.redis = None
         logger.warning("Redis unavailable, rate limiting disabled")
     app.state.http_client = httpx.AsyncClient(timeout=30.0)
@@ -127,7 +127,7 @@ async def websocket_chat_proxy(websocket: WebSocket, conversation_id: str):
                 except WebSocketDisconnect:
                     await upstream_ws.close()
                 except websockets.ConnectionClosed:
-                    pass
+                    logger.debug("Upstream WebSocket closed for conversation %s", conversation_id)
 
             async def upstream_to_client():
                 """Forward messages from chat service to client."""
@@ -137,7 +137,7 @@ async def websocket_chat_proxy(websocket: WebSocket, conversation_id: str):
                 except websockets.ConnectionClosed:
                     await websocket.close()
                 except WebSocketDisconnect:
-                    pass
+                    logger.debug("Client disconnected during upstream relay for conversation %s", conversation_id)
 
             client_task = asyncio.create_task(client_to_upstream())
             upstream_task = asyncio.create_task(upstream_to_client())
@@ -151,7 +151,7 @@ async def websocket_chat_proxy(websocket: WebSocket, conversation_id: str):
                 task.cancel()
 
     except (websockets.ConnectionClosed, WebSocketDisconnect):
-        pass
+        logger.debug("WebSocket proxy connection closed for conversation %s", conversation_id)
     except Exception:
         logger.exception("WebSocket proxy error for conversation %s", conversation_id)
     finally:

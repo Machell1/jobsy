@@ -20,7 +20,7 @@ elif DATABASE_URL.startswith("postgresql://"):
 REDIS_URL = os.getenv("REDIS_URL", "")
 if not REDIS_URL:
     if os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PRODUCTION"):
-        logging.warning("REDIS_URL not set in production — Redis features will be unavailable")
+        raise RuntimeError("REDIS_URL environment variable must be set in production")
     else:
         REDIS_URL = "redis://localhost:6379/0"
 

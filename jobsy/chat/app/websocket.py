@@ -7,6 +7,7 @@ connected to.
 
 import json
 import logging
+import os
 import uuid
 from datetime import UTC, datetime
 
@@ -151,6 +152,15 @@ async def chat_websocket(websocket: WebSocket, conversation_id: str):
     )
 
     redis_client = await _get_redis()
+    if not redis_client and (os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PRODUCTION")):
+        logger.error("Redis unavailable in production — chat requires Redis for cross-instance delivery")
+        await websocket.close(code=1013, reason="Service temporarily unavailable")
+        listener_task.cancel()
+        if conversation_id in _connections:
+            _connections[conversation_id].pop(user_id, None)
+            if not _connections[conversation_id]:
+                del _connections[conversation_id]
+        return
     try:
         while True:
             data = await websocket.receive_json()
