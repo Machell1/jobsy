@@ -8,7 +8,7 @@
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <meta http-equiv="X-Frame-Options" content="DENY">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://pagead2.googlesyndication.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' https://api.jobsyja.com http://localhost:8000; frame-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://pagead2.googlesyndication.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' https://api.jobsyja.com https://*.up.railway.app http://localhost:8000; frame-src 'none'">
   <link rel="canonical" href="https://www.jobsyja.com/login.html">
   <link rel="icon" type="image/svg+xml" href="images/logo.svg">
   <link rel="stylesheet" href="css/style.css">
@@ -237,7 +237,11 @@
           showMessage('Account created! Redirecting...', 'success');
           setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
         } catch (err) {
-          showMessage(err.message || 'Registration failed. Please try again.', 'error');
+          if (err.message === 'Failed to fetch' || err.name === 'TypeError' || err.name === 'AbortError') {
+            showMessageHTML('Cannot reach the server. Please try again later or email <a href="mailto:jobsyja@jobsyja.com" style="color:var(--primary);text-decoration:underline">jobsyja@jobsyja.com</a> for help.', 'error');
+          } else {
+            showMessage(err.message || 'Registration failed. Please try again.', 'error');
+          }
         } finally { btn.disabled = false; btn.textContent = 'Create Account'; }
       });
 
@@ -258,7 +262,11 @@
           document.getElementById('forgot-step2').style.display = '';
           showMessage('If this phone is registered, you will receive a reset code via SMS.', 'success');
         } catch (err) {
-          showMessage(err.message || 'Failed to send reset code.', 'error');
+          if (err.message === 'Failed to fetch' || err.name === 'TypeError' || err.name === 'AbortError') {
+            showMessageHTML('Cannot reach the server. Please try again later or email <a href="mailto:jobsyja@jobsyja.com" style="color:var(--primary);text-decoration:underline">jobsyja@jobsyja.com</a> for help.', 'error');
+          } else {
+            showMessage(err.message || 'Failed to send reset code.', 'error');
+          }
         } finally { btn.disabled = false; btn.textContent = 'Send Reset Code'; }
       });
 
@@ -278,7 +286,11 @@
           showMessage('Password reset! Redirecting to dashboard...', 'success');
           setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
         } catch (err) {
-          showMessage(err.message || 'Invalid or expired reset code.', 'error');
+          if (err.message === 'Failed to fetch' || err.name === 'TypeError' || err.name === 'AbortError') {
+            showMessageHTML('Cannot reach the server. Please try again later or email <a href="mailto:jobsyja@jobsyja.com" style="color:var(--primary);text-decoration:underline">jobsyja@jobsyja.com</a> for help.', 'error');
+          } else {
+            showMessage(err.message || 'Invalid or expired reset code.', 'error');
+          }
         } finally { btn.disabled = false; btn.textContent = 'Reset Password'; }
       });
 

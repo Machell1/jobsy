@@ -2,9 +2,10 @@
 
 const SITE_NAME = 'Jobsy';
 const BASE_URL = 'https://www.jobsyja.com';
+const RAILWAY_API_URL = ''; // Set to Railway domain if custom domain not ready, e.g. 'https://gateway-production-xxxx.up.railway.app'
 const API_URL = ['localhost', '127.0.0.1'].includes(location.hostname)
   ? 'http://localhost:8000'
-  : 'https://api.jobsyja.com';
+  : (RAILWAY_API_URL || 'https://api.jobsyja.com');
 const ADSENSE_PUB_ID = ''; // Paste your AdSense publisher ID here
 
 /* ===== Service Categories ===== */
