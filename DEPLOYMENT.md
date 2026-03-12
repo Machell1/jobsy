@@ -99,13 +99,41 @@ railway domain
 
 To use a custom domain (`api.jobsyja.com`):
 
-1. In Railway dashboard → **Settings** → **Custom Domain** → Add `api.jobsyja.com`
-2. In your DNS provider, add a CNAME record:
+1. **Add the domain in Railway:**
+   - Railway dashboard → select the **gateway** service → **Settings** → **Networking** → **Custom Domain**
+   - Enter `api.jobsyja.com` and click **Add**
+   - Railway will show you the required CNAME target (e.g. `jobsy-production.up.railway.app`)
+
+2. **Add a CNAME record in your DNS provider:**
+
+   | Type  | Name  | Value (Target)                         | TTL  |
+   |-------|-------|----------------------------------------|------|
+   | CNAME | `api` | `<your-railway-url>.up.railway.app`    | 300  |
+
+   Replace `<your-railway-url>` with the value Railway shows you.
+
+3. **Wait for DNS propagation** (usually 5–15 minutes)
+4. Railway auto-provisions an SSL certificate once the CNAME resolves
+
+### Temporary Workaround (while DNS propagates)
+
+If `api.jobsyja.com` is not resolving yet, you can point the frontend directly at your Railway-provided URL:
+
+1. Find your Railway public URL in the dashboard (e.g. `https://jobsy-production.up.railway.app`)
+2. Open `js/common.js` and set:
+   ```js
+   const RAILWAY_API_URL = 'https://jobsy-production.up.railway.app';
    ```
-   api.jobsyja.com  →  <your-railway-url>
-   ```
-3. Wait for DNS propagation (usually 5-15 minutes)
-4. Railway auto-provisions an SSL certificate
+3. Commit and push — the frontend will use this URL until you clear it back to `''`
+
+### Verify DNS
+
+```bash
+# Check if the CNAME is resolving
+dig api.jobsyja.com CNAME +short
+
+# Should return something like: jobsy-production.up.railway.app.
+```
 
 ---
 
@@ -146,11 +174,31 @@ Pushes to `main` that change files under `jobsy/` trigger an automated pipeline:
 
 ### Setup
 
-1. Generate a Railway deploy token: Railway dashboard → Account → Tokens → **Create Token**
-2. Add it as a GitHub secret: Repo → Settings → Secrets → Actions → **New repository secret** → Name: `RAILWAY_TOKEN`
+1. Generate a Railway deploy token:
+   - Go to [Railway dashboard](https://railway.app/dashboard) → **Account Settings** → **Tokens**
+   - Click **Create Token** and give it a descriptive name (e.g. `github-deploy`)
+   - **Important:** The token must be a *Team Token* or *Project Token* with access to the Jobsy project
+   - Copy the token immediately — it is only shown once
+2. Add it as a GitHub secret:
+   - Go to [Jobsy repo settings](https://github.com/Machell1/jobsy/settings/secrets/actions)
+   - Click **New repository secret**
+   - Name: `RAILWAY_TOKEN`, Value: paste the token (no extra spaces)
 3. Push to `main` — the workflow runs automatically
 
 The workflow file lives at `.github/workflows/deploy.yml`.
+
+### Troubleshooting: "Invalid RAILWAY_TOKEN"
+
+If the deploy step fails with `Invalid RAILWAY_TOKEN`, check the following:
+
+| Check | How to fix |
+|-------|------------|
+| Token expired | Go to Railway → Account → Tokens and verify the token is still active |
+| Token copied incorrectly | Delete the GitHub secret and re-create it — ensure no leading/trailing spaces |
+| Token lacks project access | Use a Project Token scoped to the Jobsy project, or a Team Token |
+| Wrong token type | Personal tokens from `railway login` do not work in CI — use an API token from the dashboard |
+
+After updating the secret, re-run the failed workflow from the [Actions tab](https://github.com/Machell1/jobsy/actions).
 
 ---
 
