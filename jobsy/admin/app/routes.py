@@ -15,10 +15,10 @@ from shared.config import REDIS_URL
 from shared.database import get_db
 from shared.events import publish_event
 
-logger = logging.getLogger(__name__)
-
 from .deps import require_admin
 from .models import AuditLog, ModerationQueue, Profile, VerificationRequest
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["admin"])
 
