@@ -19,3 +19,4 @@ restartPolicyMaxRetries = 5
 # ELASTICSEARCH_URL = "provide via Elasticsearch plugin, or set ELASTICSEARCH_HOST for private networking"
 # JWT_SECRET = "set in Railway secrets"
 
+# Deploy trigger - Thu Mar 12 15:29:22 EDT 2026
