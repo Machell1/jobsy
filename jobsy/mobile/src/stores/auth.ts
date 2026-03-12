@@ -2,10 +2,13 @@ import * as SecureStore from "expo-secure-store";
 import { create } from "zustand";
 
 import * as authApi from "@/api/auth";
+import type { UserRole } from "@/api/auth";
 
 interface User {
   id: string;
   role: string;
+  roles: string[];
+  activeRole: string;
 }
 
 interface AuthState {
@@ -19,13 +22,15 @@ interface AuthState {
   oauthLogin: (
     provider: "google" | "apple",
     idToken: string,
-    role?: "user" | "provider",
+    role?: UserRole,
   ) => Promise<void>;
   resetPassword: (data: {
     phone: string;
     otp: string;
     new_password: string;
   }) => Promise<void>;
+  addRole: (role: UserRole) => Promise<void>;
+  switchRole: (role: UserRole) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -53,16 +58,20 @@ function setAuthFromTokens(
   fallbackRole = "user",
 ) {
   const payload = parseJwt(tokens.access_token);
+  const roles = (payload?.roles as string[]) || tokens.roles || [fallbackRole];
+  const activeRole = (payload?.active_role as string) || tokens.active_role || fallbackRole;
   set({
     user: {
       id: (payload?.sub as string) || "",
       role: (payload?.role as string) || fallbackRole,
+      roles,
+      activeRole,
     },
     isAuthenticated: true,
   });
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isLoading: true,
   isAuthenticated: false,
@@ -74,11 +83,15 @@ export const useAuthStore = create<AuthState>((set) => ({
         const payload = parseJwt(accessToken);
         if (payload && payload.sub && !isTokenExpired(payload)) {
           set({
-            user: { id: payload.sub as string, role: (payload.role as string) || "user" },
+            user: {
+              id: payload.sub as string,
+              role: (payload.role as string) || "user",
+              roles: (payload.roles as string[]) || ["user"],
+              activeRole: (payload.active_role as string) || (payload.role as string) || "user",
+            },
             isAuthenticated: true,
           });
         } else {
-          // Token expired or invalid, clear stored tokens
           await SecureStore.deleteItemAsync("access_token");
           await SecureStore.deleteItemAsync("refresh_token");
         }
@@ -120,6 +133,26 @@ export const useAuthStore = create<AuthState>((set) => ({
     await SecureStore.setItemAsync("access_token", tokens.access_token);
     await SecureStore.setItemAsync("refresh_token", tokens.refresh_token);
     setAuthFromTokens(tokens, set);
+  },
+
+  addRole: async (role: UserRole) => {
+    await authApi.addRole(role);
+    const currentUser = get().user;
+    if (currentUser) {
+      set({
+        user: {
+          ...currentUser,
+          roles: [...new Set([...currentUser.roles, role])].sort(),
+        },
+      });
+    }
+  },
+
+  switchRole: async (role: UserRole) => {
+    const tokens = await authApi.switchRole(role);
+    await SecureStore.setItemAsync("access_token", tokens.access_token);
+    await SecureStore.setItemAsync("refresh_token", tokens.refresh_token);
+    setAuthFromTokens(tokens, set, role);
   },
 
   logout: async () => {

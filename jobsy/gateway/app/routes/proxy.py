@@ -33,7 +33,8 @@ async def _proxy_request(service: str, path: str, request: Request, user: dict) 
     request_id = getattr(request.state, "request_id", None) or request.headers.get("X-Request-ID", "")
     headers = {
         "X-User-ID": user["user_id"],
-        "X-User-Role": user["role"],
+        "X-User-Role": user.get("active_role") or user.get("role", "user"),
+        "X-User-Roles": ",".join(user.get("roles", [])),
         "X-Request-ID": request_id,
         "Content-Type": request.headers.get("content-type", "application/json"),
     }

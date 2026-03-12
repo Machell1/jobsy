@@ -1,8 +1,11 @@
 """SQLAlchemy ORM models for the gateway (users, password_reset_otps)."""
 
 from sqlalchemy import Boolean, Column, DateTime, Integer, String
+from sqlalchemy.dialects.postgresql import JSONB
 
 from shared.database import Base
+
+VALID_ROLES = {"user", "provider", "hirer", "advertiser"}
 
 
 class User(Base):
@@ -13,6 +16,8 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=True)
     password_hash = Column(String(255), nullable=True)
     role = Column(String(20), default="user")
+    roles = Column(JSONB, default=list)  # ["user", "provider", "hirer", "advertiser"]
+    active_role = Column(String(20), default="user")  # currently selected role
     is_verified = Column(Boolean, default=False)
     oauth_provider = Column(String(20), nullable=True)
     oauth_id = Column(String(255), nullable=True)

@@ -16,12 +16,19 @@ import { OAuthButtons } from "@/components/OAuthButtons";
 import { COLORS } from "@/constants/theme";
 import { useAuthStore } from "@/stores/auth";
 import { isValidJamaicanPhone, isValidPassword } from "@/utils/validators";
+import type { UserRole } from "@/api/auth";
+
+const ROLE_OPTIONS: { value: UserRole; label: string; icon: keyof typeof Ionicons.glyphMap; desc: string }[] = [
+  { value: "user", label: "Client", icon: "search-outline", desc: "Looking for services" },
+  { value: "provider", label: "Provider", icon: "construct-outline", desc: "Offering services" },
+  { value: "hirer", label: "Hirer", icon: "briefcase-outline", desc: "Posting jobs" },
+];
 
 export default function RegisterScreen() {
   const [phone, setPhone] = useState("+1876");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"user" | "provider">("user");
+  const [role, setRole] = useState<UserRole>("user");
   const [loading, setLoading] = useState(false);
   const register = useAuthStore((s) => s.register);
 
@@ -72,46 +79,29 @@ export default function RegisterScreen() {
           {/* Role picker */}
           <Text className="mb-2 text-sm font-medium text-dark-700">I am a</Text>
           <View className="mb-4 flex-row gap-3">
-            <Pressable
-              onPress={() => setRole("user")}
-              className={`flex-1 items-center rounded-xl border-2 py-3 ${
-                role === "user" ? "border-primary-900 bg-primary-50" : "border-dark-200"
-              }`}
-            >
-              <Ionicons
-                name="search-outline"
-                size={24}
-                color={role === "user" ? COLORS.primary : COLORS.gray[500]}
-              />
-              <Text
-                className={`mt-1 font-medium ${
-                  role === "user" ? "text-primary-900" : "text-dark-500"
+            {ROLE_OPTIONS.map((opt) => (
+              <Pressable
+                key={opt.value}
+                onPress={() => setRole(opt.value)}
+                className={`flex-1 items-center rounded-xl border-2 py-3 ${
+                  role === opt.value ? "border-primary-900 bg-primary-50" : "border-dark-200"
                 }`}
               >
-                Client
-              </Text>
-              <Text className="text-xs text-dark-400">Looking for services</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => setRole("provider")}
-              className={`flex-1 items-center rounded-xl border-2 py-3 ${
-                role === "provider" ? "border-primary-900 bg-primary-50" : "border-dark-200"
-              }`}
-            >
-              <Ionicons
-                name="construct-outline"
-                size={24}
-                color={role === "provider" ? COLORS.primary : COLORS.gray[500]}
-              />
-              <Text
-                className={`mt-1 font-medium ${
-                  role === "provider" ? "text-primary-900" : "text-dark-500"
-                }`}
-              >
-                Provider
-              </Text>
-              <Text className="text-xs text-dark-400">Offering services</Text>
-            </Pressable>
+                <Ionicons
+                  name={opt.icon}
+                  size={24}
+                  color={role === opt.value ? COLORS.primary : COLORS.gray[500]}
+                />
+                <Text
+                  className={`mt-1 font-medium ${
+                    role === opt.value ? "text-primary-900" : "text-dark-500"
+                  }`}
+                >
+                  {opt.label}
+                </Text>
+                <Text className="text-xs text-dark-400">{opt.desc}</Text>
+              </Pressable>
+            ))}
           </View>
 
           {/* Phone */}

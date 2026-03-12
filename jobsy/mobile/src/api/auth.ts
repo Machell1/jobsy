@@ -2,17 +2,22 @@ import axios from "axios";
 
 import { API_URL } from "./client";
 
+export type UserRole = "user" | "provider" | "hirer" | "advertiser";
+
 export interface TokenResponse {
   access_token: string;
   refresh_token: string;
   token_type: string;
+  active_role: string;
+  roles: string[];
 }
 
 export interface RegisterData {
   phone: string;
   password: string;
   email?: string;
-  role: "user" | "provider";
+  role: UserRole;
+  roles?: UserRole[];
 }
 
 export interface LoginData {
@@ -50,11 +55,33 @@ export async function refreshTokens(refreshToken: string): Promise<TokenResponse
 export interface OAuthData {
   provider: "google" | "apple";
   id_token: string;
-  role: "user" | "provider";
+  role: UserRole;
+  roles?: UserRole[];
 }
 
 export async function oauthAuthenticate(data: OAuthData): Promise<TokenResponse> {
   const res = await authClient.post<TokenResponse>("/auth/oauth", data);
+  return res.data;
+}
+
+// --- Role Management ---
+
+export async function addRole(role: UserRole): Promise<void> {
+  await authClient.post("/auth/roles/add", { role });
+}
+
+export async function switchRole(role: UserRole): Promise<TokenResponse> {
+  const res = await authClient.post<TokenResponse>("/auth/roles/switch", { role });
+  return res.data;
+}
+
+export async function getMe(): Promise<{
+  id: string;
+  roles: string[];
+  active_role: string;
+  role: string;
+}> {
+  const res = await authClient.get("/auth/me");
   return res.data;
 }
 

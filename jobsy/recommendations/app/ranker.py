@@ -5,11 +5,11 @@ Initial version uses a simple weighted-sum approach; can be replaced with
 ML-based ranking as interaction data accumulates.
 
 Scoring breakdown (weights sum to 1.0):
-  - Proximity:      0.30  (closer = higher score)
-  - Category match:  0.30  (matches user's preferred categories)
-  - Budget alignment: 0.20  (listing budget fits user's range)
+  - Proximity:       0.25  (closer = higher score)
+  - Category match:  0.25  (matches user's preferred categories)
+  - Budget alignment: 0.15  (listing budget fits user's range)
   - Freshness:       0.10  (newer listings rank higher)
-  - Provider rating:  0.10  (higher-rated providers rank higher)
+  - Provider rating:  0.25  (higher-rated providers rank significantly higher)
 """
 
 import math
@@ -22,12 +22,12 @@ MAX_DISTANCE_KM = 100.0
 # Maximum age in days before freshness score drops to 0
 MAX_AGE_DAYS = 30.0
 
-# Weights
-W_PROXIMITY = 0.30
-W_CATEGORY = 0.30
-W_BUDGET = 0.20
+# Weights -- rating now has significantly more influence
+W_PROXIMITY = 0.25
+W_CATEGORY = 0.25
+W_BUDGET = 0.15
 W_FRESHNESS = 0.10
-W_RATING = 0.10
+W_RATING = 0.25
 
 
 def compute_proximity_score(distance_km: float | None) -> float:
@@ -95,13 +95,20 @@ def compute_freshness_score(created_at: datetime) -> float:
 
 
 def compute_rating_score(rating_avg: float, rating_count: int) -> float:
-    """Score based on provider rating, with Bayesian smoothing."""
+    """Score based on provider rating, with Bayesian smoothing.
+
+    Hirer ratings directly impact how providers are ranked.
+    Higher-rated providers appear higher in search results and feeds.
+    """
     if rating_count == 0:
-        return 0.5  # no ratings yet
+        return 0.4  # no ratings gets slightly below neutral
     # Bayesian average: blend towards 3.0 (neutral) with low count
-    prior_weight = 5  # equivalent to 5 reviews at 3.0
+    # Lower prior_weight means ratings have more impact sooner
+    prior_weight = 3  # equivalent to 3 reviews at 3.0
     smoothed = (rating_avg * rating_count + 3.0 * prior_weight) / (rating_count + prior_weight)
-    return smoothed / 5.0  # normalize to 0-1
+    # Apply a bonus for high review counts (providers with more reviews are more trustworthy)
+    volume_bonus = min(rating_count / 20.0, 0.1)  # up to 0.1 bonus for 20+ reviews
+    return min((smoothed / 5.0) + volume_bonus, 1.0)
 
 
 def rank_candidate(

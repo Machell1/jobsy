@@ -13,9 +13,18 @@ class ProfileCreate(BaseModel):
     skills: list[str] = Field(default_factory=list)
     hourly_rate: Decimal | None = None
     is_provider: bool = False
+    is_hirer: bool = False
+    is_advertiser: bool = False
     latitude: float | None = None
     longitude: float | None = None
     parish: str | None = None
+    # Social media links
+    instagram_url: str | None = None
+    twitter_url: str | None = None
+    tiktok_url: str | None = None
+    youtube_url: str | None = None
+    linkedin_url: str | None = None
+    portfolio_url: str | None = None
 
 
 class ProfileUpdate(BaseModel):
@@ -26,9 +35,18 @@ class ProfileUpdate(BaseModel):
     skills: list[str] | None = None
     hourly_rate: Decimal | None = None
     is_provider: bool | None = None
+    is_hirer: bool | None = None
+    is_advertiser: bool | None = None
     latitude: float | None = None
     longitude: float | None = None
     parish: str | None = None
+    # Social media links
+    instagram_url: str | None = None
+    twitter_url: str | None = None
+    tiktok_url: str | None = None
+    youtube_url: str | None = None
+    linkedin_url: str | None = None
+    portfolio_url: str | None = None
 
 
 class ProfileResponse(BaseModel):
@@ -43,10 +61,32 @@ class ProfileResponse(BaseModel):
     skills: list[str]
     hourly_rate: Decimal | None
     is_provider: bool
+    is_hirer: bool = False
+    is_advertiser: bool = False
     rating_avg: Decimal
     rating_count: int
     is_verified: bool = False
     is_active: bool
+    # Social media links
+    instagram_url: str | None = None
+    twitter_url: str | None = None
+    tiktok_url: str | None = None
+    youtube_url: str | None = None
+    linkedin_url: str | None = None
+    portfolio_url: str | None = None
+    # Follower stats
+    follower_count: int = 0
+    following_count: int = 0
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class FollowRequest(BaseModel):
+    user_id: str
+
+
+class TagUserRequest(BaseModel):
+    tagged_user_id: str
+    entity_type: str = Field(..., pattern=r"^(listing|review|post)$")
+    entity_id: str
