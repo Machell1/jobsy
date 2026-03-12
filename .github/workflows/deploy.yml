@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths: ["jobsy/**"]
+  workflow_dispatch:
 
 jobs:
   test:
@@ -23,7 +24,7 @@ jobs:
       - name: Deploy to Railway
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: cd jobsy && railway up --detach
+        run: cd jobsy && railway up --detach --service gateway
 
       - name: Wait for deployment health
         run: sleep 20
@@ -31,7 +32,7 @@ jobs:
       - name: Run migrations
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: cd jobsy && railway run alembic upgrade head
+        run: cd jobsy && railway run --service gateway alembic upgrade head
 
       - name: Verify deployment
         run: |
