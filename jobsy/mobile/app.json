@@ -15,7 +15,7 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.jobsy.app",
+      "bundleIdentifier": "com.williamsmachell.jobsy",
       "usesAppleSignIn": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Jobsy needs your location to show nearby services in your parish.",

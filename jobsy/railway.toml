@@ -13,6 +13,8 @@ restartPolicyMaxRetries = 5
 # All five are REQUIRED in production — services will refuse to start without them.
 # DATABASE_URL = "provided by Railway Postgres plugin"
 # REDIS_URL = "provided by Railway Redis plugin"
-# RABBITMQ_URL = "REQUIRED: provide via CloudAMQP plugin or self-hosted RabbitMQ service URL"
-# ELASTICSEARCH_URL = "REQUIRED for search service: provide via Elasticsearch plugin or hosted URL"
+# RABBITMQ_URL = "provide via CloudAMQP plugin, or set RABBITMQ_HOST for Railway private networking"
+# CLOUDAMQP_URL = "auto-detected: set by CloudAMQP plugin if installed"
+# RABBITMQ_HOST = "alternative: hostname for Railway private networking (e.g. rabbitmq.railway.internal)"
+# ELASTICSEARCH_URL = "provide via Elasticsearch plugin, or set ELASTICSEARCH_HOST for private networking"
 # JWT_SECRET = "set in Railway secrets"

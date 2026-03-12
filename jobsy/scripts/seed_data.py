@@ -374,6 +374,7 @@ async def seed():
                 role="provider",
                 is_verified=True,
                 created_at=_now(),
+                updated_at=_now(),
             )
             session.add(user)
 
@@ -386,7 +387,7 @@ async def seed():
                 parish=p["parish"],
                 skills=p["skills"],
                 hourly_rate=p["hourly_rate"],
-                availability_status="available",
+                is_provider=True,
                 created_at=_now(),
                 updated_at=_now(),
             )
@@ -422,6 +423,7 @@ async def seed():
                 role="user",
                 is_verified=True,
                 created_at=_now(),
+                updated_at=_now(),
             ))
             profile_id = _uid()
             session.add(Profile(
@@ -429,7 +431,6 @@ async def seed():
                 user_id=user_id,
                 display_name=c["name"],
                 parish=c["parish"],
-                availability_status="available",
                 created_at=_now(),
                 updated_at=_now(),
             ))

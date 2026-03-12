@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 EXCHANGE_NAME = "jobsy.events"
 DLX_NAME = "jobsy.events.dlx"
 MAX_RETRIES = 3
+CONNECTION_RETRIES = 5  # attempts before giving up on initial connection
 RECONNECT_DELAY = 10  # seconds between reconnection attempts
 
 # Module-level connection for reuse across publishes
@@ -27,13 +28,36 @@ _publish_connection: aio_pika.abc.AbstractRobustConnection | None = None
 
 
 async def get_connection():
-    """Get or create a reusable RabbitMQ connection for publishing."""
+    """Get or create a reusable RabbitMQ connection for publishing.
+
+    Retries with exponential backoff if the broker is temporarily
+    unreachable (e.g. DNS not yet propagated on Railway).
+    """
     global _publish_connection
     if not RABBITMQ_URL:
         return None
-    if _publish_connection is None or _publish_connection.is_closed:
-        _publish_connection = await aio_pika.connect_robust(RABBITMQ_URL)
-    return _publish_connection
+    if _publish_connection is not None and not _publish_connection.is_closed:
+        return _publish_connection
+
+    delay = 2
+    for attempt in range(1, CONNECTION_RETRIES + 1):
+        try:
+            _publish_connection = await aio_pika.connect_robust(RABBITMQ_URL)
+            return _publish_connection
+        except Exception:
+            if attempt == CONNECTION_RETRIES:
+                logger.warning(
+                    "RabbitMQ connection failed after %d attempts, giving up",
+                    CONNECTION_RETRIES,
+                )
+                return None
+            logger.warning(
+                "RabbitMQ connection attempt %d/%d failed, retrying in %ds",
+                attempt, CONNECTION_RETRIES, delay,
+            )
+            await asyncio.sleep(delay)
+            delay = min(delay * 2, 30)
+    return None
 
 
 async def close_connection():
