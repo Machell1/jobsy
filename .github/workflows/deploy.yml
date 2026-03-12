@@ -18,6 +18,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Install Railway CLI
         run: npm i -g @railway/cli
 
@@ -32,7 +36,9 @@ jobs:
       - name: Run database migrations
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: cd jobsy && railway run --service gateway python migrate.py
+        run: |
+          pip install sqlalchemy[asyncio] asyncpg
+          cd jobsy && railway run --service gateway python gateway/migrate.py
 
       - name: Verify deployment
         run: |
