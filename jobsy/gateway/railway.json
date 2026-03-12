@@ -1,7 +1,8 @@
 {
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
-    "dockerfilePath": "gateway/Dockerfile"
+    "dockerfilePath": "gateway/Dockerfile",
+    "watchPatterns": ["shared/**", "gateway/**", "alembic/**"]
   },
   "deploy": {
     "healthcheckPath": "/health",

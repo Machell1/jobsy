@@ -135,6 +135,57 @@ curl -X POST https://api.jobsyja.com/auth/login \
 
 ---
 
+## Automated Deployment (GitHub Actions)
+
+Pushes to `main` that change files under `jobsy/` trigger an automated pipeline:
+
+1. **Tests run** via the reusable `test.yml` workflow
+2. **Railway deploy** via `railway up --detach`
+3. **Database migrations** via `railway run alembic upgrade head`
+4. **Health check** verifies `https://api.jobsyja.com/health` returns 200
+
+### Setup
+
+1. Generate a Railway deploy token: Railway dashboard → Account → Tokens → **Create Token**
+2. Add it as a GitHub secret: Repo → Settings → Secrets → Actions → **New repository secret** → Name: `RAILWAY_TOKEN`
+3. Push to `main` — the workflow runs automatically
+
+The workflow file lives at `.github/workflows/deploy.yml`.
+
+---
+
+## Mobile App (Expo / EAS Build)
+
+The mobile app connects to the same gateway API.
+
+### Development
+
+```bash
+cd jobsy/mobile
+cp .env.example .env   # Uses http://localhost:8000 by default
+npx expo start
+```
+
+### Production Build
+
+Production API URLs are configured in `eas.json`:
+
+```bash
+cd jobsy/mobile
+npx eas build --profile production --platform all
+```
+
+This bakes `EXPO_PUBLIC_API_URL=https://api.jobsyja.com` into the build.
+
+### Submit to App Stores
+
+```bash
+npx eas submit --profile production --platform ios
+npx eas submit --profile production --platform android
+```
+
+---
+
 ## Frontend (GitHub Pages)
 
 The frontend is already configured for GitHub Pages:
