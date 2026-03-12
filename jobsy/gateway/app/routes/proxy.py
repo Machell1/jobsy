@@ -204,29 +204,37 @@ async def proxy_search_listings(
     db: AsyncSession = Depends(get_db),
 ):
     """Search listings -- proxy to search service with local DB fallback."""
+    # Try the dedicated search microservice first
     try:
         return await _proxy_request("search", "/listings", request, user)
-    except HTTPException as exc:
-        if exc.status_code not in (502, 504):
-            raise
+    except Exception:
+        logger.info("Search microservice unavailable, using local DB fallback")
+
     # Fallback: direct SQL ILIKE search against listings table
     q = request.query_params.get("q", "").strip()
     if not q:
-        return Response(content="[]", media_type="application/json")
-    pattern = f"%{q}%"
-    result = await db.execute(
-        text(
-            "SELECT id, poster_id, title, description, category, subcategory, "
-            "budget_min, budget_max, currency, latitude, longitude, geohash, "
-            "parish, address_text, photos, status, expires_at, created_at, updated_at "
-            "FROM listings "
-            "WHERE status = 'active' AND ("
-            "  title ILIKE :pattern OR description ILIKE :pattern "
-            "  OR category ILIKE :pattern OR parish ILIKE :pattern"
-            ") ORDER BY created_at DESC LIMIT 50"
-        ),
-        {"pattern": pattern},
-    )
+        # Return all active listings when no query
+        result = await db.execute(
+            text(
+                "SELECT id, poster_id, title, description, category, subcategory, "
+                "budget_min, budget_max, currency, parish, status, created_at, updated_at "
+                "FROM listings WHERE status = 'active' ORDER BY created_at DESC LIMIT 50"
+            )
+        )
+    else:
+        pattern = f"%{q}%"
+        result = await db.execute(
+            text(
+                "SELECT id, poster_id, title, description, category, subcategory, "
+                "budget_min, budget_max, currency, parish, status, created_at, updated_at "
+                "FROM listings "
+                "WHERE status = 'active' AND ("
+                "  title ILIKE :pattern OR description ILIKE :pattern "
+                "  OR category ILIKE :pattern OR parish ILIKE :pattern"
+                ") ORDER BY created_at DESC LIMIT 50"
+            ),
+            {"pattern": pattern},
+        )
     rows = result.mappings().all()
 
     def _serialize(val):
@@ -243,7 +251,13 @@ async def proxy_search_listings(
 @router.api_route("/search/{path:path}", methods=["GET"])
 async def proxy_search(path: str, request: Request, user: dict = Depends(get_optional_user)):
     """Public search access (browse without login)."""
-    return await _proxy_request("search", f"/{path}", request, user)
+    try:
+        return await _proxy_request("search", f"/{path}", request, user)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Search service is temporarily unavailable",
+        ) from None
 
 
 @router.api_route("/admin/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
