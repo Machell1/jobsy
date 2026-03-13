@@ -1065,6 +1065,27 @@ Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
 
 @app.middleware("http")
+async def inject_user_context(request: Request, call_next):
+    """Extract user ID from JWT and inject X-User-ID header for downstream routes."""
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        from shared.auth import decode_token
+
+        try:
+            payload = decode_token(auth_header[7:])
+            if payload.get("type") == "access" and payload.get("sub"):
+                request.state.user_id = payload["sub"]
+                request.state.active_role = payload.get("active_role", payload.get("role", "user"))
+                # Inject into mutable headers scope so downstream sees X-User-ID
+                raw_headers = list(request.scope["headers"])
+                raw_headers.append((b"x-user-id", payload["sub"].encode()))
+                request.scope["headers"] = raw_headers
+        except Exception:  # noqa: BLE001
+            pass  # Let individual route auth handle invalid tokens
+    return await call_next(request)
+
+
+@app.middleware("http")
 async def rate_limit_middleware(request: Request, call_next):
     """Apply rate limiting to all requests."""
     await rate_limit_check(request)
