@@ -41,6 +41,7 @@ from .models import (
     Follow,
     PortfolioItem,
     Profile,
+    ProfileView,
     ProviderProfile,
     ProviderService,
     ServicePackage,
@@ -1354,6 +1355,304 @@ async def resubmit_verification(
 
 
 # ============================================================
+# Phase 3: Portfolio (user-based), Analytics, Public Profile
+# ============================================================
+
+
+class UserPortfolioCreate(BaseModel):
+    title: str
+    description: str | None = None
+    image_url: str | None = None
+    category: str | None = None
+    display_order: int = 0
+    is_visible: bool = True
+
+
+class UserPortfolioUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    image_url: str | None = None
+    category: str | None = None
+    display_order: int | None = None
+    is_visible: bool | None = None
+
+
+@router.post("/me/portfolio", status_code=status.HTTP_201_CREATED)
+async def add_user_portfolio_item(
+    data: UserPortfolioCreate, request: Request, db: AsyncSession = Depends(get_db)
+):
+    """Add portfolio item for the current user."""
+    user_id = _get_user_id(request)
+    now = datetime.now(UTC)
+
+    item = PortfolioItem(
+        id=str(uuid.uuid4()),
+        user_id=user_id,
+        title=data.title,
+        description=data.description,
+        image_url=data.image_url,
+        category=data.category,
+        display_order=data.display_order,
+        is_visible=data.is_visible,
+        created_at=now,
+        updated_at=now,
+    )
+    db.add(item)
+    await db.flush()
+
+    return {
+        "id": item.id,
+        "user_id": item.user_id,
+        "title": item.title,
+        "description": item.description,
+        "image_url": item.image_url,
+        "category": item.category,
+        "display_order": item.display_order,
+        "is_visible": item.is_visible,
+        "created_at": item.created_at.isoformat(),
+    }
+
+
+@router.get("/me/portfolio")
+async def list_user_portfolio(request: Request, db: AsyncSession = Depends(get_db)):
+    """List current user's portfolio items."""
+    user_id = _get_user_id(request)
+
+    result = await db.execute(
+        select(PortfolioItem)
+        .where(PortfolioItem.user_id == user_id)
+        .order_by(PortfolioItem.display_order)
+    )
+    items = result.scalars().all()
+
+    return [
+        {
+            "id": item.id,
+            "title": item.title,
+            "description": item.description,
+            "image_url": item.image_url,
+            "category": item.category,
+            "display_order": item.display_order,
+            "is_visible": item.is_visible,
+            "created_at": item.created_at.isoformat(),
+        }
+        for item in items
+    ]
+
+
+@router.put("/me/portfolio/{item_id}")
+async def update_user_portfolio_item(
+    item_id: str, data: UserPortfolioUpdate, request: Request, db: AsyncSession = Depends(get_db)
+):
+    """Update a portfolio item."""
+    user_id = _get_user_id(request)
+
+    result = await db.execute(
+        select(PortfolioItem).where(PortfolioItem.id == item_id, PortfolioItem.user_id == user_id)
+    )
+    item = result.scalar_one_or_none()
+    if not item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Portfolio item not found")
+
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(item, field, value)
+    item.updated_at = datetime.now(UTC)
+    await db.flush()
+
+    return {
+        "id": item.id,
+        "title": item.title,
+        "description": item.description,
+        "image_url": item.image_url,
+        "category": item.category,
+        "display_order": item.display_order,
+        "is_visible": item.is_visible,
+    }
+
+
+@router.delete("/me/portfolio/{item_id}")
+async def delete_user_portfolio_item(
+    item_id: str, request: Request, db: AsyncSession = Depends(get_db)
+):
+    """Delete a portfolio item."""
+    user_id = _get_user_id(request)
+
+    result = await db.execute(
+        select(PortfolioItem).where(PortfolioItem.id == item_id, PortfolioItem.user_id == user_id)
+    )
+    item = result.scalar_one_or_none()
+    if not item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Portfolio item not found")
+
+    await db.delete(item)
+    await db.flush()
+    return {"status": "deleted", "item_id": item_id}
+
+
+@router.get("/me/analytics")
+async def my_profile_analytics(request: Request, db: AsyncSession = Depends(get_db)):
+    """Get profile analytics for the current user."""
+    user_id = _get_user_id(request)
+
+    # Total profile views
+    views_result = await db.execute(
+        select(func.count()).where(ProfileView.profile_user_id == user_id)
+    )
+    total_views = views_result.scalar() or 0
+
+    # Views last 7 days
+    from datetime import timedelta
+
+    week_ago = datetime.now(UTC) - timedelta(days=7)
+    recent_views_result = await db.execute(
+        select(func.count()).where(
+            ProfileView.profile_user_id == user_id,
+            ProfileView.created_at >= week_ago,
+        )
+    )
+    recent_views = recent_views_result.scalar() or 0
+
+    # Views last 30 days
+    month_ago = datetime.now(UTC) - timedelta(days=30)
+    monthly_views_result = await db.execute(
+        select(func.count()).where(
+            ProfileView.profile_user_id == user_id,
+            ProfileView.created_at >= month_ago,
+        )
+    )
+    monthly_views = monthly_views_result.scalar() or 0
+
+    # View sources breakdown
+    sources_result = await db.execute(
+        select(ProfileView.source, func.count())
+        .where(ProfileView.profile_user_id == user_id)
+        .group_by(ProfileView.source)
+    )
+    sources = {row[0] or "unknown": row[1] for row in sources_result.all()}
+
+    # Portfolio item count
+    portfolio_result = await db.execute(
+        select(func.count()).where(PortfolioItem.user_id == user_id)
+    )
+    portfolio_count = portfolio_result.scalar() or 0
+
+    return {
+        "user_id": user_id,
+        "total_views": total_views,
+        "views_last_7_days": recent_views,
+        "views_last_30_days": monthly_views,
+        "view_sources": sources,
+        "portfolio_items": portfolio_count,
+    }
+
+
+@router.get("/public/{identifier}")
+async def public_profile(identifier: str, request: Request, db: AsyncSession = Depends(get_db)):
+    """Public shareable profile page data."""
+    # Try slug first, then user_id
+    result = await db.execute(
+        select(Profile).where(
+            Profile.is_active.is_(True),
+            (Profile.public_url_slug == identifier) | (Profile.user_id == identifier),
+        )
+    )
+    profile = result.scalar_one_or_none()
+    if not profile:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
+
+    # Record the view
+    viewer_user_id = request.headers.get("X-User-ID")
+    viewer_ip = request.client.host if request.client else None
+    source = request.query_params.get("source", "direct")
+    share_link_id = request.query_params.get("share_link_id")
+
+    view = ProfileView(
+        id=str(uuid.uuid4()),
+        profile_user_id=profile.user_id,
+        viewer_user_id=viewer_user_id,
+        viewer_ip=viewer_ip,
+        source=source,
+        share_link_id=share_link_id,
+        created_at=datetime.now(UTC),
+    )
+    db.add(view)
+    await db.flush()
+
+    # Get public portfolio items
+    portfolio_result = await db.execute(
+        select(PortfolioItem)
+        .where(PortfolioItem.user_id == profile.user_id, PortfolioItem.is_visible.is_(True))
+        .order_by(PortfolioItem.display_order)
+    )
+    portfolio_items = portfolio_result.scalars().all()
+
+    return {
+        "user_id": profile.user_id,
+        "display_name": profile.display_name,
+        "bio": profile.bio,
+        "avatar_url": profile.avatar_url,
+        "parish": profile.parish,
+        "service_category": profile.service_category,
+        "skills": profile.skills,
+        "is_verified": profile.is_verified,
+        "is_provider": profile.is_provider,
+        "rating_avg": float(profile.rating_avg) if profile.rating_avg else None,
+        "rating_count": profile.rating_count,
+        "portfolio": [
+            {
+                "id": item.id,
+                "title": item.title,
+                "description": item.description,
+                "image_url": item.image_url,
+                "category": item.category,
+            }
+            for item in portfolio_items
+        ],
+        "social_links": {
+            "instagram": profile.instagram_url,
+            "twitter": profile.twitter_url,
+            "tiktok": profile.tiktok_url,
+            "youtube": profile.youtube_url,
+            "linkedin": profile.linkedin_url,
+        },
+    }
+
+
+@router.post("/me/share-link")
+async def generate_share_link(request: Request, db: AsyncSession = Depends(get_db)):
+    """Generate a shareable profile link with tracking."""
+    user_id = _get_user_id(request)
+
+    result = await db.execute(select(Profile).where(Profile.user_id == user_id))
+    profile = result.scalar_one_or_none()
+    if not profile:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
+
+    # Generate slug if not present
+    if not profile.public_url_slug:
+        base_slug = profile.display_name.lower().replace(" ", "-") if profile.display_name else user_id
+        base_slug = quote(base_slug, safe="-")
+        # Check uniqueness
+        check = await db.execute(
+            select(func.count()).where(Profile.public_url_slug == base_slug)
+        )
+        if check.scalar():
+            base_slug = f"{base_slug}-{str(uuid.uuid4())[:8]}"
+        profile.public_url_slug = base_slug
+        profile.updated_at = datetime.now(UTC)
+        await db.flush()
+
+    share_link_id = str(uuid.uuid4())[:12]
+    identifier = profile.public_url_slug or user_id
+
+    return {
+        "share_url": f"/profiles/public/{identifier}?source=share_link&share_link_id={share_link_id}",
+        "share_link_id": share_link_id,
+        "slug": profile.public_url_slug,
+    }
+
+
+# ============================================================
 # Profile delete + catch-all (MUST be last)
 # ============================================================
 
@@ -1370,6 +1669,30 @@ async def delete_my_profile(request: Request, db: AsyncSession = Depends(get_db)
     profile.updated_at = datetime.now(UTC)
     await db.flush()
     return {"status": "deleted"}
+
+
+@router.get("/{user_id}/portfolio")
+async def public_user_portfolio(user_id: str, db: AsyncSession = Depends(get_db)):
+    """Public: view someone's portfolio items."""
+    result = await db.execute(
+        select(PortfolioItem)
+        .where(PortfolioItem.user_id == user_id, PortfolioItem.is_visible.is_(True))
+        .order_by(PortfolioItem.display_order)
+    )
+    items = result.scalars().all()
+
+    return [
+        {
+            "id": item.id,
+            "title": item.title,
+            "description": item.description,
+            "image_url": item.image_url,
+            "category": item.category,
+            "display_order": item.display_order,
+            "created_at": item.created_at.isoformat(),
+        }
+        for item in items
+    ]
 
 
 # NOTE: This catch-all route MUST be declared after all fixed-path routes

@@ -60,6 +60,10 @@ with contextlib.suppress(Exception):
     import gateway.app.models_trust  # noqa: F401
 with contextlib.suppress(Exception):
     import search.app.models  # noqa: F401
+with contextlib.suppress(Exception):
+    import gateway.app.models_business  # noqa: F401
+with contextlib.suppress(Exception):
+    import gateway.app.models_analytics  # noqa: F401
 
 
 @pytest.fixture(scope="session")

@@ -42,8 +42,15 @@ class Profile(Base):
     follower_count = Column(Integer, default=0)
     following_count = Column(Integer, default=0)
 
+    # Phase 3: Public profile & portfolio
+    public_url_slug = Column(String(100), nullable=True)
+    portfolio_enabled = Column(Boolean, default=False)
+    total_profile_views = Column(Integer, default=0)
+
     created_at = Column(DateTime(timezone=True), nullable=False)
     updated_at = Column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = ({"extend_existing": True},)
 
 
 class VerificationRequest(Base):
@@ -252,14 +259,41 @@ class PortfolioItem(Base):
     __tablename__ = "portfolio_items"
 
     id = Column(String, primary_key=True)
-    provider_id = Column(String, nullable=False)
+    provider_id = Column(String, nullable=True)
+    user_id = Column(String, nullable=True)
     title = Column(String(200), nullable=True)
     description = Column(Text, nullable=True)
-    image_url = Column(String(500), nullable=False)
+    image_url = Column(String(500), nullable=True)
     thumbnail_url = Column(String(500), nullable=True)
+    category = Column(String(100), nullable=True)
+    display_order = Column(Integer, default=0)
+    is_visible = Column(Boolean, default=True)
     sort_order = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), nullable=False)
+    updated_at = Column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (
         Index("idx_pi_provider", "provider_id"),
+        Index("idx_portfolio_user", "user_id"),
+        {"extend_existing": True},
+    )
+
+
+class ProfileView(Base):
+    """Tracks profile views for analytics."""
+
+    __tablename__ = "profile_views"
+
+    id = Column(String, primary_key=True)
+    profile_user_id = Column(String, nullable=False)
+    viewer_user_id = Column(String, nullable=True)
+    viewer_ip = Column(String(45), nullable=True)
+    source = Column(String(50), nullable=True)
+    share_link_id = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index("idx_profile_view_user", "profile_user_id"),
+        Index("idx_profile_view_date", "created_at"),
+        {"extend_existing": True},
     )

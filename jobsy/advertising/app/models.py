@@ -1,6 +1,6 @@
 """SQLAlchemy ORM models for the advertising service."""
 
-from sqlalchemy import Boolean, Column, DateTime, Index, Integer, Numeric, String
+from sqlalchemy import Boolean, Column, Date, DateTime, Index, Integer, Numeric, String
 from sqlalchemy.dialects.postgresql import JSONB
 
 from shared.database import Base
@@ -73,3 +73,65 @@ class AdClick(Base):
     user_id = Column(String, nullable=True)
     parish = Column(String(50), nullable=True)
     recorded_at = Column(DateTime(timezone=True), nullable=False)
+
+
+class AdBudget(Base):
+    """Budget tracking for ad campaigns."""
+
+    __tablename__ = "ad_budgets"
+
+    id = Column(String, primary_key=True)
+    campaign_id = Column(String, nullable=False)
+    daily_budget = Column(Numeric(12, 2), nullable=True)
+    total_budget = Column(Numeric(12, 2), nullable=True)
+    daily_spent = Column(Numeric(12, 2), default=0)
+    total_spent = Column(Numeric(12, 2), default=0)
+    bid_amount = Column(Numeric(12, 2), default=0.50)
+    last_reset_date = Column(Date, nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    updated_at = Column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index("idx_ad_budget_campaign", "campaign_id"),
+        {"extend_existing": True},
+    )
+
+
+class AdTargeting(Base):
+    """Targeting configuration for ad campaigns."""
+
+    __tablename__ = "ad_targeting"
+
+    id = Column(String, primary_key=True)
+    campaign_id = Column(String, nullable=False)
+    target_parishes = Column(JSONB, default=list)
+    target_categories = Column(JSONB, default=list)
+    target_age_range = Column(JSONB, default=dict)
+    target_user_types = Column(JSONB, default=list)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index("idx_ad_targeting_campaign", "campaign_id"),
+        {"extend_existing": True},
+    )
+
+
+class AdConversion(Base):
+    """Conversion events linked to ad clicks."""
+
+    __tablename__ = "ad_conversions"
+
+    id = Column(String, primary_key=True)
+    campaign_id = Column(String, nullable=False)
+    click_id = Column(String, nullable=True)
+    user_id = Column(String, nullable=True)
+    conversion_type = Column(String(30), nullable=False)
+    conversion_value = Column(Numeric(12, 2), nullable=True)
+    event_metadata = Column("event_metadata", JSONB, default=dict)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index("idx_ad_conversion_campaign", "campaign_id"),
+        Index("idx_ad_conversion_type", "conversion_type"),
+        {"extend_existing": True},
+    )

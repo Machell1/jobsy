@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.database import get_db
 
-from .models import AdCampaign, AdClick, AdImpression, AdPlacement
+from .models import AdBudget, AdCampaign, AdClick, AdConversion, AdImpression, AdPlacement, AdTargeting
 from .revive import fetch_ad_from_revive, report_impression_to_revive
 
 router = APIRouter(tags=["advertising"])
@@ -181,8 +181,13 @@ class CampaignCreate(BaseModel):
     click_url: str
     target_parishes: list[str] = Field(default_factory=list)
     target_categories: list[str] = Field(default_factory=list)
+    target_age_range: dict | None = None
+    target_user_types: list[str] = Field(default_factory=list)
     budget_total: float | None = None
     budget_daily: float | None = None
+    daily_budget: float | None = None
+    total_budget: float | None = None
+    bid_amount: float | None = None
     cost_per_click: float | None = None
     cost_per_impression: float | None = None
 
@@ -201,8 +206,9 @@ async def create_campaign(
 ):
     """Create a new advertising campaign."""
     now = datetime.now(UTC)
+    campaign_id = str(uuid.uuid4())
     campaign = AdCampaign(
-        id=str(uuid.uuid4()),
+        id=campaign_id,
         advertiser_name=data.advertiser_name,
         advertiser_email=data.advertiser_email,
         title=data.title,
@@ -211,14 +217,39 @@ async def create_campaign(
         click_url=data.click_url,
         target_parishes=data.target_parishes,
         target_categories=data.target_categories,
-        budget_total=data.budget_total,
-        budget_daily=data.budget_daily,
+        budget_total=data.budget_total or data.total_budget,
+        budget_daily=data.budget_daily or data.daily_budget,
         cost_per_click=data.cost_per_click,
         cost_per_impression=data.cost_per_impression,
         created_at=now,
         updated_at=now,
     )
     db.add(campaign)
+
+    # Create targeting record
+    targeting = AdTargeting(
+        id=str(uuid.uuid4()),
+        campaign_id=campaign_id,
+        target_parishes=data.target_parishes,
+        target_categories=data.target_categories,
+        target_age_range=data.target_age_range or {},
+        target_user_types=data.target_user_types,
+        created_at=now,
+    )
+    db.add(targeting)
+
+    # Create budget record
+    budget = AdBudget(
+        id=str(uuid.uuid4()),
+        campaign_id=campaign_id,
+        daily_budget=data.daily_budget or data.budget_daily,
+        total_budget=data.total_budget or data.budget_total,
+        bid_amount=data.bid_amount or 0.50,
+        created_at=now,
+        updated_at=now,
+    )
+    db.add(budget)
+
     await db.flush()
 
     return {"id": campaign.id, "title": campaign.title, "status": campaign.status}
@@ -331,3 +362,170 @@ async def campaign_report(campaign_id: str, db: AsyncSession = Depends(get_db)):
         "ctr_percent": round(ctr, 2),
         "status": campaign.status,
     }
+
+
+# --- Phase 3: Self-serve dashboard, analytics, conversions ---
+
+
+@router.get("/dashboard")
+async def advertiser_dashboard(
+    request: Request,
+    user_id: str = Depends(_require_auth),
+    db: AsyncSession = Depends(get_db),
+):
+    """Self-serve advertiser dashboard -- summary of all campaigns."""
+    result = await db.execute(
+        select(AdCampaign).where(AdCampaign.advertiser_email.is_not(None))
+    )
+    campaigns = result.scalars().all()
+
+    total_impressions = 0
+    total_clicks = 0
+    total_spend = 0.0
+
+    for c in campaigns:
+        imp_result = await db.execute(
+            select(func.count()).where(AdImpression.campaign_id == c.id)
+        )
+        clk_result = await db.execute(
+            select(func.count()).where(AdClick.campaign_id == c.id)
+        )
+        imps = imp_result.scalar() or 0
+        clks = clk_result.scalar() or 0
+        total_impressions += imps
+        total_clicks += clks
+
+        budget_result = await db.execute(
+            select(AdBudget).where(AdBudget.campaign_id == c.id)
+        )
+        budget = budget_result.scalar_one_or_none()
+        if budget and budget.total_spent:
+            total_spend += float(budget.total_spent)
+
+    ctr = (total_clicks / total_impressions * 100) if total_impressions > 0 else 0.0
+
+    return {
+        "total_campaigns": len(campaigns),
+        "total_impressions": total_impressions,
+        "total_clicks": total_clicks,
+        "ctr_percent": round(ctr, 2),
+        "total_spend": round(total_spend, 2),
+    }
+
+
+@router.get("/campaigns/{campaign_id}/analytics")
+async def campaign_analytics(
+    campaign_id: str,
+    request: Request,
+    user_id: str = Depends(_require_auth),
+    db: AsyncSession = Depends(get_db),
+):
+    """Detailed campaign analytics -- daily breakdown."""
+    result = await db.execute(select(AdCampaign).where(AdCampaign.id == campaign_id))
+    campaign = result.scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Campaign not found")
+
+    impressions_result = await db.execute(
+        select(func.count()).where(AdImpression.campaign_id == campaign_id)
+    )
+    clicks_result = await db.execute(
+        select(func.count()).where(AdClick.campaign_id == campaign_id)
+    )
+    conversions_result = await db.execute(
+        select(func.count()).where(AdConversion.campaign_id == campaign_id)
+    )
+
+    impressions = impressions_result.scalar() or 0
+    clicks = clicks_result.scalar() or 0
+    conversions = conversions_result.scalar() or 0
+    ctr = (clicks / impressions * 100) if impressions > 0 else 0.0
+
+    budget_result = await db.execute(
+        select(AdBudget).where(AdBudget.campaign_id == campaign_id)
+    )
+    budget = budget_result.scalar_one_or_none()
+
+    return {
+        "campaign_id": campaign_id,
+        "title": campaign.title,
+        "impressions": impressions,
+        "clicks": clicks,
+        "conversions": conversions,
+        "ctr_percent": round(ctr, 2),
+        "total_spent": float(budget.total_spent) if budget and budget.total_spent else 0.0,
+        "daily_spent": float(budget.daily_spent) if budget and budget.daily_spent else 0.0,
+    }
+
+
+class ConversionCreate(BaseModel):
+    campaign_id: str
+    click_id: str | None = None
+    conversion_type: str = Field(
+        ..., pattern=r"^(booking|contact|profile_view|listing_view)$"
+    )
+    conversion_value: float | None = None
+    event_metadata: dict = Field(default_factory=dict)
+
+
+@router.post("/conversions", status_code=status.HTTP_201_CREATED)
+async def track_conversion(
+    data: ConversionCreate,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Track a conversion event."""
+    user_id = _get_user_id(request)
+    now = datetime.now(UTC)
+
+    conversion = AdConversion(
+        id=str(uuid.uuid4()),
+        campaign_id=data.campaign_id,
+        click_id=data.click_id,
+        user_id=user_id,
+        conversion_type=data.conversion_type,
+        conversion_value=data.conversion_value,
+        event_metadata=data.event_metadata,
+        created_at=now,
+    )
+    db.add(conversion)
+    await db.flush()
+
+    return {"id": conversion.id, "conversion_type": conversion.conversion_type}
+
+
+@router.get("/campaigns/{campaign_id}/conversions")
+async def list_conversions(
+    campaign_id: str,
+    request: Request,
+    limit: int = Query(default=50, le=200),
+    offset: int = 0,
+    user_id: str = Depends(_require_auth),
+    db: AsyncSession = Depends(get_db),
+):
+    """List conversions for a campaign."""
+    result = await db.execute(select(AdCampaign).where(AdCampaign.id == campaign_id))
+    if not result.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Campaign not found")
+
+    query = (
+        select(AdConversion)
+        .where(AdConversion.campaign_id == campaign_id)
+        .order_by(AdConversion.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+    )
+    result = await db.execute(query)
+    conversions = result.scalars().all()
+
+    return [
+        {
+            "id": c.id,
+            "click_id": c.click_id,
+            "user_id": c.user_id,
+            "conversion_type": c.conversion_type,
+            "conversion_value": float(c.conversion_value) if c.conversion_value else None,
+            "created_at": c.created_at.isoformat(),
+        }
+        for c in conversions
+    ]

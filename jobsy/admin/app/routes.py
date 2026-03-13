@@ -18,8 +18,11 @@ from shared.models.verification import VerificationReviewAction, VerificationSta
 
 from .deps import require_admin
 from .models import (
+    AdminRole,
+    AdminRoleAssignment,
     Appeal,
     AuditLog,
+    Category,
     ModerationQueue,
     Profile,
     ProviderProfile,
@@ -794,3 +797,620 @@ async def review_appeal(
     await db.flush()
 
     return {"status": appeal.status, "appeal_id": appeal_id}
+
+
+# --- Phase 3: User Management ---
+
+
+@router.get("/users")
+async def list_users(
+    admin_id: str = Depends(require_admin),
+    search: str | None = None,
+    role: str | None = None,
+    parish: str | None = None,
+    is_verified: bool | None = None,
+    is_active: bool | None = None,
+    limit: int = Query(default=50, le=200),
+    offset: int = 0,
+    db: AsyncSession = Depends(get_db),
+):
+    """List all users with search, filters, and pagination."""
+    query = select(Profile)
+
+    if search:
+        query = query.where(Profile.display_name.ilike(f"%{search}%"))
+    if parish:
+        query = query.where(Profile.parish == parish)
+    if is_verified is not None:
+        query = query.where(Profile.is_verified == is_verified)
+    if is_active is not None:
+        query = query.where(Profile.is_active == is_active)
+
+    count_query = select(func.count()).select_from(query.subquery())
+    total = (await db.execute(count_query)).scalar() or 0
+
+    query = query.order_by(Profile.created_at.desc()).offset(offset).limit(limit)
+    result = await db.execute(query)
+    users = result.scalars().all()
+
+    return {
+        "total": total,
+        "users": [
+            {
+                "id": u.id,
+                "user_id": u.user_id,
+                "display_name": u.display_name,
+                "parish": u.parish,
+                "is_verified": u.is_verified,
+                "is_active": u.is_active,
+                "created_at": u.created_at.isoformat() if u.created_at else None,
+            }
+            for u in users
+        ],
+    }
+
+
+@router.get("/users/{user_id}")
+async def get_user_detail(
+    user_id: str,
+    admin_id: str = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Full user detail (profile + provider profile + stats)."""
+    result = await db.execute(
+        select(Profile).where(Profile.user_id == user_id)
+    )
+    profile = result.scalar_one_or_none()
+    if not profile:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    # Get provider profile if exists
+    pp_result = await db.execute(
+        select(ProviderProfile).where(ProviderProfile.user_id == user_id)
+    )
+    pp = pp_result.scalar_one_or_none()
+
+    # Count reports
+    report_count = (await db.execute(
+        select(func.count()).select_from(Report).where(Report.reporter_id == user_id)
+    )).scalar() or 0
+
+    # Count suspensions
+    suspension_count = (await db.execute(
+        select(func.count()).select_from(Suspension).where(Suspension.user_id == user_id)
+    )).scalar() or 0
+
+    return {
+        "profile": {
+            "id": profile.id,
+            "user_id": profile.user_id,
+            "display_name": profile.display_name,
+            "parish": profile.parish,
+            "is_verified": profile.is_verified,
+            "is_active": profile.is_active,
+            "created_at": profile.created_at.isoformat() if profile.created_at else None,
+        },
+        "provider_profile": {
+            "id": pp.id,
+            "verification_status": pp.verification_status,
+        } if pp else None,
+        "stats": {
+            "reports_filed": report_count,
+            "suspensions": suspension_count,
+        },
+    }
+
+
+class UserStatusUpdate(BaseModel):
+    status: str = Field(..., pattern=r"^(active|suspended|banned)$")
+    reason: str | None = None
+
+
+@router.put("/users/{user_id}/status")
+async def update_user_status(
+    user_id: str,
+    data: UserStatusUpdate,
+    admin_id: str = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Change user status (active, suspended, banned)."""
+    result = await db.execute(
+        select(Profile).where(Profile.user_id == user_id)
+    )
+    profile = result.scalar_one_or_none()
+    if not profile:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    profile.is_active = data.status == "active"
+    await db.flush()
+
+    if data.status == "suspended":
+        suspension = Suspension(
+            id=str(uuid.uuid4()),
+            user_id=user_id,
+            reason=data.reason or "Admin action",
+            suspension_type="temporary",
+            starts_at=datetime.now(UTC),
+            issued_by=admin_id,
+            is_active=True,
+            created_at=datetime.now(UTC),
+        )
+        db.add(suspension)
+        await db.flush()
+
+    await _log_action(
+        db, admin_id,
+        action=f"user.{data.status}",
+        target_type="user",
+        target_id=user_id,
+        reason=data.reason,
+    )
+    await db.flush()
+
+    return {"user_id": user_id, "status": data.status}
+
+
+# --- Phase 3: Booking Oversight ---
+
+
+@router.get("/bookings")
+async def list_bookings(
+    admin_id: str = Depends(require_admin),
+    status_filter: str | None = Query(default=None, alias="status"),
+    limit: int = Query(default=50, le=200),
+    offset: int = 0,
+    db: AsyncSession = Depends(get_db),
+):
+    """List all bookings with filters."""
+    # Query audit log for booking-related actions as a proxy
+    query = select(AuditLog).where(AuditLog.target_type == "booking")
+
+    if status_filter:
+        query = query.where(AuditLog.action.ilike(f"%{status_filter}%"))
+
+    query = query.order_by(AuditLog.created_at.desc()).offset(offset).limit(limit)
+    result = await db.execute(query)
+    entries = result.scalars().all()
+
+    return [
+        {
+            "id": e.id,
+            "target_id": e.target_id,
+            "action": e.action,
+            "details": e.details,
+            "created_at": e.created_at.isoformat(),
+        }
+        for e in entries
+    ]
+
+
+@router.get("/bookings/{booking_id}")
+async def get_booking_detail(
+    booking_id: str,
+    admin_id: str = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Booking detail with full event history."""
+    result = await db.execute(
+        select(AuditLog).where(
+            AuditLog.target_type == "booking",
+            AuditLog.target_id == booking_id,
+        ).order_by(AuditLog.created_at.asc())
+    )
+    entries = result.scalars().all()
+
+    if not entries:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
+
+    return {
+        "booking_id": booking_id,
+        "events": [
+            {
+                "id": e.id,
+                "action": e.action,
+                "details": e.details,
+                "admin_id": e.admin_id,
+                "created_at": e.created_at.isoformat(),
+            }
+            for e in entries
+        ],
+    }
+
+
+# --- Phase 3: Payment Visibility ---
+
+
+@router.get("/payments")
+async def list_payments(
+    admin_id: str = Depends(require_admin),
+    limit: int = Query(default=50, le=200),
+    offset: int = 0,
+    db: AsyncSession = Depends(get_db),
+):
+    """List all payments (via audit log for payment actions)."""
+    query = (
+        select(AuditLog)
+        .where(AuditLog.target_type == "payment")
+        .order_by(AuditLog.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+    )
+    result = await db.execute(query)
+    entries = result.scalars().all()
+
+    return [
+        {
+            "id": e.id,
+            "target_id": e.target_id,
+            "action": e.action,
+            "details": e.details,
+            "reason": e.reason,
+            "created_at": e.created_at.isoformat(),
+        }
+        for e in entries
+    ]
+
+
+# --- Phase 3: Category CRUD ---
+
+
+@router.get("/categories")
+async def list_categories(
+    admin_id: str = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """List all categories."""
+    result = await db.execute(
+        select(Category).order_by(Category.sort_order)
+    )
+    categories = result.scalars().all()
+    return [
+        {
+            "id": c.id,
+            "name": c.name,
+            "slug": c.slug,
+            "parent_id": c.parent_id,
+            "icon": c.icon,
+            "description": c.description,
+            "is_active": c.is_active,
+            "sort_order": c.sort_order,
+        }
+        for c in categories
+    ]
+
+
+class CategoryCreate(BaseModel):
+    name: str = Field(..., max_length=100)
+    slug: str | None = None
+    parent_id: str | None = None
+    icon: str | None = None
+    description: str | None = None
+    sort_order: int = 0
+
+
+@router.post("/categories", status_code=status.HTTP_201_CREATED)
+async def create_category(
+    data: CategoryCreate,
+    admin_id: str = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a new category."""
+    slug = data.slug or data.name.lower().replace(" & ", "-").replace(" ", "-")
+    now = datetime.now(UTC)
+    cat = Category(
+        id=str(uuid.uuid4()),
+        name=data.name,
+        slug=slug,
+        parent_id=data.parent_id,
+        icon=data.icon,
+        description=data.description,
+        is_active=True,
+        sort_order=data.sort_order,
+        created_at=now,
+    )
+    db.add(cat)
+    await db.flush()
+
+    await _log_action(
+        db, admin_id, action="category.create",
+        target_type="category", target_id=cat.id,
+    )
+    await db.flush()
+
+    return {"id": cat.id, "name": cat.name, "slug": cat.slug}
+
+
+class CategoryUpdate(BaseModel):
+    name: str | None = Field(default=None, max_length=100)
+    slug: str | None = None
+    icon: str | None = None
+    description: str | None = None
+    sort_order: int | None = None
+    is_active: bool | None = None
+
+
+@router.put("/categories/{category_id}")
+async def update_category(
+    category_id: str,
+    data: CategoryUpdate,
+    admin_id: str = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update a category."""
+    result = await db.execute(
+        select(Category).where(Category.id == category_id)
+    )
+    cat = result.scalar_one_or_none()
+    if not cat:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
+
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(cat, field, value)
+    await db.flush()
+
+    await _log_action(
+        db, admin_id, action="category.update",
+        target_type="category", target_id=category_id,
+    )
+    await db.flush()
+
+    return {"id": cat.id, "name": cat.name, "slug": cat.slug}
+
+
+@router.delete("/categories/{category_id}")
+async def delete_category(
+    category_id: str,
+    admin_id: str = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Deactivate a category."""
+    result = await db.execute(
+        select(Category).where(Category.id == category_id)
+    )
+    cat = result.scalar_one_or_none()
+    if not cat:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
+
+    cat.is_active = False
+    await db.flush()
+
+    await _log_action(
+        db, admin_id, action="category.delete",
+        target_type="category", target_id=category_id,
+    )
+    await db.flush()
+
+    return {"status": "deactivated", "id": category_id}
+
+
+# --- Phase 3: Role Management ---
+
+
+@router.get("/roles")
+async def list_roles(
+    admin_id: str = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """List admin roles and permissions."""
+    result = await db.execute(select(AdminRole).order_by(AdminRole.role_name))
+    roles = result.scalars().all()
+    return [
+        {
+            "id": r.id,
+            "role_name": r.role_name,
+            "permissions": r.permissions,
+            "description": r.description,
+        }
+        for r in roles
+    ]
+
+
+class RoleCreate(BaseModel):
+    role_name: str = Field(..., max_length=50)
+    permissions: list[str] = Field(default_factory=list)
+    description: str | None = None
+
+
+@router.post("/roles", status_code=status.HTTP_201_CREATED)
+async def create_role(
+    data: RoleCreate,
+    admin_id: str = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create an admin role."""
+    now = datetime.now(UTC)
+    role = AdminRole(
+        id=str(uuid.uuid4()),
+        role_name=data.role_name,
+        permissions=data.permissions,
+        description=data.description,
+        created_at=now,
+    )
+    db.add(role)
+    await db.flush()
+
+    await _log_action(
+        db, admin_id, action="role.create",
+        target_type="role", target_id=role.id,
+    )
+    await db.flush()
+
+    return {"id": role.id, "role_name": role.role_name}
+
+
+class AdminRoleAssign(BaseModel):
+    role_id: str
+
+
+@router.put("/users/{user_id}/admin-role")
+async def assign_admin_role(
+    user_id: str,
+    data: AdminRoleAssign,
+    admin_id: str = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Assign admin role to user."""
+    # Verify role exists
+    role_result = await db.execute(
+        select(AdminRole).where(AdminRole.id == data.role_id)
+    )
+    if not role_result.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
+
+    now = datetime.now(UTC)
+    assignment = AdminRoleAssignment(
+        id=str(uuid.uuid4()),
+        user_id=user_id,
+        role_id=data.role_id,
+        assigned_by=admin_id,
+        assigned_at=now,
+    )
+    db.add(assignment)
+    await db.flush()
+
+    await _log_action(
+        db, admin_id, action="role.assign",
+        target_type="user", target_id=user_id,
+        details={"role_id": data.role_id},
+    )
+    await db.flush()
+
+    return {"user_id": user_id, "role_id": data.role_id}
+
+
+# --- Phase 3: Content Moderation ---
+
+
+@router.get("/content/posts")
+async def list_content_posts(
+    admin_id: str = Depends(require_admin),
+    status_filter: str = Query(default="pending", alias="status"),
+    limit: int = Query(default=50, le=200),
+    offset: int = 0,
+    db: AsyncSession = Depends(get_db),
+):
+    """List posts pending moderation."""
+    query = (
+        select(ModerationQueue)
+        .where(
+            ModerationQueue.item_type == "post",
+            ModerationQueue.status == status_filter,
+        )
+        .order_by(ModerationQueue.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+    )
+    result = await db.execute(query)
+    items = result.scalars().all()
+
+    return [
+        {
+            "id": i.id,
+            "item_id": i.item_id,
+            "reported_by": i.reported_by,
+            "reason": i.reason,
+            "status": i.status,
+            "created_at": i.created_at.isoformat(),
+        }
+        for i in items
+    ]
+
+
+class PostModerate(BaseModel):
+    decision: str = Field(..., pattern=r"^(approved|rejected|dismissed)$")
+    resolution: str | None = None
+
+
+@router.put("/content/posts/{post_id}/moderate")
+async def moderate_post(
+    post_id: str,
+    data: PostModerate,
+    admin_id: str = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Moderate a post (approve/reject)."""
+    result = await db.execute(
+        select(ModerationQueue).where(
+            ModerationQueue.item_id == post_id,
+            ModerationQueue.item_type == "post",
+        )
+    )
+    item = result.scalar_one_or_none()
+    if not item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found in moderation queue")
+
+    now = datetime.now(UTC)
+    status_map = {"approved": "resolved", "rejected": "resolved", "dismissed": "dismissed"}
+    item.status = status_map.get(data.decision, "resolved")
+    item.reviewed_by = admin_id
+    item.resolution = data.resolution or data.decision
+    item.resolved_at = now
+    await db.flush()
+
+    await _log_action(
+        db, admin_id, action=f"content.{data.decision}",
+        target_type="post", target_id=post_id,
+        reason=data.resolution,
+    )
+    await db.flush()
+
+    return {"post_id": post_id, "decision": data.decision}
+
+
+# --- Phase 3: Analytics Overview ---
+
+
+@router.get("/analytics/overview")
+async def analytics_overview(
+    admin_id: str = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Platform overview: users, activity, growth."""
+    now = datetime.now(UTC)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_ago = now - timedelta(days=7)
+
+    # Total users
+    total_users = (await db.execute(
+        select(func.count()).select_from(Profile)
+    )).scalar() or 0
+
+    # Active users (is_active = True)
+    active_users = (await db.execute(
+        select(func.count()).select_from(Profile).where(Profile.is_active.is_(True))
+    )).scalar() or 0
+
+    # Verified users
+    verified_users = (await db.execute(
+        select(func.count()).select_from(Profile).where(Profile.is_verified.is_(True))
+    )).scalar() or 0
+
+    # Reports this week
+    reports_week = (await db.execute(
+        select(func.count()).select_from(Report).where(Report.created_at >= week_ago)
+    )).scalar() or 0
+
+    # Pending reports
+    pending_reports = (await db.execute(
+        select(func.count()).select_from(Report).where(Report.status == "pending")
+    )).scalar() or 0
+
+    # Active suspensions
+    active_suspensions = (await db.execute(
+        select(func.count()).select_from(Suspension).where(Suspension.is_active.is_(True))
+    )).scalar() or 0
+
+    # Audit actions today
+    actions_today = (await db.execute(
+        select(func.count()).select_from(AuditLog).where(AuditLog.created_at >= today_start)
+    )).scalar() or 0
+
+    return {
+        "total_users": total_users,
+        "active_users": active_users,
+        "verified_users": verified_users,
+        "reports_this_week": reports_week,
+        "pending_reports": pending_reports,
+        "active_suspensions": active_suspensions,
+        "admin_actions_today": actions_today,
+    }

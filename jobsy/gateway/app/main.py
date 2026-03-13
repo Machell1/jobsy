@@ -18,8 +18,10 @@ from shared.logging import setup_json_logging
 from shared.middleware import setup_middleware
 
 from .middleware.rate_limit import rate_limit_check
+from .routes.analytics import router as analytics_router
 from .routes.auth import router as auth_router
 from .routes.bookings import router as bookings_router
+from .routes.business import router as business_router
 from .routes.health import router as health_router
 from .routes.noticeboard import router as noticeboard_router
 from .routes.proxy import router as proxy_router
@@ -604,6 +606,253 @@ async def _apply_migrations() -> None:
             await conn.execute(text(
                 "CREATE INDEX IF NOT EXISTS idx_reputation_user ON reputation_metrics(user_id)"
             ))
+
+            # ── Migration 012: Phase 3 -- Advertising expansion ──
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS ad_budgets ("
+                "id VARCHAR PRIMARY KEY, "
+                "campaign_id VARCHAR NOT NULL, "
+                "daily_budget NUMERIC(12,2), "
+                "total_budget NUMERIC(12,2), "
+                "daily_spent NUMERIC(12,2) DEFAULT 0, "
+                "total_spent NUMERIC(12,2) DEFAULT 0, "
+                "bid_amount NUMERIC(12,2) DEFAULT 0.50, "
+                "last_reset_date DATE, "
+                "created_at TIMESTAMPTZ NOT NULL DEFAULT now(), "
+                "updated_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_ad_budget_campaign ON ad_budgets(campaign_id)"
+            ))
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS ad_targeting ("
+                "id VARCHAR PRIMARY KEY, "
+                "campaign_id VARCHAR NOT NULL, "
+                "target_parishes JSONB DEFAULT '[]', "
+                "target_categories JSONB DEFAULT '[]', "
+                "target_age_range JSONB DEFAULT '{}', "
+                "target_user_types JSONB DEFAULT '[]', "
+                "created_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_ad_targeting_campaign ON ad_targeting(campaign_id)"
+            ))
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS ad_conversions ("
+                "id VARCHAR PRIMARY KEY, "
+                "campaign_id VARCHAR NOT NULL, "
+                "click_id VARCHAR, "
+                "user_id VARCHAR, "
+                "conversion_type VARCHAR(30) NOT NULL, "
+                "conversion_value NUMERIC(12,2), "
+                "event_metadata JSONB DEFAULT '{}', "
+                "created_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_ad_conversion_campaign ON ad_conversions(campaign_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_ad_conversion_type ON ad_conversions(conversion_type)"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE ad_campaigns ADD COLUMN IF NOT EXISTS daily_budget NUMERIC(12,2)"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE ad_campaigns ADD COLUMN IF NOT EXISTS total_budget NUMERIC(12,2)"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE ad_campaigns ADD COLUMN IF NOT EXISTS bid_amount NUMERIC(12,2) DEFAULT 0.50"
+            ))
+
+            # ── Migration 013: Phase 3 -- Business accounts ──
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS business_profiles ("
+                "id VARCHAR PRIMARY KEY, "
+                "user_id VARCHAR NOT NULL, "
+                "business_name VARCHAR(200) NOT NULL, "
+                "registration_number VARCHAR(100), "
+                "address TEXT, "
+                "parish VARCHAR(50), "
+                "contact_email VARCHAR(255), "
+                "contact_phone VARCHAR(30), "
+                "description TEXT, "
+                "logo_url TEXT, "
+                "website VARCHAR(500), "
+                "is_verified BOOLEAN DEFAULT false, "
+                "verified_at TIMESTAMPTZ, "
+                "created_at TIMESTAMPTZ NOT NULL DEFAULT now(), "
+                "updated_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_business_user ON business_profiles(user_id)"
+            ))
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS business_staff ("
+                "id VARCHAR PRIMARY KEY, "
+                "business_id VARCHAR NOT NULL, "
+                "user_id VARCHAR NOT NULL, "
+                "role VARCHAR(20) NOT NULL DEFAULT 'staff', "
+                "is_active BOOLEAN DEFAULT true, "
+                "invited_at TIMESTAMPTZ NOT NULL DEFAULT now(), "
+                "accepted_at TIMESTAMPTZ, "
+                "created_at TIMESTAMPTZ NOT NULL DEFAULT now(), "
+                "UNIQUE(business_id, user_id))"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_staff_business ON business_staff(business_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_staff_user ON business_staff(user_id)"
+            ))
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS business_branches ("
+                "id VARCHAR PRIMARY KEY, "
+                "business_id VARCHAR NOT NULL, "
+                "branch_name VARCHAR(200) NOT NULL, "
+                "address TEXT, "
+                "parish VARCHAR(50), "
+                "phone VARCHAR(30), "
+                "manager_id VARCHAR, "
+                "is_active BOOLEAN DEFAULT true, "
+                "created_at TIMESTAMPTZ NOT NULL DEFAULT now(), "
+                "updated_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_branch_business ON business_branches(business_id)"
+            ))
+
+            # ── Migration 014: Phase 3 -- Analytics & event tracking ──
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS analytics_events ("
+                "id VARCHAR PRIMARY KEY, "
+                "user_id VARCHAR, "
+                "event_type VARCHAR(50) NOT NULL, "
+                "entity_type VARCHAR(30), "
+                "entity_id VARCHAR, "
+                "properties JSONB DEFAULT '{}', "
+                "session_id VARCHAR, "
+                "ip_address VARCHAR(45), "
+                "user_agent TEXT, "
+                "created_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_analytics_user ON analytics_events(user_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_analytics_type ON analytics_events(event_type)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_analytics_entity ON analytics_events(entity_type, entity_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_analytics_created ON analytics_events(created_at)"
+            ))
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS dashboard_snapshots ("
+                "id VARCHAR PRIMARY KEY, "
+                "user_id VARCHAR NOT NULL, "
+                "snapshot_date DATE NOT NULL, "
+                "profile_views INTEGER DEFAULT 0, "
+                "listing_views INTEGER DEFAULT 0, "
+                "search_appearances INTEGER DEFAULT 0, "
+                "bookings_received INTEGER DEFAULT 0, "
+                "messages_received INTEGER DEFAULT 0, "
+                "total_revenue NUMERIC(12,2) DEFAULT 0, "
+                "created_at TIMESTAMPTZ NOT NULL DEFAULT now(), "
+                "UNIQUE(user_id, snapshot_date))"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_snapshot_user ON dashboard_snapshots(user_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_snapshot_date ON dashboard_snapshots(snapshot_date)"
+            ))
+
+            # ── Migration 015: Phase 3 -- Admin roles ──
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS admin_roles ("
+                "id VARCHAR PRIMARY KEY, "
+                "role_name VARCHAR(50) NOT NULL UNIQUE, "
+                "permissions JSONB DEFAULT '[]', "
+                "description TEXT, "
+                "created_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS admin_role_assignments ("
+                "id VARCHAR PRIMARY KEY, "
+                "user_id VARCHAR NOT NULL, "
+                "role_id VARCHAR NOT NULL, "
+                "assigned_by VARCHAR NOT NULL, "
+                "assigned_at TIMESTAMPTZ NOT NULL DEFAULT now(), "
+                "UNIQUE(user_id, role_id))"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_admin_role_user ON admin_role_assignments(user_id)"
+            ))
+            await conn.execute(text(
+                "INSERT INTO admin_roles (id, role_name, permissions, description) "
+                "VALUES ('role_super', 'super_admin', '[\"all\"]', 'Full access to everything') "
+                "ON CONFLICT (role_name) DO NOTHING"
+            ))
+            await conn.execute(text(
+                "INSERT INTO admin_roles (id, role_name, permissions, description) "
+                "VALUES ('role_mod', 'moderator', "
+                "'[\"reports\",\"content\",\"verifications\"]', 'Content and trust moderation') "
+                "ON CONFLICT (role_name) DO NOTHING"
+            ))
+            await conn.execute(text(
+                "INSERT INTO admin_roles (id, role_name, permissions, description) "
+                "VALUES ('role_finance', 'finance', '[\"payments\",\"payouts\",\"refunds\"]', 'Financial operations') "
+                "ON CONFLICT (role_name) DO NOTHING"
+            ))
+            await conn.execute(text(
+                "INSERT INTO admin_roles (id, role_name, permissions, description) "
+                "VALUES ('role_support', 'support', '[\"users\",\"bookings\",\"reports\"]', 'Customer support') "
+                "ON CONFLICT (role_name) DO NOTHING"
+            ))
+
+            # ── Migration 016: Phase 3 -- Profile enhancements ──
+            # portfolio_items already exists with provider_id; add user_id, category, is_visible columns
+            await conn.execute(text(
+                "ALTER TABLE portfolio_items ADD COLUMN IF NOT EXISTS user_id VARCHAR"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE portfolio_items ADD COLUMN IF NOT EXISTS category VARCHAR(100)"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE portfolio_items ADD COLUMN IF NOT EXISTS is_visible BOOLEAN DEFAULT true"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE portfolio_items ADD COLUMN IF NOT EXISTS display_order INTEGER DEFAULT 0"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE portfolio_items ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ"
+            ))
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS profile_views ("
+                "id VARCHAR PRIMARY KEY, "
+                "profile_user_id VARCHAR NOT NULL, "
+                "viewer_user_id VARCHAR, "
+                "viewer_ip VARCHAR(45), "
+                "source VARCHAR(50), "
+                "share_link_id VARCHAR, "
+                "created_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_profile_view_user ON profile_views(profile_user_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_profile_view_date ON profile_views(created_at)"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE profiles ADD COLUMN IF NOT EXISTS public_url_slug VARCHAR(100)"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE profiles ADD COLUMN IF NOT EXISTS portfolio_enabled BOOLEAN DEFAULT false"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE profiles ADD COLUMN IF NOT EXISTS total_profile_views INTEGER DEFAULT 0"
+            ))
         logger.info("Database migrations applied successfully")
     except Exception:
         logger.warning("Could not apply migrations on startup -- will retry on next deploy")
@@ -689,6 +938,16 @@ app.include_router(
     trust_router,
     prefix="/api/trust",
     tags=["trust"],
+)
+app.include_router(
+    business_router,
+    prefix="/api/business",
+    tags=["business"],
+)
+app.include_router(
+    analytics_router,
+    prefix="/api/analytics",
+    tags=["analytics"],
 )
 app.include_router(proxy_router)
 
