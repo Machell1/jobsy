@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from shared.database import get_db
 from shared.events import publish_event
 
-from .models import PaymentAccount, Payout, Transaction
+from .models import PaymentAccount, Payout, Refund, Transaction
 from .stripe_client import (
     PLATFORM_FEE_PERCENT,
     create_connect_account,
@@ -276,6 +276,234 @@ async def get_transaction(transaction_id: str, request: Request, db: AsyncSessio
         "match_id": txn.match_id,
         "created_at": txn.created_at.isoformat(),
         "updated_at": txn.updated_at.isoformat(),
+    }
+
+
+# --- Payouts ---
+
+
+# --- Booking Payment ---
+
+
+class BookingPaymentCreate(BaseModel):
+    booking_id: str
+    payee_id: str
+    amount: float = Field(..., gt=0)
+    currency: str = Field(default="JMD", pattern=r"^[A-Z]{3}$")
+    description: str | None = None
+
+
+@router.post("/booking-payment", status_code=status.HTTP_201_CREATED)
+async def create_booking_payment(
+    data: BookingPaymentCreate,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a payment linked to a booking with platform fee."""
+    payer_id = _get_user_id(request)
+
+    if payer_id == data.payee_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot pay yourself")
+
+    amount = Decimal(str(data.amount))
+    platform_fee = amount * PLATFORM_FEE_PERCENT / 100
+    net_amount = amount - platform_fee
+
+    payer_result = await db.execute(select(PaymentAccount).where(PaymentAccount.user_id == payer_id))
+    payer_account = payer_result.scalar_one_or_none()
+
+    payee_result = await db.execute(select(PaymentAccount).where(PaymentAccount.user_id == data.payee_id))
+    payee_account = payee_result.scalar_one_or_none()
+
+    customer_id = payer_account.stripe_customer_id if payer_account else None
+    connect_id = payee_account.stripe_account_id if payee_account else None
+
+    intent = await create_payment_intent(
+        amount_jmd=amount,
+        customer_id=customer_id,
+        connected_account_id=connect_id,
+        description=data.description or f"Booking {data.booking_id}",
+        metadata={
+            "payer_id": payer_id,
+            "payee_id": data.payee_id,
+            "booking_id": data.booking_id,
+        },
+    )
+
+    now = datetime.now(UTC)
+    txn = Transaction(
+        id=str(uuid.uuid4()),
+        payer_id=payer_id,
+        payee_id=data.payee_id,
+        booking_id=data.booking_id,
+        amount=amount,
+        currency=data.currency,
+        platform_fee=platform_fee,
+        net_amount=net_amount,
+        provider_payout=net_amount,
+        stripe_payment_intent_id=intent["payment_intent_id"] if intent else None,
+        status="pending",
+        description=data.description,
+        created_at=now,
+        updated_at=now,
+    )
+    db.add(txn)
+    await db.flush()
+
+    await publish_event("payment.booking_created", {
+        "transaction_id": txn.id,
+        "booking_id": data.booking_id,
+        "payer_id": payer_id,
+        "payee_id": data.payee_id,
+        "amount": float(amount),
+        "platform_fee": float(platform_fee),
+    })
+
+    return {
+        "transaction_id": txn.id,
+        "booking_id": data.booking_id,
+        "client_secret": intent["client_secret"] if intent else None,
+        "amount": float(amount),
+        "platform_fee": float(platform_fee),
+        "provider_payout": float(net_amount),
+        "status": "pending",
+    }
+
+
+# --- Refunds ---
+
+
+class RefundCreate(BaseModel):
+    payment_id: str
+    booking_id: str | None = None
+    amount: float | None = None  # None = full refund
+    reason: str | None = None
+
+
+@router.post("/refunds", status_code=status.HTTP_201_CREATED)
+async def create_refund(
+    data: RefundCreate,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Process a full or partial refund against a payment."""
+    user_id = _get_user_id(request)
+
+    result = await db.execute(
+        select(Transaction).where(
+            Transaction.id == data.payment_id,
+            or_(Transaction.payer_id == user_id, Transaction.payee_id == user_id),
+        )
+    )
+    txn = result.scalar_one_or_none()
+    if not txn:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found")
+
+    if txn.status != "completed":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Can only refund completed payments")
+
+    refund_amount = Decimal(str(data.amount)) if data.amount else txn.amount
+
+    if refund_amount > txn.amount:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Refund exceeds payment amount")
+
+    now = datetime.now(UTC)
+    refund = Refund(
+        id=str(uuid.uuid4()),
+        payment_id=data.payment_id,
+        booking_id=data.booking_id or txn.booking_id,
+        amount=refund_amount,
+        currency=txn.currency,
+        reason=data.reason,
+        status="processing",
+        initiated_by=user_id,
+        created_at=now,
+    )
+    db.add(refund)
+
+    txn.status = "refunded"
+    txn.updated_at = now
+    await db.flush()
+
+    await publish_event("payment.refunded", {
+        "refund_id": refund.id,
+        "transaction_id": txn.id,
+        "amount": float(refund_amount),
+    })
+
+    return {
+        "refund_id": refund.id,
+        "payment_id": data.payment_id,
+        "amount": float(refund_amount),
+        "status": "processing",
+    }
+
+
+# --- Receipts & Invoices ---
+
+
+@router.get("/receipts/{payment_id}")
+async def get_receipt(payment_id: str, request: Request, db: AsyncSession = Depends(get_db)):
+    """Generate receipt data for a completed payment."""
+    user_id = _get_user_id(request)
+    result = await db.execute(
+        select(Transaction).where(
+            Transaction.id == payment_id,
+            or_(Transaction.payer_id == user_id, Transaction.payee_id == user_id),
+        )
+    )
+    txn = result.scalar_one_or_none()
+    if not txn:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found")
+
+    return {
+        "receipt_id": txn.id,
+        "payer_id": txn.payer_id,
+        "payee_id": txn.payee_id,
+        "amount": float(txn.amount),
+        "currency": txn.currency,
+        "platform_fee": float(txn.platform_fee) if txn.platform_fee else 0,
+        "net_amount": float(txn.net_amount),
+        "status": txn.status,
+        "description": txn.description,
+        "booking_id": txn.booking_id,
+        "created_at": txn.created_at.isoformat(),
+    }
+
+
+@router.get("/invoices/{booking_id}")
+async def get_invoice(booking_id: str, request: Request, db: AsyncSession = Depends(get_db)):
+    """Generate invoice data for a booking."""
+    user_id = _get_user_id(request)
+    result = await db.execute(
+        select(Transaction).where(
+            Transaction.booking_id == booking_id,
+            or_(Transaction.payer_id == user_id, Transaction.payee_id == user_id),
+        )
+    )
+    txns = result.scalars().all()
+    if not txns:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No payments found for booking")
+
+    total = sum(float(t.amount) for t in txns)
+    total_fees = sum(float(t.platform_fee) if t.platform_fee else 0 for t in txns)
+
+    return {
+        "booking_id": booking_id,
+        "total_amount": total,
+        "total_platform_fees": total_fees,
+        "total_provider_payout": total - total_fees,
+        "currency": txns[0].currency,
+        "payments": [
+            {
+                "id": t.id,
+                "amount": float(t.amount),
+                "platform_fee": float(t.platform_fee) if t.platform_fee else 0,
+                "status": t.status,
+                "created_at": t.created_at.isoformat(),
+            }
+            for t in txns
+        ],
     }
 
 

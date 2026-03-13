@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from shared.database import get_db
 from shared.events import publish_event
 
-from .models import Review, ReviewResponse, UserRating
+from .models import ReputationMetrics, Review, ReviewResponse, UserRating
 
 router = APIRouter(tags=["reviews"])
 
@@ -27,6 +27,7 @@ class ReviewCreate(BaseModel):
     reviewee_id: str
     listing_id: str | None = None
     transaction_id: str | None = None
+    booking_id: str | None = None
     rating: int = Field(..., ge=1, le=5)
     title: str | None = Field(default=None, max_length=200)
     body: str | None = None
@@ -111,6 +112,7 @@ async def create_review(
         reviewee_id=data.reviewee_id,
         listing_id=data.listing_id,
         transaction_id=data.transaction_id,
+        booking_id=data.booking_id,
         rating=data.rating,
         title=data.title,
         body=data.body,
@@ -119,6 +121,7 @@ async def create_review(
         communication_rating=data.communication_rating,
         value_rating=data.value_rating,
         is_verified=bool(data.transaction_id),
+        is_verified_purchase=bool(data.booking_id),
         created_at=now,
         updated_at=now,
     )
@@ -260,3 +263,111 @@ async def flag_review(review_id: str, request: Request, db: AsyncSession = Depen
     await db.flush()
 
     return {"status": "flagged", "review_id": review_id}
+
+
+# --- Reputation ---
+
+
+@router.get("/reputation/{user_id}")
+async def get_reputation(user_id: str, db: AsyncSession = Depends(get_db)):
+    """Get reputation metrics for a user."""
+    result = await db.execute(select(ReputationMetrics).where(ReputationMetrics.user_id == user_id))
+    metrics = result.scalar_one_or_none()
+
+    if not metrics:
+        return {
+            "user_id": user_id,
+            "total_jobs_completed": 0,
+            "repeat_client_rate": 0,
+            "response_rate": 0,
+            "on_time_rate": 0,
+            "cancellation_rate": 0,
+            "badge_level": "none",
+            "trust_score": 0,
+        }
+
+    return {
+        "user_id": user_id,
+        "total_jobs_completed": metrics.total_jobs_completed,
+        "repeat_client_rate": float(metrics.repeat_client_rate),
+        "response_rate": float(metrics.response_rate),
+        "on_time_rate": float(metrics.on_time_rate),
+        "cancellation_rate": float(metrics.cancellation_rate),
+        "badge_level": metrics.badge_level,
+        "trust_score": float(metrics.trust_score),
+        "updated_at": metrics.updated_at.isoformat(),
+    }
+
+
+# --- Moderation ---
+
+
+@router.get("/moderation-queue")
+async def moderation_queue(
+    limit: int = Query(default=20, le=100),
+    offset: int = 0,
+    db: AsyncSession = Depends(get_db),
+):
+    """Get reviews pending moderation (flagged or pending status)."""
+    query = (
+        select(Review)
+        .where((Review.is_flagged.is_(True)) | (Review.moderation_status == "pending"))
+        .order_by(Review.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+    )
+    result = await db.execute(query)
+    reviews = result.scalars().all()
+
+    return [
+        {
+            "id": r.id,
+            "reviewer_id": r.reviewer_id,
+            "reviewee_id": r.reviewee_id,
+            "rating": r.rating,
+            "title": r.title,
+            "body": r.body,
+            "is_flagged": r.is_flagged,
+            "moderation_status": r.moderation_status,
+            "moderation_note": r.moderation_note,
+            "created_at": r.created_at.isoformat(),
+        }
+        for r in reviews
+    ]
+
+
+class ModerationUpdate(BaseModel):
+    status: str = Field(..., pattern=r"^(approved|rejected|pending)$")
+    note: str | None = None
+
+
+@router.put("/{review_id}/moderate")
+async def moderate_review(
+    review_id: str,
+    data: ModerationUpdate,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Update moderation status of a review."""
+    _get_user_id(request)
+
+    result = await db.execute(select(Review).where(Review.id == review_id))
+    review = result.scalar_one_or_none()
+    if not review:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Review not found")
+
+    review.moderation_status = data.status
+    review.moderation_note = data.note
+    if data.status == "rejected":
+        review.is_visible = False
+    elif data.status == "approved":
+        review.is_visible = True
+    review.updated_at = datetime.now(UTC)
+    await db.flush()
+
+    return {
+        "id": review.id,
+        "moderation_status": review.moderation_status,
+        "moderation_note": review.moderation_note,
+        "is_visible": review.is_visible,
+    }

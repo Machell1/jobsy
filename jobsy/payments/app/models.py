@@ -4,7 +4,7 @@ Supports Stripe for international payments and tracks JMD-based
 transactions for the Jamaican marketplace.
 """
 
-from sqlalchemy import Column, DateTime, Index, Numeric, String
+from sqlalchemy import Column, DateTime, Index, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 
 from shared.database import Base
@@ -36,11 +36,13 @@ class Transaction(Base):
     payee_id = Column(String, nullable=False)
     listing_id = Column(String, nullable=True)
     match_id = Column(String, nullable=True)
+    booking_id = Column(String, nullable=True)
 
     amount = Column(Numeric(12, 2), nullable=False)
     currency = Column(String(3), default="JMD")
     platform_fee = Column(Numeric(12, 2), default=0)  # Jobsy's cut
     net_amount = Column(Numeric(12, 2), nullable=False)  # payee receives
+    provider_payout = Column(Numeric(12, 2), nullable=True)
 
     stripe_payment_intent_id = Column(String(100), nullable=True)
     stripe_transfer_id = Column(String(100), nullable=True)
@@ -73,3 +75,22 @@ class Payout(Base):
     status = Column(String(20), default="pending")  # pending, processing, completed, failed
     requested_at = Column(DateTime(timezone=True), nullable=False)
     completed_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class Refund(Base):
+    """A refund against a payment transaction."""
+
+    __tablename__ = "refunds"
+    __table_args__ = {"extend_existing": True}
+
+    id = Column(String, primary_key=True)
+    payment_id = Column(String, nullable=False, index=True)
+    booking_id = Column(String, nullable=True, index=True)
+    amount = Column(Numeric(12, 2), nullable=False)
+    currency = Column(String(3), default="JMD")
+    reason = Column(Text, nullable=True)
+    status = Column(String(20), default="pending")
+    stripe_refund_id = Column(String, nullable=True)
+    initiated_by = Column(String, nullable=False)
+    processed_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False)

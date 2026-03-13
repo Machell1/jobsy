@@ -41,4 +41,36 @@ class NotificationLog(Base):
     notification_type = Column(String(30), nullable=False)  # match, message, listing_expired
     is_read = Column(Boolean, default=False)
     delivered = Column(Boolean, default=False)
+    email_sent = Column(Boolean, default=False)
+    push_sent = Column(Boolean, default=False)
     sent_at = Column(DateTime(timezone=True), nullable=False)
+
+
+class NotificationPreference(Base):
+    __tablename__ = "notification_preferences"
+    __table_args__ = {"extend_existing": True}
+
+    id = Column(String, primary_key=True)
+    user_id = Column(String, unique=True, nullable=False)
+    message_push = Column(Boolean, default=True)
+    message_email = Column(Boolean, default=False)
+    message_in_app = Column(Boolean, default=True)
+    booking_push = Column(Boolean, default=True)
+    booking_email = Column(Boolean, default=True)
+    booking_in_app = Column(Boolean, default=True)
+    payment_push = Column(Boolean, default=True)
+    payment_email = Column(Boolean, default=True)
+    payment_in_app = Column(Boolean, default=True)
+    review_push = Column(Boolean, default=True)
+    review_email = Column(Boolean, default=False)
+    review_in_app = Column(Boolean, default=True)
+    verification_push = Column(Boolean, default=True)
+    verification_email = Column(Boolean, default=True)
+    verification_in_app = Column(Boolean, default=True)
+    content_push = Column(Boolean, default=False)
+    content_email = Column(Boolean, default=False)
+    content_in_app = Column(Boolean, default=True)
+    system_push = Column(Boolean, default=True)
+    system_email = Column(Boolean, default=True)
+    system_in_app = Column(Boolean, default=True)
+    updated_at = Column(DateTime(timezone=True), nullable=False)

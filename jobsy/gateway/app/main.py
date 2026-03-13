@@ -24,6 +24,7 @@ from .routes.health import router as health_router
 from .routes.noticeboard import router as noticeboard_router
 from .routes.proxy import router as proxy_router
 from .routes.stream_chat import router as stream_chat_router
+from .routes.trust import router as trust_router
 
 setup_json_logging()
 logger = logging.getLogger(__name__)
@@ -388,6 +389,221 @@ async def _apply_migrations() -> None:
             await conn.execute(text(
                 "CREATE INDEX IF NOT EXISTS idx_va_request ON verification_assets(verification_request_id)"
             ))
+
+            # Migration 007: Phase 2 -- Trust & Safety tables
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS reports ("
+                "id VARCHAR PRIMARY KEY, "
+                "reporter_id VARCHAR NOT NULL, "
+                "target_type VARCHAR(30) NOT NULL, "
+                "target_id VARCHAR NOT NULL, "
+                "reason VARCHAR(50) NOT NULL, "
+                "description TEXT, "
+                "evidence_urls JSONB DEFAULT '[]', "
+                "severity VARCHAR(20) DEFAULT 'low', "
+                "status VARCHAR(20) DEFAULT 'pending', "
+                "assigned_to VARCHAR, "
+                "resolution_note TEXT, "
+                "resolved_at TIMESTAMPTZ, "
+                "created_at TIMESTAMPTZ NOT NULL DEFAULT now(), "
+                "updated_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_report_status ON reports(status)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_report_target ON reports(target_type, target_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_report_reporter ON reports(reporter_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_report_severity ON reports(severity)"
+            ))
+
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS suspensions ("
+                "id VARCHAR PRIMARY KEY, "
+                "user_id VARCHAR NOT NULL, "
+                "reason TEXT NOT NULL, "
+                "suspension_type VARCHAR(20) NOT NULL, "
+                "starts_at TIMESTAMPTZ NOT NULL DEFAULT now(), "
+                "ends_at TIMESTAMPTZ, "
+                "issued_by VARCHAR NOT NULL, "
+                "report_id VARCHAR, "
+                "is_active BOOLEAN DEFAULT true, "
+                "created_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_suspension_user ON suspensions(user_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_suspension_active ON suspensions(is_active)"
+            ))
+
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS appeals ("
+                "id VARCHAR PRIMARY KEY, "
+                "suspension_id VARCHAR NOT NULL, "
+                "user_id VARCHAR NOT NULL, "
+                "reason TEXT NOT NULL, "
+                "evidence_urls JSONB DEFAULT '[]', "
+                "status VARCHAR(20) DEFAULT 'pending', "
+                "reviewed_by VARCHAR, "
+                "reviewer_notes TEXT, "
+                "reviewed_at TIMESTAMPTZ, "
+                "created_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_appeal_suspension ON appeals(suspension_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_appeal_status ON appeals(status)"
+            ))
+
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS blocked_users ("
+                "id VARCHAR PRIMARY KEY, "
+                "blocker_id VARCHAR NOT NULL, "
+                "blocked_id VARCHAR NOT NULL, "
+                "created_at TIMESTAMPTZ NOT NULL DEFAULT now(), "
+                "UNIQUE(blocker_id, blocked_id))"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_blocked_blocker ON blocked_users(blocker_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_blocked_blocked ON blocked_users(blocked_id)"
+            ))
+
+            # Migration 008: Phase 2 -- Saved searches table
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS saved_searches ("
+                "id VARCHAR PRIMARY KEY, "
+                "user_id VARCHAR NOT NULL, "
+                "name VARCHAR(100), "
+                "query VARCHAR(500), "
+                "filters JSONB DEFAULT '{}', "
+                "notification_enabled BOOLEAN DEFAULT false, "
+                "last_run_at TIMESTAMPTZ, "
+                "result_count INTEGER DEFAULT 0, "
+                "created_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_saved_search_user ON saved_searches(user_id)"
+            ))
+
+            # Migration 009: Phase 2 -- Refunds table + transactions columns
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS refunds ("
+                "id VARCHAR PRIMARY KEY, "
+                "payment_id VARCHAR NOT NULL, "
+                "booking_id VARCHAR, "
+                "amount NUMERIC(12,2) NOT NULL, "
+                "currency VARCHAR(3) DEFAULT 'JMD', "
+                "reason TEXT, "
+                "status VARCHAR(20) DEFAULT 'pending', "
+                "stripe_refund_id VARCHAR, "
+                "initiated_by VARCHAR NOT NULL, "
+                "processed_at TIMESTAMPTZ, "
+                "created_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_refund_payment ON refunds(payment_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_refund_booking ON refunds(booking_id)"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE transactions ADD COLUMN IF NOT EXISTS booking_id VARCHAR"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE transactions ADD COLUMN IF NOT EXISTS platform_fee NUMERIC(12,2)"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE transactions ADD COLUMN IF NOT EXISTS provider_payout NUMERIC(12,2)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_payment_booking ON transactions(booking_id)"
+            ))
+
+            # Migration 010: Phase 2 -- Notification preferences + columns
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS notification_preferences ("
+                "id VARCHAR PRIMARY KEY, "
+                "user_id VARCHAR UNIQUE NOT NULL, "
+                "message_push BOOLEAN DEFAULT true, "
+                "message_email BOOLEAN DEFAULT false, "
+                "message_in_app BOOLEAN DEFAULT true, "
+                "booking_push BOOLEAN DEFAULT true, "
+                "booking_email BOOLEAN DEFAULT true, "
+                "booking_in_app BOOLEAN DEFAULT true, "
+                "payment_push BOOLEAN DEFAULT true, "
+                "payment_email BOOLEAN DEFAULT true, "
+                "payment_in_app BOOLEAN DEFAULT true, "
+                "review_push BOOLEAN DEFAULT true, "
+                "review_email BOOLEAN DEFAULT false, "
+                "review_in_app BOOLEAN DEFAULT true, "
+                "verification_push BOOLEAN DEFAULT true, "
+                "verification_email BOOLEAN DEFAULT true, "
+                "verification_in_app BOOLEAN DEFAULT true, "
+                "content_push BOOLEAN DEFAULT false, "
+                "content_email BOOLEAN DEFAULT false, "
+                "content_in_app BOOLEAN DEFAULT true, "
+                "system_push BOOLEAN DEFAULT true, "
+                "system_email BOOLEAN DEFAULT true, "
+                "system_in_app BOOLEAN DEFAULT true, "
+                "quiet_hours_start TIME, "
+                "quiet_hours_end TIME, "
+                "updated_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_notif_pref_user ON notification_preferences(user_id)"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE notification_log ADD COLUMN IF NOT EXISTS email_sent BOOLEAN DEFAULT false"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE notification_log ADD COLUMN IF NOT EXISTS push_sent BOOLEAN DEFAULT false"
+            ))
+
+            # Migration 011: Phase 2 -- Review enhancements + reputation metrics
+            await conn.execute(text(
+                "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS booking_id VARCHAR"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS is_verified_purchase BOOLEAN DEFAULT false"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS moderation_status VARCHAR(20) DEFAULT 'approved'"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS moderation_note TEXT"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_review_booking ON reviews(booking_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_review_moderation ON reviews(moderation_status)"
+            ))
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS reputation_metrics ("
+                "id VARCHAR PRIMARY KEY, "
+                "user_id VARCHAR UNIQUE NOT NULL, "
+                "avg_rating NUMERIC(3,2) DEFAULT 0, "
+                "total_reviews INTEGER DEFAULT 0, "
+                "response_rate NUMERIC(5,2) DEFAULT 0, "
+                "completion_rate NUMERIC(5,2) DEFAULT 0, "
+                "cancellation_rate NUMERIC(5,2) DEFAULT 0, "
+                "repeat_hire_rate NUMERIC(5,2) DEFAULT 0, "
+                "on_time_rate NUMERIC(5,2) DEFAULT 0, "
+                "last_calculated_at TIMESTAMPTZ, "
+                "created_at TIMESTAMPTZ NOT NULL DEFAULT now(), "
+                "updated_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_reputation_user ON reputation_metrics(user_id)"
+            ))
         logger.info("Database migrations applied successfully")
     except Exception:
         logger.warning("Could not apply migrations on startup -- will retry on next deploy")
@@ -468,6 +684,11 @@ app.include_router(
     noticeboard_router,
     prefix="/api/noticeboard",
     tags=["noticeboard"],
+)
+app.include_router(
+    trust_router,
+    prefix="/api/trust",
+    tags=["trust"],
 )
 app.include_router(proxy_router)
 

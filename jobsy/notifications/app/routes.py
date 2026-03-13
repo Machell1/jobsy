@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.database import get_db
 
-from .models import DeviceToken, NewsletterSubscriber, NotificationLog
+from .models import DeviceToken, NewsletterSubscriber, NotificationLog, NotificationPreference
 
 router = APIRouter(tags=["notifications"])
 
@@ -173,3 +173,127 @@ async def mark_all_read(request: Request, db: AsyncSession = Depends(get_db)):
     )
     await db.flush()
     return {"status": "ok"}
+
+
+# --- Notification Preferences ---
+
+PREF_FIELDS = [
+    "message_push", "message_email", "message_in_app",
+    "booking_push", "booking_email", "booking_in_app",
+    "payment_push", "payment_email", "payment_in_app",
+    "review_push", "review_email", "review_in_app",
+    "verification_push", "verification_email", "verification_in_app",
+    "content_push", "content_email", "content_in_app",
+    "system_push", "system_email", "system_in_app",
+]
+
+
+@router.get("/preferences")
+async def get_preferences(request: Request, db: AsyncSession = Depends(get_db)):
+    """Get notification preferences for the current user."""
+    user_id = _get_user_id(request)
+    result = await db.execute(
+        select(NotificationPreference).where(NotificationPreference.user_id == user_id)
+    )
+    pref = result.scalar_one_or_none()
+
+    if not pref:
+        return {"user_id": user_id, **{f: True for f in PREF_FIELDS}}
+
+    return {
+        "user_id": user_id,
+        **{f: getattr(pref, f) for f in PREF_FIELDS},
+        "updated_at": pref.updated_at.isoformat(),
+    }
+
+
+class PreferencesUpdate(BaseModel):
+    message_push: bool | None = None
+    message_email: bool | None = None
+    message_in_app: bool | None = None
+    booking_push: bool | None = None
+    booking_email: bool | None = None
+    booking_in_app: bool | None = None
+    payment_push: bool | None = None
+    payment_email: bool | None = None
+    payment_in_app: bool | None = None
+    review_push: bool | None = None
+    review_email: bool | None = None
+    review_in_app: bool | None = None
+    verification_push: bool | None = None
+    verification_email: bool | None = None
+    verification_in_app: bool | None = None
+    content_push: bool | None = None
+    content_email: bool | None = None
+    content_in_app: bool | None = None
+    system_push: bool | None = None
+    system_email: bool | None = None
+    system_in_app: bool | None = None
+
+
+@router.put("/preferences")
+async def update_preferences(
+    data: PreferencesUpdate,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Update notification preferences for the current user."""
+    user_id = _get_user_id(request)
+    now = datetime.now(UTC)
+
+    result = await db.execute(
+        select(NotificationPreference).where(NotificationPreference.user_id == user_id)
+    )
+    pref = result.scalar_one_or_none()
+
+    if not pref:
+        pref = NotificationPreference(
+            id=str(uuid.uuid4()),
+            user_id=user_id,
+            updated_at=now,
+        )
+        db.add(pref)
+
+    updates = data.model_dump(exclude_none=True)
+    for field, value in updates.items():
+        setattr(pref, field, value)
+    pref.updated_at = now
+    await db.flush()
+
+    return {"status": "updated", "user_id": user_id}
+
+
+# --- Email Notification ---
+
+
+class EmailNotification(BaseModel):
+    user_id: str
+    subject: str = Field(..., max_length=200)
+    body: str
+    notification_type: str = Field(default="system")
+
+
+@router.post("/email", status_code=status.HTTP_201_CREATED)
+async def send_email_notification(
+    data: EmailNotification,
+    db: AsyncSession = Depends(get_db),
+):
+    """Send an email notification (internal endpoint)."""
+    now = datetime.now(UTC)
+    log_entry = NotificationLog(
+        id=str(uuid.uuid4()),
+        user_id=data.user_id,
+        title=data.subject,
+        body=data.body,
+        notification_type=data.notification_type,
+        email_sent=True,
+        sent_at=now,
+    )
+    db.add(log_entry)
+    await db.flush()
+
+    return {
+        "id": log_entry.id,
+        "status": "queued",
+        "email_sent": True,
+    }

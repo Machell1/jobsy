@@ -17,7 +17,17 @@ from shared.events import publish_event
 from shared.models.verification import VerificationReviewAction, VerificationStatsResponse
 
 from .deps import require_admin
-from .models import AuditLog, ModerationQueue, Profile, ProviderProfile, VerificationAsset, VerificationRequest
+from .models import (
+    Appeal,
+    AuditLog,
+    ModerationQueue,
+    Profile,
+    ProviderProfile,
+    Report,
+    Suspension,
+    VerificationAsset,
+    VerificationRequest,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -516,3 +526,271 @@ async def submit_report(
     await db.flush()
 
     return {"id": item.id, "status": "pending"}
+
+
+# --- Trust & Safety admin routes ---
+
+
+@router.get("/reports")
+async def list_reports(
+    admin_id: str = Depends(require_admin),
+    status_filter: str | None = Query(default=None, alias="status"),
+    severity: str | None = None,
+    target_type: str | None = None,
+    limit: int = Query(default=20, le=100),
+    offset: int = 0,
+    db: AsyncSession = Depends(get_db),
+):
+    """List user reports with optional filters."""
+    query = select(Report).order_by(Report.created_at.desc()).offset(offset).limit(limit)
+    if status_filter:
+        query = query.where(Report.status == status_filter)
+    if severity:
+        query = query.where(Report.severity == severity)
+    if target_type:
+        query = query.where(Report.target_type == target_type)
+
+    result = await db.execute(query)
+    reports = result.scalars().all()
+    return [
+        {
+            "id": r.id,
+            "reporter_id": r.reporter_id,
+            "target_type": r.target_type,
+            "target_id": r.target_id,
+            "reason": r.reason,
+            "severity": r.severity,
+            "status": r.status,
+            "assigned_to": r.assigned_to,
+            "created_at": r.created_at.isoformat(),
+        }
+        for r in reports
+    ]
+
+
+@router.get("/reports/{report_id}")
+async def get_report(
+    report_id: str,
+    admin_id: str = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get full report detail."""
+    result = await db.execute(select(Report).where(Report.id == report_id))
+    report = result.scalar_one_or_none()
+    if not report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+    return {
+        "id": report.id,
+        "reporter_id": report.reporter_id,
+        "target_type": report.target_type,
+        "target_id": report.target_id,
+        "reason": report.reason,
+        "description": report.description,
+        "evidence_urls": report.evidence_urls,
+        "severity": report.severity,
+        "status": report.status,
+        "assigned_to": report.assigned_to,
+        "resolution_note": report.resolution_note,
+        "resolved_at": report.resolved_at.isoformat() if report.resolved_at else None,
+        "created_at": report.created_at.isoformat(),
+        "updated_at": report.updated_at.isoformat(),
+    }
+
+
+class ReportResolve(BaseModel):
+    status: str = Field(..., pattern=r"^(under_review|resolved|dismissed)$")
+    severity: str | None = Field(default=None, pattern=r"^(low|medium|high|critical)$")
+    resolution_note: str | None = None
+
+
+@router.put("/reports/{report_id}/resolve")
+async def resolve_report(
+    report_id: str,
+    data: ReportResolve,
+    admin_id: str = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Resolve a report -- update status, severity, and notes."""
+    result = await db.execute(select(Report).where(Report.id == report_id))
+    report = result.scalar_one_or_none()
+    if not report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+
+    now = datetime.now(UTC)
+    report.status = data.status
+    if data.severity:
+        report.severity = data.severity
+    if data.resolution_note:
+        report.resolution_note = data.resolution_note
+    report.assigned_to = admin_id
+    report.updated_at = now
+    if data.status in ("resolved", "dismissed"):
+        report.resolved_at = now
+    await db.flush()
+
+    await _log_action(
+        db, admin_id,
+        action=f"report.{data.status}",
+        target_type="report",
+        target_id=report_id,
+        reason=data.resolution_note,
+    )
+    await db.flush()
+
+    return {"status": report.status, "report_id": report_id}
+
+
+class SuspensionCreate(BaseModel):
+    user_id: str
+    reason: str = Field(..., min_length=1)
+    suspension_type: str = Field(..., pattern=r"^(warning|temporary|permanent)$")
+    ends_at: str | None = None
+    report_id: str | None = None
+
+
+@router.post("/suspensions", status_code=status.HTTP_201_CREATED)
+async def create_suspension(
+    data: SuspensionCreate,
+    admin_id: str = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Issue a suspension or warning to a user."""
+    now = datetime.now(UTC)
+    suspension = Suspension(
+        id=str(uuid.uuid4()),
+        user_id=data.user_id,
+        reason=data.reason,
+        suspension_type=data.suspension_type,
+        starts_at=now,
+        ends_at=datetime.fromisoformat(data.ends_at) if data.ends_at else None,
+        issued_by=admin_id,
+        report_id=data.report_id,
+        created_at=now,
+    )
+    db.add(suspension)
+    await db.flush()
+
+    await _log_action(
+        db, admin_id,
+        action=f"suspension.{data.suspension_type}",
+        target_type="user",
+        target_id=data.user_id,
+        reason=data.reason,
+        details={"suspension_id": suspension.id},
+    )
+    await db.flush()
+
+    await publish_event(f"user.{data.suspension_type}", {
+        "user_id": data.user_id,
+        "suspension_id": suspension.id,
+        "admin_id": admin_id,
+    })
+
+    return {"id": suspension.id, "status": "active"}
+
+
+@router.get("/suspensions")
+async def list_suspensions(
+    admin_id: str = Depends(require_admin),
+    is_active: bool | None = None,
+    limit: int = Query(default=20, le=100),
+    offset: int = 0,
+    db: AsyncSession = Depends(get_db),
+):
+    """List suspensions with optional active filter."""
+    query = select(Suspension).order_by(Suspension.created_at.desc()).offset(offset).limit(limit)
+    if is_active is not None:
+        query = query.where(Suspension.is_active.is_(is_active))
+
+    result = await db.execute(query)
+    suspensions = result.scalars().all()
+    return [
+        {
+            "id": s.id,
+            "user_id": s.user_id,
+            "suspension_type": s.suspension_type,
+            "reason": s.reason,
+            "is_active": s.is_active,
+            "starts_at": s.starts_at.isoformat(),
+            "ends_at": s.ends_at.isoformat() if s.ends_at else None,
+            "issued_by": s.issued_by,
+            "created_at": s.created_at.isoformat(),
+        }
+        for s in suspensions
+    ]
+
+
+@router.get("/appeals")
+async def list_appeals(
+    admin_id: str = Depends(require_admin),
+    status_filter: str | None = Query(default=None, alias="status"),
+    limit: int = Query(default=20, le=100),
+    offset: int = 0,
+    db: AsyncSession = Depends(get_db),
+):
+    """List appeals with optional status filter."""
+    query = select(Appeal).order_by(Appeal.created_at.desc()).offset(offset).limit(limit)
+    if status_filter:
+        query = query.where(Appeal.status == status_filter)
+
+    result = await db.execute(query)
+    appeals = result.scalars().all()
+    return [
+        {
+            "id": a.id,
+            "suspension_id": a.suspension_id,
+            "user_id": a.user_id,
+            "reason": a.reason,
+            "status": a.status,
+            "created_at": a.created_at.isoformat(),
+        }
+        for a in appeals
+    ]
+
+
+class AppealReview(BaseModel):
+    decision: str = Field(..., pattern=r"^(approved|denied)$")
+    reviewer_notes: str | None = None
+
+
+@router.put("/appeals/{appeal_id}/review")
+async def review_appeal(
+    appeal_id: str,
+    data: AppealReview,
+    admin_id: str = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Review an appeal -- approve or deny."""
+    result = await db.execute(select(Appeal).where(Appeal.id == appeal_id))
+    appeal = result.scalar_one_or_none()
+    if not appeal:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Appeal not found")
+
+    now = datetime.now(UTC)
+    appeal.status = data.decision
+    appeal.reviewed_by = admin_id
+    appeal.reviewer_notes = data.reviewer_notes
+    appeal.reviewed_at = now
+    await db.flush()
+
+    # If approved, deactivate the suspension
+    if data.decision == "approved":
+        susp_result = await db.execute(
+            select(Suspension).where(Suspension.id == appeal.suspension_id)
+        )
+        suspension = susp_result.scalar_one_or_none()
+        if suspension:
+            suspension.is_active = False
+            await db.flush()
+
+    await _log_action(
+        db, admin_id,
+        action=f"appeal.{data.decision}",
+        target_type="appeal",
+        target_id=appeal_id,
+        reason=data.reviewer_notes,
+        details={"suspension_id": appeal.suspension_id, "user_id": appeal.user_id},
+    )
+    await db.flush()
+
+    return {"status": appeal.status, "appeal_id": appeal_id}

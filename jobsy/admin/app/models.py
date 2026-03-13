@@ -5,6 +5,66 @@ from sqlalchemy.dialects.postgresql import JSONB
 
 from shared.database import Base
 
+# --- Trust & Safety mirrors (shared tables, extend_existing) ---
+
+
+class Report(Base):
+    """Mirror of reports table for admin queries."""
+
+    __tablename__ = "reports"
+    __table_args__ = {"extend_existing": True}
+
+    id = Column(String, primary_key=True)
+    reporter_id = Column(String, nullable=False)
+    target_type = Column(String(30), nullable=False)
+    target_id = Column(String, nullable=False)
+    reason = Column(String(50), nullable=False)
+    description = Column(Text, nullable=True)
+    evidence_urls = Column(JSONB, default=list)
+    severity = Column(String(20), default="low")
+    status = Column(String(20), default="pending")
+    assigned_to = Column(String, nullable=True)
+    resolution_note = Column(Text, nullable=True)
+    resolved_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    updated_at = Column(DateTime(timezone=True), nullable=False)
+
+
+class Suspension(Base):
+    """Mirror of suspensions table for admin queries."""
+
+    __tablename__ = "suspensions"
+    __table_args__ = {"extend_existing": True}
+
+    id = Column(String, primary_key=True)
+    user_id = Column(String, nullable=False)
+    reason = Column(Text, nullable=False)
+    suspension_type = Column(String(20), nullable=False)
+    starts_at = Column(DateTime(timezone=True), nullable=False)
+    ends_at = Column(DateTime(timezone=True), nullable=True)
+    issued_by = Column(String, nullable=False)
+    report_id = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+
+
+class Appeal(Base):
+    """Mirror of appeals table for admin queries."""
+
+    __tablename__ = "appeals"
+    __table_args__ = {"extend_existing": True}
+
+    id = Column(String, primary_key=True)
+    suspension_id = Column(String, nullable=False)
+    user_id = Column(String, nullable=False)
+    reason = Column(Text, nullable=False)
+    evidence_urls = Column(JSONB, default=list)
+    status = Column(String(20), default="pending")
+    reviewed_by = Column(String, nullable=True)
+    reviewer_notes = Column(Text, nullable=True)
+    reviewed_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+
 
 class AuditLog(Base):
     """Tracks admin actions for accountability and compliance."""

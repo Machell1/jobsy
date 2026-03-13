@@ -30,9 +30,13 @@ class Review(Base):
     communication_rating = Column(Integer, nullable=True)  # 1-5
     value_rating = Column(Integer, nullable=True)  # 1-5
 
+    booking_id = Column(String, nullable=True)
     is_verified = Column(Boolean, default=False)  # linked to completed transaction
+    is_verified_purchase = Column(Boolean, default=False)
     is_flagged = Column(Boolean, default=False)
     is_visible = Column(Boolean, default=True)
+    moderation_status = Column(String(20), default="approved")
+    moderation_note = Column(Text, nullable=True)
 
     created_at = Column(DateTime(timezone=True), nullable=False)
     updated_at = Column(DateTime(timezone=True), nullable=False)
@@ -68,4 +72,21 @@ class UserRating(Base):
     average_punctuality = Column(Numeric(3, 2), nullable=True)
     average_communication = Column(Numeric(3, 2), nullable=True)
     average_value = Column(Numeric(3, 2), nullable=True)
+    updated_at = Column(DateTime(timezone=True), nullable=False)
+
+
+class ReputationMetrics(Base):
+    """Extended reputation metrics for a user."""
+
+    __tablename__ = "reputation_metrics"
+    __table_args__ = {"extend_existing": True}
+
+    user_id = Column(String, primary_key=True)
+    total_jobs_completed = Column(Integer, default=0)
+    repeat_client_rate = Column(Numeric(5, 2), default=0)
+    response_rate = Column(Numeric(5, 2), default=0)
+    on_time_rate = Column(Numeric(5, 2), default=0)
+    cancellation_rate = Column(Numeric(5, 2), default=0)
+    badge_level = Column(String(20), default="none")
+    trust_score = Column(Numeric(5, 2), default=0)
     updated_at = Column(DateTime(timezone=True), nullable=False)
