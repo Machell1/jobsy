@@ -1081,7 +1081,7 @@ async def inject_user_context(request: Request, call_next):
                 raw_headers.append((b"x-user-id", payload["sub"].encode()))
                 request.scope["headers"] = raw_headers
         except Exception:  # noqa: BLE001
-            pass  # Let individual route auth handle invalid tokens
+            logger.debug("JWT decode skipped in middleware (invalid or expired token)")
     return await call_next(request)
 
 
