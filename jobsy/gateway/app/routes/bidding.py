@@ -279,7 +279,7 @@ async def _notify_providers_for_category(
     job_post: JobPost,
     hirer_name: str,
 ) -> None:
-    """Insert notification_logs for providers matching the job's category.
+    """Insert notification_log rows for providers matching the job's category.
 
     Uses a savepoint per insert so that a failure does not abort the
     outer transaction.
@@ -306,9 +306,9 @@ async def _notify_providers_for_category(
             async with db.begin_nested():
                 await db.execute(
                     text(
-                        "INSERT INTO notification_logs "
+                        "INSERT INTO notification_log "
                         "(id, user_id, title, body, data, notification_type, "
-                        "delivered, read, sent_at) "
+                        "delivered, is_read, sent_at) "
                         "VALUES (:id, :uid, :title, :body, :data::jsonb, :ntype, "
                         "false, false, :sent_at)"
                     ),
@@ -339,7 +339,7 @@ async def _insert_notification(
     data: dict,
     notification_type: str,
 ) -> None:
-    """Insert a single notification_logs row.
+    """Insert a single notification_log row.
 
     Uses a savepoint so that a failure here does not abort the
     outer transaction (PostgreSQL marks the whole transaction as
@@ -351,9 +351,9 @@ async def _insert_notification(
         async with db.begin_nested():
             await db.execute(
                 text(
-                    "INSERT INTO notification_logs "
+                    "INSERT INTO notification_log "
                     "(id, user_id, title, body, data, notification_type, "
-                    "delivered, read, sent_at) "
+                    "delivered, is_read, sent_at) "
                     "VALUES (:id, :uid, :title, :body, :data::jsonb, :ntype, "
                     "false, false, :sent_at)"
                 ),
