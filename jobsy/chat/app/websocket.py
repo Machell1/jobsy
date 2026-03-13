@@ -152,7 +152,7 @@ async def chat_websocket(websocket: WebSocket, conversation_id: str):
 
     redis_client = await _get_redis()
     if not redis_client and (os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PRODUCTION")):
-        logger.error("Redis unavailable in production — chat requires Redis for cross-instance delivery")
+        logger.error("Redis unavailable in production - chat requires Redis for cross-instance delivery")
         await websocket.close(code=1013, reason="Service temporarily unavailable")
         listener_task.cancel()
         if conversation_id in _connections:

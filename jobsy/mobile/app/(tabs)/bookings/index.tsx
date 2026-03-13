@@ -280,7 +280,7 @@ export default function BookingsScreen() {
                       <Ionicons name="time-outline" size={16} color="#6B7280" />
                       <Text className="text-sm text-gray-700 ml-2">
                         {selectedBooking.scheduled_time_start}
-                        {selectedBooking.scheduled_time_end ? ` – ${selectedBooking.scheduled_time_end}` : ""}
+                        {selectedBooking.scheduled_time_end ? ` - ${selectedBooking.scheduled_time_end}` : ""}
                       </Text>
                     </View>
                   )}

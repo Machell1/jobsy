@@ -1,4 +1,4 @@
-# Jobsy — Production Deployment Guide
+# Jobsy - Production Deployment Guide
 
 Deploy the Jobsy service marketplace to Railway with PostgreSQL and Redis.
 
@@ -8,7 +8,7 @@ Deploy the Jobsy service marketplace to Railway with PostgreSQL and Redis.
 
 - [Railway account](https://railway.app) (free tier works for MVP)
 - Railway CLI: `npm i -g @railway/cli`
-- DNS access for `api.jobsyja.com` (optional — Railway provides a public URL)
+- DNS access for `api.jobsyja.com` (optional - Railway provides a public URL)
 - Docker (for local development only)
 
 ---
@@ -124,7 +124,7 @@ If `api.jobsyja.com` is not resolving yet, you can point the frontend directly a
    ```js
    const RAILWAY_API_URL = 'https://jobsy-production.up.railway.app';
    ```
-3. Commit and push — the frontend will use this URL until you clear it back to `''`
+3. Commit and push - the frontend will use this URL until you clear it back to `''`
 
 ### Verify DNS
 
@@ -178,12 +178,12 @@ Pushes to `main` that change files under `jobsy/` trigger an automated pipeline:
    - Go to [Railway dashboard](https://railway.app/dashboard) → **Account Settings** → **Tokens**
    - Click **Create Token** and give it a descriptive name (e.g. `github-deploy`)
    - **Important:** The token must be a *Team Token* or *Project Token* with access to the Jobsy project
-   - Copy the token immediately — it is only shown once
+   - Copy the token immediately - it is only shown once
 2. Add it as a GitHub secret:
    - Go to [Jobsy repo settings](https://github.com/Machell1/jobsy/settings/secrets/actions)
    - Click **New repository secret**
    - Name: `RAILWAY_TOKEN`, Value: paste the token (no extra spaces)
-3. Push to `main` — the workflow runs automatically
+3. Push to `main` - the workflow runs automatically
 
 The workflow file lives at `.github/workflows/deploy.yml`.
 
@@ -194,9 +194,9 @@ If the deploy step fails with `Invalid RAILWAY_TOKEN`, check the following:
 | Check | How to fix |
 |-------|------------|
 | Token expired | Go to Railway → Account → Tokens and verify the token is still active |
-| Token copied incorrectly | Delete the GitHub secret and re-create it — ensure no leading/trailing spaces |
+| Token copied incorrectly | Delete the GitHub secret and re-create it - ensure no leading/trailing spaces |
 | Token lacks project access | Use a Project Token scoped to the Jobsy project, or a Team Token |
-| Wrong token type | Personal tokens from `railway login` do not work in CI — use an API token from the dashboard |
+| Wrong token type | Personal tokens from `railway login` do not work in CI - use an API token from the dashboard |
 
 After updating the secret, re-run the failed workflow from the [Actions tab](https://github.com/Machell1/jobsy/actions).
 
@@ -291,7 +291,7 @@ api.jobsyja.com (Railway)
    PostgreSQL + Redis + RabbitMQ + Elasticsearch
 ```
 
-For MVP, only the **gateway** needs to be deployed — it handles auth, listings, profiles, and search directly via the shared database. The microservice architecture allows scaling individual services later.
+For MVP, only the **gateway** needs to be deployed - it handles auth, listings, profiles, and search directly via the shared database. The microservice architecture allows scaling individual services later.
 
 ---
 

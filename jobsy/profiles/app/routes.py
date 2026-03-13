@@ -900,7 +900,7 @@ async def deactivate_package(package_id: str, request: Request, db: AsyncSession
 
 @router.put("/availability")
 async def set_availability(data: AvailabilityBulkUpdate, request: Request, db: AsyncSession = Depends(get_db)):
-    """Set availability slots (bulk upsert — replaces all existing slots)."""
+    """Set availability slots (bulk upsert - replaces all existing slots)."""
     user_id = _get_user_id(request)
     pp = await _get_provider_profile(user_id, db)
 

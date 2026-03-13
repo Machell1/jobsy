@@ -1,9 +1,9 @@
-# Jobsy — App Store Submission Metadata
+# Jobsy - App Store Submission Metadata
 
 ## App Information
 
 ### App Name
-**Jobsy — Jamaica's Service Marketplace**
+**Jobsy - Jamaica's Service Marketplace**
 
 ### Subtitle (iOS, 30 chars max)
 Find & Book Local Services
@@ -19,7 +19,7 @@ Find trusted service providers across Jamaica. Book, bid, and hire locally.
 
 **Full Description:**
 
-Jobsy connects you with trusted, verified service providers across all 14 parishes of Jamaica. Whether you need a plumber, electrician, hairstylist, caterer, photographer, or any other professional — Jobsy makes it easy to find, compare, and book the right person for the job.
+Jobsy connects you with trusted, verified service providers across all 14 parishes of Jamaica. Whether you need a plumber, electrician, hairstylist, caterer, photographer, or any other professional - Jobsy makes it easy to find, compare, and book the right person for the job.
 
 **For Customers:**
 • Browse verified service providers by category, location, and rating
@@ -35,7 +35,7 @@ Jobsy connects you with trusted, verified service providers across all 14 parish
 • Bid on posted jobs with custom proposals
 • Manage bookings, contracts, and client communications in one place
 • Build your reputation with verified reviews and ratings
-• Grow your business with the Noticeboard — post updates, promotions, and portfolio pieces
+• Grow your business with the Noticeboard - post updates, promotions, and portfolio pieces
 
 **Key Features:**
 • Digital contracts with built-in e-signatures
@@ -44,10 +44,10 @@ Jobsy connects you with trusted, verified service providers across all 14 parish
 • Secure bidding system with auto-approval workflows
 • Provider verification and trust badges
 • Comprehensive notification system
-• Role switching — be both a customer and a provider
+• Role switching - be both a customer and a provider
 
 **Built for Jamaica:**
-Jobsy is designed specifically for the Jamaican market, with support for all 14 parishes, JMD currency, and local phone number formats. From Kingston to Montego Bay, Portland to Westmoreland — find services wherever you are on the island.
+Jobsy is designed specifically for the Jamaican market, with support for all 14 parishes, JMD currency, and local phone number formats. From Kingston to Montego Bay, Portland to Westmoreland - find services wherever you are on the island.
 
 Download Jobsy today and experience a better way to find and hire local services in Jamaica.
 
@@ -89,11 +89,11 @@ https://www.jobsyja.com/#/terms-of-service
 
 ### App Privacy (iOS)
 **Data Collected:**
-- Contact Info (name, email, phone number) — used for account functionality
-- Location — used for finding nearby services
-- User Content (photos, reviews) — used for app functionality
-- Identifiers (user ID) — used for app functionality
-- Usage Data — used for analytics
+- Contact Info (name, email, phone number) - used for account functionality
+- Location - used for finding nearby services
+- User Content (photos, reviews) - used for app functionality
+- Identifiers (user ID) - used for app functionality
+- Usage Data - used for analytics
 
 **Data NOT Collected:**
 - Financial info (handled by payment processor)
@@ -128,24 +128,24 @@ https://www.jobsyja.com/#/settings (in-app support)
 ## Required Assets Checklist
 
 ### App Icon
-- [x] 1024x1024 PNG (no alpha/transparency) — required for both stores
+- [x] 1024x1024 PNG (no alpha/transparency) - required for both stores
 - iOS: Automatically generated from app.json icon
 - Android: Adaptive icon configured in app.json
 
 ### Screenshots Needed
 
-**iPhone 6.7" Display (1290 x 2796):** — Required for iOS
-1. Home/Landing screen — "Find Trusted Services Across Jamaica"
-2. Search/Browse providers — "Browse by Category & Parish"
-3. Provider profile — "View Ratings, Reviews & Portfolio"
-4. Job Board — "Post Jobs & Receive Bids"
-5. Messages — "Chat Directly with Providers"
-6. Booking confirmation — "Book with Confidence"
+**iPhone 6.7" Display (1290 x 2796):** - Required for iOS
+1. Home/Landing screen - "Find Trusted Services Across Jamaica"
+2. Search/Browse providers - "Browse by Category & Parish"
+3. Provider profile - "View Ratings, Reviews & Portfolio"
+4. Job Board - "Post Jobs & Receive Bids"
+5. Messages - "Chat Directly with Providers"
+6. Booking confirmation - "Book with Confidence"
 
-**iPhone 6.5" Display (1242 x 2688):** — Required for iOS
+**iPhone 6.5" Display (1242 x 2688):** - Required for iOS
 Same 6 screenshots at this resolution
 
-**Android Phone (1080 x 1920 minimum):** — Required for Google Play
+**Android Phone (1080 x 1920 minimum):** - Required for Google Play
 Same 6 screenshots concept, minimum 2, maximum 8
 
 ### Feature Graphic (Google Play only)

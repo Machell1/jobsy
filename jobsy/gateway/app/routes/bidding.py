@@ -288,9 +288,9 @@ async def _notify_providers_for_category(
 
     budget_str = ""
     if job_post.budget_min and job_post.budget_max:
-        budget_str = f" — Budget: J${job_post.budget_min}-${job_post.budget_max}"
+        budget_str = f" - Budget: J${job_post.budget_min}-${job_post.budget_max}"
     elif job_post.budget_max:
-        budget_str = f" — Budget: up to J${job_post.budget_max}"
+        budget_str = f" - Budget: up to J${job_post.budget_max}"
 
     now = datetime.now(UTC)
     for row in provider_rows:
@@ -792,7 +792,7 @@ async def sign_contract(
                 db,
                 contract.hirer_id,
                 "Contract Fully Signed",
-                f"Contract for '{contract.title}' is fully signed — work can begin!",
+                f"Contract for '{contract.title}' is fully signed - work can begin!",
                 {"type": "contract", "contract_id": contract.id},
                 "contract",
             )
@@ -800,7 +800,7 @@ async def sign_contract(
                 db,
                 contract.provider_id,
                 "Contract Fully Signed",
-                f"Contract for '{contract.title}' is fully signed — work can begin!",
+                f"Contract for '{contract.title}' is fully signed - work can begin!",
                 {"type": "contract", "contract_id": contract.id},
                 "contract",
             )

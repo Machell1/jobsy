@@ -13,7 +13,7 @@ class UserCreate(BaseModel):
     password: str = Field(..., min_length=8)
     role: str = Field(default="user", pattern=r"^(user|provider|hirer|advertiser)$")
     roles: list[str] = Field(default_factory=lambda: ["user"])
-    # Optional profile fields — when provided, a Profile is created atomically
+    # Optional profile fields - when provided, a Profile is created atomically
     display_name: str | None = None
     parish: str | None = None
     service_category: str | None = None

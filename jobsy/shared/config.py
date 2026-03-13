@@ -90,7 +90,7 @@ if not ELASTICSEARCH_URL:
             ELASTICSEARCH_URL = f"http://{_es_host}:{_es_port}"
             logging.info("ELASTICSEARCH_URL built from ELASTICSEARCH_HOST=%s", _es_host)
         else:
-            logging.warning("ELASTICSEARCH_URL not set in production — search will be unavailable")
+            logging.warning("ELASTICSEARCH_URL not set in production - search will be unavailable")
     else:
         ELASTICSEARCH_URL = "http://localhost:9200"
 

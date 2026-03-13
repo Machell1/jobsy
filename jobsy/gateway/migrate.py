@@ -2,7 +2,7 @@
 
 This standalone script applies DDL changes that match the Alembic
 migrations without requiring the full Alembic toolchain or all
-service model imports.  It is idempotent — safe to run multiple times.
+service model imports.  It is idempotent - safe to run multiple times.
 
 Usage:
     python migrate.py              (uses DATABASE_URL env var)

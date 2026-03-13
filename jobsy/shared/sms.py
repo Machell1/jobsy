@@ -16,7 +16,7 @@ def send_sms(to: str, body: str) -> bool:
     """
     if not all([TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER]):
         if os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PRODUCTION"):
-            logger.error("Twilio not configured in production — SMS to %s not sent", to)
+            logger.error("Twilio not configured in production - SMS to %s not sent", to)
             return False
         logger.info("SMS (dev mode) to %s: %s", to, body)
         return True

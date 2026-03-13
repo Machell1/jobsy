@@ -15,7 +15,7 @@ def send_email(to: str, subject: str, html_body: str, text_body: str = "") -> bo
     """Send an email via SMTP. Returns True on success."""
     if not all([SMTP_HOST, SMTP_USER, SMTP_PASSWORD]):
         if os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PRODUCTION"):
-            logger.error("SMTP not configured in production — email to %s not sent", to)
+            logger.error("SMTP not configured in production - email to %s not sent", to)
             return False
         logger.info("Email (dev mode) to %s: subject=%s", to, subject)
         return True

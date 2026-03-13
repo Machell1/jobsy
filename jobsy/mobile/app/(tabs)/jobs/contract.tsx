@@ -45,7 +45,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function formatDate(dateStr?: string) {
-  if (!dateStr) return "—";
+  if (!dateStr) return "-";
   return new Date(dateStr).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -212,7 +212,7 @@ export default function ContractDetailScreen() {
               <Ionicons name="checkmark-circle" size={18} color="#166534" />
               <View className="ml-2">
                 <Text className="text-sm font-medium text-gray-900">
-                  {sig.signer_role === "hirer" ? "Hirer" : "Provider"} — Signed
+                  {sig.signer_role === "hirer" ? "Hirer" : "Provider"} - Signed
                 </Text>
                 <Text className="text-xs text-gray-500">
                   {formatDate(sig.signed_at)} via {sig.signature_method}
