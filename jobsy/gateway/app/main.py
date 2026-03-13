@@ -853,6 +853,19 @@ async def _apply_migrations() -> None:
             await conn.execute(text(
                 "ALTER TABLE profiles ADD COLUMN IF NOT EXISTS total_profile_views INTEGER DEFAULT 0"
             ))
+
+            # ── Migration 017: Fix portfolio_items NOT NULL constraints ──
+            # The original table creation had provider_id and image_url as NOT NULL,
+            # but Phase 3 user-based portfolio items don't require these fields.
+            await conn.execute(text(
+                "ALTER TABLE portfolio_items ALTER COLUMN provider_id DROP NOT NULL"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE portfolio_items ALTER COLUMN image_url DROP NOT NULL"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_portfolio_user ON portfolio_items(user_id)"
+            ))
         logger.info("Database migrations applied successfully")
     except Exception:
         logger.warning("Could not apply migrations on startup -- will retry on next deploy")

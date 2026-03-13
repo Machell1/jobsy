@@ -13,7 +13,7 @@ import os
 from typing import Any
 
 from elasticsearch import AsyncElasticsearch
-from sqlalchemy import func, or_, select
+from sqlalchemy import text
 
 from shared.config import ELASTICSEARCH_URL
 from shared.database import async_session_factory
@@ -158,45 +158,58 @@ async def _fallback_search_listings(
     limit: int = 20,
     offset: int = 0,
 ) -> dict:
-    """SQL fallback when Elasticsearch is unavailable."""
-    from listings.app.models import Listing
+    """SQL fallback when Elasticsearch is unavailable.
 
+    Uses raw SQL to avoid cross-service ORM model imports that are
+    unavailable in the search service's container.
+    """
     async with async_session_factory() as session:
-        stmt = select(Listing).where(Listing.status == "active")
+        conditions = ["status = 'active'"]
+        params: dict[str, Any] = {"limit": limit, "offset": offset}
 
         if query:
-            pattern = f"%{query}%"
-            stmt = stmt.where(
-                or_(
-                    Listing.title.ilike(pattern),
-                    Listing.description.ilike(pattern),
-                )
-            )
+            conditions.append("(title ILIKE :pattern OR description ILIKE :pattern)")
+            params["pattern"] = f"%{query}%"
         if parish:
-            stmt = stmt.where(Listing.parish == parish)
+            conditions.append("parish = :parish")
+            params["parish"] = parish
         if category:
-            stmt = stmt.where(Listing.category == category)
+            conditions.append("category = :category")
+            params["category"] = category
+        if listing_type:
+            conditions.append("listing_type = :listing_type")
+            params["listing_type"] = listing_type
 
-        # Count total before pagination
-        count_stmt = select(func.count()).select_from(stmt.subquery())
-        total = (await session.execute(count_stmt)).scalar() or 0
+        where = " AND ".join(conditions)
 
-        stmt = stmt.order_by(Listing.created_at.desc()).offset(offset).limit(limit)
-        result = await session.execute(stmt)
-        rows = result.scalars().all()
+        count_result = await session.execute(
+            text(f"SELECT COUNT(*) FROM listings WHERE {where}"), params  # noqa: S608
+        )
+        total = count_result.scalar() or 0
+
+        result = await session.execute(
+            text(
+                f"SELECT id, poster_id, title, description, category, parish, "  # noqa: S608
+                f"budget_min, budget_max, status, created_at "
+                f"FROM listings WHERE {where} "
+                f"ORDER BY created_at DESC LIMIT :limit OFFSET :offset"
+            ),
+            params,
+        )
+        rows = result.mappings().all()
 
         hits = [
             {
-                "id": r.id,
-                "poster_id": r.poster_id,
-                "title": r.title,
-                "description": r.description,
-                "category": r.category,
-                "parish": r.parish,
-                "budget_min": float(r.budget_min) if r.budget_min else None,
-                "budget_max": float(r.budget_max) if r.budget_max else None,
-                "status": r.status,
-                "created_at": r.created_at.isoformat() if r.created_at else None,
+                "id": r["id"],
+                "poster_id": r["poster_id"],
+                "title": r["title"],
+                "description": r["description"],
+                "category": r["category"],
+                "parish": r["parish"],
+                "budget_min": float(r["budget_min"]) if r["budget_min"] else None,
+                "budget_max": float(r["budget_max"]) if r["budget_max"] else None,
+                "status": r["status"],
+                "created_at": r["created_at"].isoformat() if r["created_at"] else None,
             }
             for r in rows
         ]
@@ -211,39 +224,49 @@ async def _fallback_search_profiles(
     limit: int = 20,
     offset: int = 0,
 ) -> dict:
-    """SQL fallback when Elasticsearch is unavailable."""
-    from profiles.app.models import Profile
+    """SQL fallback when Elasticsearch is unavailable.
 
+    Uses raw SQL to avoid cross-service ORM model imports that are
+    unavailable in the search service's container.
+    """
     async with async_session_factory() as session:
-        stmt = select(Profile).where(Profile.is_active.is_(True))
+        conditions = ["is_active = true"]
+        params: dict[str, Any] = {"limit": limit, "offset": offset}
 
         if query:
-            pattern = f"%{query}%"
-            stmt = stmt.where(
-                or_(
-                    Profile.display_name.ilike(pattern),
-                    Profile.bio.ilike(pattern),
-                )
-            )
+            conditions.append("(display_name ILIKE :pattern OR bio ILIKE :pattern)")
+            params["pattern"] = f"%{query}%"
         if parish:
-            stmt = stmt.where(Profile.parish == parish)
+            conditions.append("parish = :parish")
+            params["parish"] = parish
 
-        count_stmt = select(func.count()).select_from(stmt.subquery())
-        total = (await session.execute(count_stmt)).scalar() or 0
+        where = " AND ".join(conditions)
 
-        stmt = stmt.order_by(Profile.rating_avg.desc()).offset(offset).limit(limit)
-        result = await session.execute(stmt)
-        rows = result.scalars().all()
+        count_result = await session.execute(
+            text(f"SELECT COUNT(*) FROM profiles WHERE {where}"), params  # noqa: S608
+        )
+        total = count_result.scalar() or 0
+
+        result = await session.execute(
+            text(
+                f"SELECT id, display_name, bio, skills, parish, "  # noqa: S608
+                f"rating_avg, rating_count "
+                f"FROM profiles WHERE {where} "
+                f"ORDER BY rating_avg DESC NULLS LAST LIMIT :limit OFFSET :offset"
+            ),
+            params,
+        )
+        rows = result.mappings().all()
 
         hits = [
             {
-                "id": r.id,
-                "display_name": r.display_name,
-                "bio": r.bio,
-                "skills": r.skills or [],
-                "parish": r.parish,
-                "average_rating": float(r.rating_avg) if r.rating_avg else None,
-                "total_reviews": r.rating_count or 0,
+                "id": r["id"],
+                "display_name": r["display_name"],
+                "bio": r["bio"],
+                "skills": r["skills"] or [],
+                "parish": r["parish"],
+                "average_rating": float(r["rating_avg"]) if r["rating_avg"] else None,
+                "total_reviews": r["rating_count"] or 0,
             }
             for r in rows
         ]

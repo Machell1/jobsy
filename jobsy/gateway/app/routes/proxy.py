@@ -264,6 +264,18 @@ async def proxy_search(path: str, request: Request, user: dict = Depends(get_opt
         ) from None
 
 
+@router.api_route("/search/{path:path}", methods=["POST", "DELETE"])
+async def proxy_search_write(path: str, request: Request, user: dict = Depends(get_current_user)):
+    """Authenticated write access to search (saved searches)."""
+    return await _proxy_request("search", f"/{path}", request, user)
+
+
+@router.api_route("/advertising/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
+async def proxy_advertising(path: str, request: Request, user: dict = Depends(get_current_user)):
+    """Proxy requests to the advertising service via /api/advertising/ path."""
+    return await _proxy_request("ads", f"/{path}", request, user)
+
+
 @router.api_route("/admin/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
 async def proxy_admin(path: str, request: Request, user: dict = Depends(get_current_user)):
     if user.get("role") != "admin":

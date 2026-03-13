@@ -52,11 +52,13 @@ class StaffRoleUpdate(BaseModel):
 
 
 class BranchCreate(BaseModel):
-    name: str = Field(..., max_length=200)
+    name: str = Field(..., max_length=200, alias="branch_name")
     address: str | None = None
     parish: str | None = None
     phone: str | None = None
     manager_id: str | None = None
+
+    model_config = {"populate_by_name": True}
 
 
 class BranchUpdate(BaseModel):
