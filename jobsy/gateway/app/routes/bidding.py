@@ -279,7 +279,11 @@ async def _notify_providers_for_category(
     job_post: JobPost,
     hirer_name: str,
 ) -> None:
-    """Insert notification_logs for providers matching the job's category."""
+    """Insert notification_logs for providers matching the job's category.
+
+    Uses a savepoint per insert so that a failure does not abort the
+    outer transaction.
+    """
     result = await db.execute(
         text(
             "SELECT user_id FROM profiles "
@@ -298,26 +302,33 @@ async def _notify_providers_for_category(
     now = datetime.now(UTC)
     for row in provider_rows:
         provider_user_id = row[0]
-        await db.execute(
-            text(
-                "INSERT INTO notification_logs "
-                "(id, user_id, title, body, data, notification_type, "
-                "delivered, read, sent_at) "
-                "VALUES (:id, :uid, :title, :body, :data::jsonb, :ntype, "
-                "false, false, :sent_at)"
-            ),
-            {
-                "id": str(uuid.uuid4()),
-                "uid": provider_user_id,
-                "title": f"New Job in {job_post.category}!",
-                "body": (
-                    f"{hirer_name} posted: {job_post.title}{budget_str}"
-                ),
-                "data": f'{{"type":"job_post","job_post_id":"{job_post.id}"}}',
-                "ntype": "job_post",
-                "sent_at": now,
-            },
-        )
+        try:
+            async with db.begin_nested():
+                await db.execute(
+                    text(
+                        "INSERT INTO notification_logs "
+                        "(id, user_id, title, body, data, notification_type, "
+                        "delivered, read, sent_at) "
+                        "VALUES (:id, :uid, :title, :body, :data::jsonb, :ntype, "
+                        "false, false, :sent_at)"
+                    ),
+                    {
+                        "id": str(uuid.uuid4()),
+                        "uid": provider_user_id,
+                        "title": f"New Job in {job_post.category}!",
+                        "body": (
+                            f"{hirer_name} posted: {job_post.title}{budget_str}"
+                        ),
+                        "data": f'{{"type":"job_post","job_post_id":"{job_post.id}"}}',
+                        "ntype": "job_post",
+                        "sent_at": now,
+                    },
+                )
+        except Exception:
+            logger.warning(
+                "Notification insert failed for provider %s, skipping",
+                provider_user_id,
+            )
 
 
 async def _insert_notification(
@@ -328,27 +339,36 @@ async def _insert_notification(
     data: dict,
     notification_type: str,
 ) -> None:
-    """Insert a single notification_logs row."""
+    """Insert a single notification_logs row.
+
+    Uses a savepoint so that a failure here does not abort the
+    outer transaction (PostgreSQL marks the whole transaction as
+    aborted after any statement error).
+    """
     import json
 
-    await db.execute(
-        text(
-            "INSERT INTO notification_logs "
-            "(id, user_id, title, body, data, notification_type, "
-            "delivered, read, sent_at) "
-            "VALUES (:id, :uid, :title, :body, :data::jsonb, :ntype, "
-            "false, false, :sent_at)"
-        ),
-        {
-            "id": str(uuid.uuid4()),
-            "uid": user_id,
-            "title": title,
-            "body": body,
-            "data": json.dumps(data),
-            "ntype": notification_type,
-            "sent_at": datetime.now(UTC),
-        },
-    )
+    try:
+        async with db.begin_nested():
+            await db.execute(
+                text(
+                    "INSERT INTO notification_logs "
+                    "(id, user_id, title, body, data, notification_type, "
+                    "delivered, read, sent_at) "
+                    "VALUES (:id, :uid, :title, :body, :data::jsonb, :ntype, "
+                    "false, false, :sent_at)"
+                ),
+                {
+                    "id": str(uuid.uuid4()),
+                    "uid": user_id,
+                    "title": title,
+                    "body": body,
+                    "data": json.dumps(data),
+                    "ntype": notification_type,
+                    "sent_at": datetime.now(UTC),
+                },
+            )
+    except Exception:
+        logger.warning("Notification insert failed for user %s, skipping", user_id)
 
 
 def _generate_contract_pdf(contract: Contract) -> bytes:
