@@ -10,7 +10,8 @@ import { useChatStore } from "@/stores/chat";
 export default function ChatThreadScreen() {
   const { id: channelId } = useLocalSearchParams<{ id: string }>();
   const { client, isReady } = useChatStore();
-  const [channel, setChannel] = useState<ChannelType | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [channel, setChannel] = useState<ChannelType<any> | null>(null);
 
   useEffect(() => {
     if (!client || !channelId) return;
@@ -30,6 +31,7 @@ export default function ChatThreadScreen() {
       <Stack.Screen
         options={{ title: `Chat #${channelId?.slice(0, 8) || ""}` }}
       />
+      {/* @ts-expect-error stream-chat dual-package generics mismatch */}
       <Channel channel={channel}>
         <View style={{ flex: 1 }}>
           <MessageList />
