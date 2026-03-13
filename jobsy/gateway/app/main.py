@@ -20,6 +20,7 @@ from shared.middleware import setup_middleware
 from .middleware.rate_limit import rate_limit_check
 from .routes.analytics import router as analytics_router
 from .routes.auth import router as auth_router
+from .routes.bidding import router as bidding_router
 from .routes.bookings import router as bookings_router
 from .routes.business import router as business_router
 from .routes.health import router as health_router
@@ -866,6 +867,142 @@ async def _apply_migrations() -> None:
             await conn.execute(text(
                 "CREATE INDEX IF NOT EXISTS idx_portfolio_user ON portfolio_items(user_id)"
             ))
+
+            # ── Migration 018: Phase 4 -- Bidding & Contracts ──
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS job_posts ("
+                "id VARCHAR PRIMARY KEY, "
+                "hirer_id VARCHAR NOT NULL, "
+                "title VARCHAR(200) NOT NULL, "
+                "description TEXT NOT NULL, "
+                "category VARCHAR(100) NOT NULL, "
+                "subcategory VARCHAR(100), "
+                "required_skills JSONB DEFAULT '[]', "
+                "budget_min NUMERIC(12,2), "
+                "budget_max NUMERIC(12,2), "
+                "currency VARCHAR(3) DEFAULT 'JMD', "
+                "location_text VARCHAR(500), "
+                "parish VARCHAR(50), "
+                "latitude NUMERIC, "
+                "longitude NUMERIC, "
+                "deadline TIMESTAMPTZ, "
+                "bid_deadline TIMESTAMPTZ, "
+                "status VARCHAR(30) DEFAULT 'open', "
+                "attachments JSONB DEFAULT '[]', "
+                "visibility VARCHAR(20) DEFAULT 'public', "
+                "max_bids INTEGER, "
+                "created_at TIMESTAMPTZ NOT NULL, "
+                "updated_at TIMESTAMPTZ NOT NULL)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_jp_hirer ON job_posts(hirer_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_jp_category ON job_posts(category)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_jp_status ON job_posts(status)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_jp_parish ON job_posts(parish)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_jp_created ON job_posts(created_at)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_jp_bid_deadline ON job_posts(bid_deadline)"
+            ))
+
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS bids ("
+                "id VARCHAR PRIMARY KEY, "
+                "job_post_id VARCHAR NOT NULL REFERENCES job_posts(id), "
+                "provider_id VARCHAR NOT NULL, "
+                "amount NUMERIC(12,2) NOT NULL, "
+                "currency VARCHAR(3) DEFAULT 'JMD', "
+                "proposal TEXT NOT NULL, "
+                "estimated_duration_days INTEGER, "
+                "available_start_date DATE, "
+                "attachments JSONB DEFAULT '[]', "
+                "status VARCHAR(30) DEFAULT 'submitted', "
+                "is_winner BOOLEAN DEFAULT FALSE, "
+                "hirer_note TEXT, "
+                "created_at TIMESTAMPTZ NOT NULL, "
+                "updated_at TIMESTAMPTZ NOT NULL, "
+                "UNIQUE(job_post_id, provider_id))"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_bid_job ON bids(job_post_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_bid_provider ON bids(provider_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_bid_status ON bids(status)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_bid_winner ON bids(is_winner)"
+            ))
+
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS contracts ("
+                "id VARCHAR PRIMARY KEY, "
+                "job_post_id VARCHAR NOT NULL, "
+                "bid_id VARCHAR NOT NULL, "
+                "hirer_id VARCHAR NOT NULL, "
+                "provider_id VARCHAR NOT NULL, "
+                "title VARCHAR(300) NOT NULL, "
+                "scope_of_work TEXT NOT NULL, "
+                "agreed_amount NUMERIC(12,2) NOT NULL, "
+                "currency VARCHAR(3) DEFAULT 'JMD', "
+                "start_date DATE, "
+                "estimated_end_date DATE, "
+                "location_text VARCHAR(500), "
+                "parish VARCHAR(50), "
+                "terms_and_conditions TEXT NOT NULL, "
+                "status VARCHAR(30) DEFAULT 'pending_signatures', "
+                "contract_pdf_url VARCHAR, "
+                "signed_pdf_url VARCHAR, "
+                "generated_at TIMESTAMPTZ NOT NULL, "
+                "completed_at TIMESTAMPTZ, "
+                "created_at TIMESTAMPTZ NOT NULL, "
+                "updated_at TIMESTAMPTZ NOT NULL)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_contract_job ON contracts(job_post_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_contract_bid ON contracts(bid_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_contract_hirer ON contracts(hirer_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_contract_provider ON contracts(provider_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_contract_status ON contracts(status)"
+            ))
+
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS contract_signatures ("
+                "id VARCHAR PRIMARY KEY, "
+                "contract_id VARCHAR NOT NULL REFERENCES contracts(id), "
+                "signer_id VARCHAR NOT NULL, "
+                "signer_role VARCHAR(20) NOT NULL, "
+                "signature_data TEXT NOT NULL, "
+                "signature_method VARCHAR(20) DEFAULT 'digital', "
+                "ip_address VARCHAR(45), "
+                "user_agent VARCHAR(500), "
+                "signed_at TIMESTAMPTZ NOT NULL)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_csig_contract ON contract_signatures(contract_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_csig_signer ON contract_signatures(signer_id)"
+            ))
+
         logger.info("Database migrations applied successfully")
     except Exception:
         logger.warning("Could not apply migrations on startup -- will retry on next deploy")
@@ -961,6 +1098,11 @@ app.include_router(
     analytics_router,
     prefix="/api/analytics",
     tags=["analytics"],
+)
+app.include_router(
+    bidding_router,
+    prefix="/api/bidding",
+    tags=["bidding"],
 )
 app.include_router(proxy_router)
 
