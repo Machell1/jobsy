@@ -326,7 +326,10 @@ const StreamChatManager = {
   },
 
   getChannelId(userA, userB) {
-    return [userA, userB].sort().join('_');
+    // Stream limits channel IDs to 64 chars.
+    // Two UUIDs sorted + dashes stripped = exactly 64 chars (32+32).
+    const [a, b] = [userA, userB].sort();
+    return (a.replace(/-/g, '') + b.replace(/-/g, '')).slice(0, 64);
   },
 
   async getOrCreateDMChannel(client, currentUserId, otherUserId) {
