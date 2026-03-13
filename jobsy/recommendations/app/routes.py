@@ -137,9 +137,7 @@ async def get_recommendation_feed(
 
 
 @router.put("/preferences")
-async def update_preferences(
-    data: PreferencesUpdate, request: Request, db: AsyncSession = Depends(get_db)
-):
+async def update_preferences(data: PreferencesUpdate, request: Request, db: AsyncSession = Depends(get_db)):
     """Update user's recommendation preferences."""
     user_id = _get_user_id(request)
     now = datetime.now(UTC)

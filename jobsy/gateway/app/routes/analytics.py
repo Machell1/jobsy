@@ -68,7 +68,9 @@ async def user_dashboard(
 
     # Views today
     views_today = await db.execute(
-        select(func.count()).select_from(AnalyticsEvent).where(
+        select(func.count())
+        .select_from(AnalyticsEvent)
+        .where(
             AnalyticsEvent.entity_id == user_id,
             AnalyticsEvent.event_type == "profile_view",
             AnalyticsEvent.created_at >= today_start,
@@ -77,7 +79,9 @@ async def user_dashboard(
 
     # Views this week
     views_week = await db.execute(
-        select(func.count()).select_from(AnalyticsEvent).where(
+        select(func.count())
+        .select_from(AnalyticsEvent)
+        .where(
             AnalyticsEvent.entity_id == user_id,
             AnalyticsEvent.event_type == "profile_view",
             AnalyticsEvent.created_at >= week_start,
@@ -86,7 +90,9 @@ async def user_dashboard(
 
     # Total bookings
     total_bookings = await db.execute(
-        select(func.count()).select_from(AnalyticsEvent).where(
+        select(func.count())
+        .select_from(AnalyticsEvent)
+        .where(
             AnalyticsEvent.user_id == user_id,
             AnalyticsEvent.event_type == "booking_created",
         )
@@ -94,7 +100,9 @@ async def user_dashboard(
 
     # Profile views total
     profile_views = await db.execute(
-        select(func.count()).select_from(AnalyticsEvent).where(
+        select(func.count())
+        .select_from(AnalyticsEvent)
+        .where(
             AnalyticsEvent.entity_id == user_id,
             AnalyticsEvent.event_type == "profile_view",
         )
@@ -102,7 +110,9 @@ async def user_dashboard(
 
     # Listing views
     listing_views = await db.execute(
-        select(func.count()).select_from(AnalyticsEvent).where(
+        select(func.count())
+        .select_from(AnalyticsEvent)
+        .where(
             AnalyticsEvent.entity_id == user_id,
             AnalyticsEvent.event_type == "listing_view",
         )
@@ -110,7 +120,9 @@ async def user_dashboard(
 
     # Search appearances
     search_appearances = await db.execute(
-        select(func.count()).select_from(AnalyticsEvent).where(
+        select(func.count())
+        .select_from(AnalyticsEvent)
+        .where(
             AnalyticsEvent.entity_id == user_id,
             AnalyticsEvent.event_type == "search",
         )
@@ -138,7 +150,9 @@ async def provider_analytics(
 
     # Views over time
     views_result = await db.execute(
-        select(func.count()).select_from(AnalyticsEvent).where(
+        select(func.count())
+        .select_from(AnalyticsEvent)
+        .where(
             AnalyticsEvent.entity_id == user_id,
             AnalyticsEvent.event_type == "profile_view",
             AnalyticsEvent.created_at >= since,
@@ -147,7 +161,9 @@ async def provider_analytics(
 
     # Bookings in period
     bookings_result = await db.execute(
-        select(func.count()).select_from(AnalyticsEvent).where(
+        select(func.count())
+        .select_from(AnalyticsEvent)
+        .where(
             AnalyticsEvent.entity_id == user_id,
             AnalyticsEvent.event_type == "booking_created",
             AnalyticsEvent.created_at >= since,
@@ -171,10 +187,7 @@ async def provider_analytics(
         .group_by(AnalyticsEvent.entity_type)
     )
     cat_result = await db.execute(cat_query)
-    categories = [
-        {"entity_type": row.entity_type, "count": row.count}
-        for row in cat_result
-    ]
+    categories = [{"entity_type": row.entity_type, "count": row.count} for row in cat_result]
 
     return {
         "period_days": days,
@@ -202,14 +215,18 @@ async def platform_metrics(
 
     # Total events today
     events_today = await db.execute(
-        select(func.count()).select_from(AnalyticsEvent).where(
+        select(func.count())
+        .select_from(AnalyticsEvent)
+        .where(
             AnalyticsEvent.created_at >= today_start,
         )
     )
 
     # Bookings today
     bookings_today = await db.execute(
-        select(func.count()).select_from(AnalyticsEvent).where(
+        select(func.count())
+        .select_from(AnalyticsEvent)
+        .where(
             AnalyticsEvent.event_type == "booking_created",
             AnalyticsEvent.created_at >= today_start,
         )
@@ -217,7 +234,9 @@ async def platform_metrics(
 
     # New signups today
     signups_today = await db.execute(
-        select(func.count()).select_from(AnalyticsEvent).where(
+        select(func.count())
+        .select_from(AnalyticsEvent)
+        .where(
             AnalyticsEvent.event_type == "signup",
             AnalyticsEvent.created_at >= today_start,
         )
@@ -262,10 +281,7 @@ async def trending(
         .limit(10)
     )
     cat_result = await db.execute(cat_query)
-    trending_categories = [
-        {"category": row.entity_type, "count": row.count}
-        for row in cat_result
-    ]
+    trending_categories = [{"category": row.entity_type, "count": row.count} for row in cat_result]
 
     # Top providers (most profile views)
     provider_query = (
@@ -283,10 +299,7 @@ async def trending(
         .limit(10)
     )
     provider_result = await db.execute(provider_query)
-    top_providers = [
-        {"user_id": row.entity_id, "views": row.views}
-        for row in provider_result
-    ]
+    top_providers = [{"user_id": row.entity_id, "views": row.views} for row in provider_result]
 
     # Popular searches
     search_query = (
@@ -304,10 +317,7 @@ async def trending(
         .limit(10)
     )
     search_result = await db.execute(search_query)
-    popular_searches = [
-        {"term": row.entity_id, "count": row.count}
-        for row in search_result
-    ]
+    popular_searches = [{"term": row.entity_id, "count": row.count} for row in search_result]
 
     return {
         "period_days": days,

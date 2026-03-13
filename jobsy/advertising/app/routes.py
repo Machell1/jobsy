@@ -66,8 +66,7 @@ async def serve_ad(
         parish_json = type_coerce([parish], JSONB_TYPE)
         empty_json = type_coerce([], JSONB_TYPE)
         query = query.where(
-            AdCampaign.target_parishes.op("@>")(parish_json)
-            | (AdCampaign.target_parishes == empty_json)
+            AdCampaign.target_parishes.op("@>")(parish_json) | (AdCampaign.target_parishes == empty_json)
         )
 
     # Category targeting
@@ -75,8 +74,7 @@ async def serve_ad(
         cat_json = type_coerce([category], JSONB_TYPE)
         empty_json = type_coerce([], JSONB_TYPE)
         query = query.where(
-            AdCampaign.target_categories.op("@>")(cat_json)
-            | (AdCampaign.target_categories == empty_json)
+            AdCampaign.target_categories.op("@>")(cat_json) | (AdCampaign.target_categories == empty_json)
         )
 
     query = query.limit(1)
@@ -202,7 +200,10 @@ def _require_auth(request: Request) -> str:
 
 @router.post("/campaigns", status_code=status.HTTP_201_CREATED)
 async def create_campaign(
-    data: CampaignCreate, request: Request, user_id: str = Depends(_require_auth), db: AsyncSession = Depends(get_db),
+    data: CampaignCreate,
+    request: Request,
+    user_id: str = Depends(_require_auth),
+    db: AsyncSession = Depends(get_db),
 ):
     """Create a new advertising campaign."""
     now = datetime.now(UTC)
@@ -341,14 +342,10 @@ async def campaign_report(campaign_id: str, db: AsyncSession = Depends(get_db)):
     if not campaign:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Campaign not found")
 
-    impressions_result = await db.execute(
-        select(func.count()).where(AdImpression.campaign_id == campaign_id)
-    )
+    impressions_result = await db.execute(select(func.count()).where(AdImpression.campaign_id == campaign_id))
     impressions = impressions_result.scalar() or 0
 
-    clicks_result = await db.execute(
-        select(func.count()).where(AdClick.campaign_id == campaign_id)
-    )
+    clicks_result = await db.execute(select(func.count()).where(AdClick.campaign_id == campaign_id))
     clicks = clicks_result.scalar() or 0
 
     ctr = (clicks / impressions * 100) if impressions > 0 else 0.0
@@ -374,9 +371,7 @@ async def advertiser_dashboard(
     db: AsyncSession = Depends(get_db),
 ):
     """Self-serve advertiser dashboard -- summary of all campaigns."""
-    result = await db.execute(
-        select(AdCampaign).where(AdCampaign.advertiser_email.is_not(None))
-    )
+    result = await db.execute(select(AdCampaign).where(AdCampaign.advertiser_email.is_not(None)))
     campaigns = result.scalars().all()
 
     total_impressions = 0
@@ -384,20 +379,14 @@ async def advertiser_dashboard(
     total_spend = 0.0
 
     for c in campaigns:
-        imp_result = await db.execute(
-            select(func.count()).where(AdImpression.campaign_id == c.id)
-        )
-        clk_result = await db.execute(
-            select(func.count()).where(AdClick.campaign_id == c.id)
-        )
+        imp_result = await db.execute(select(func.count()).where(AdImpression.campaign_id == c.id))
+        clk_result = await db.execute(select(func.count()).where(AdClick.campaign_id == c.id))
         imps = imp_result.scalar() or 0
         clks = clk_result.scalar() or 0
         total_impressions += imps
         total_clicks += clks
 
-        budget_result = await db.execute(
-            select(AdBudget).where(AdBudget.campaign_id == c.id)
-        )
+        budget_result = await db.execute(select(AdBudget).where(AdBudget.campaign_id == c.id))
         budget = budget_result.scalar_one_or_none()
         if budget and budget.total_spent:
             total_spend += float(budget.total_spent)
@@ -426,24 +415,16 @@ async def campaign_analytics(
     if not campaign:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Campaign not found")
 
-    impressions_result = await db.execute(
-        select(func.count()).where(AdImpression.campaign_id == campaign_id)
-    )
-    clicks_result = await db.execute(
-        select(func.count()).where(AdClick.campaign_id == campaign_id)
-    )
-    conversions_result = await db.execute(
-        select(func.count()).where(AdConversion.campaign_id == campaign_id)
-    )
+    impressions_result = await db.execute(select(func.count()).where(AdImpression.campaign_id == campaign_id))
+    clicks_result = await db.execute(select(func.count()).where(AdClick.campaign_id == campaign_id))
+    conversions_result = await db.execute(select(func.count()).where(AdConversion.campaign_id == campaign_id))
 
     impressions = impressions_result.scalar() or 0
     clicks = clicks_result.scalar() or 0
     conversions = conversions_result.scalar() or 0
     ctr = (clicks / impressions * 100) if impressions > 0 else 0.0
 
-    budget_result = await db.execute(
-        select(AdBudget).where(AdBudget.campaign_id == campaign_id)
-    )
+    budget_result = await db.execute(select(AdBudget).where(AdBudget.campaign_id == campaign_id))
     budget = budget_result.scalar_one_or_none()
 
     return {
@@ -461,9 +442,7 @@ async def campaign_analytics(
 class ConversionCreate(BaseModel):
     campaign_id: str
     click_id: str | None = None
-    conversion_type: str = Field(
-        ..., pattern=r"^(booking|contact|profile_view|listing_view)$"
-    )
+    conversion_type: str = Field(..., pattern=r"^(booking|contact|profile_view|listing_view)$")
     conversion_value: float | None = None
     event_metadata: dict = Field(default_factory=dict)
 

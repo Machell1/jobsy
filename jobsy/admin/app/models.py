@@ -102,9 +102,7 @@ class ModerationQueue(Base):
     created_at = Column(DateTime(timezone=True), nullable=False)
     resolved_at = Column(DateTime(timezone=True), nullable=True)
 
-    __table_args__ = (
-        Index("idx_moderation_status", "status", "created_at"),
-    )
+    __table_args__ = (Index("idx_moderation_status", "status", "created_at"),)
 
 
 class VerificationRequest(Base):
@@ -186,9 +184,7 @@ class AdminRole(Base):
     description = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False)
 
-    __table_args__ = (
-        {"extend_existing": True},
-    )
+    __table_args__ = ({"extend_existing": True},)
 
 
 class AdminRoleAssignment(Base):

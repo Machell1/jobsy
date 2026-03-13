@@ -51,11 +51,15 @@ class TestDashboard:
 class TestModeration:
     async def test_submit_and_list_report(self, client):
         # Submit a report
-        response = await client.post("/report", json={
-            "item_type": "review",
-            "item_id": "review-bad",
-            "reason": "Inappropriate content",
-        }, headers=admin_headers())
+        response = await client.post(
+            "/report",
+            json={
+                "item_type": "review",
+                "item_id": "review-bad",
+                "reason": "Inappropriate content",
+            },
+            headers=admin_headers(),
+        )
         assert response.status_code == 201
         response.json()["id"]
 
@@ -68,46 +72,66 @@ class TestModeration:
 
     async def test_resolve_moderation_item(self, client):
         # Create item
-        resp = await client.post("/report", json={
-            "item_type": "listing",
-            "item_id": "listing-spam",
-            "reason": "Spam listing",
-        }, headers=admin_headers())
+        resp = await client.post(
+            "/report",
+            json={
+                "item_type": "listing",
+                "item_id": "listing-spam",
+                "reason": "Spam listing",
+            },
+            headers=admin_headers(),
+        )
         item_id = resp.json()["id"]
 
         # Resolve it
-        response = await client.post(f"/moderation/{item_id}/resolve", json={
-            "action": "remove",
-            "reason": "Confirmed spam",
-        }, headers=admin_headers())
+        response = await client.post(
+            f"/moderation/{item_id}/resolve",
+            json={
+                "action": "remove",
+                "reason": "Confirmed spam",
+            },
+            headers=admin_headers(),
+        )
         assert response.status_code == 200
         assert response.json()["action"] == "remove"
 
 
 class TestUserActions:
     async def test_suspend_user(self, client):
-        response = await client.post("/users/bad-user/action", json={
-            "action": "suspend",
-            "reason": "Violation of terms of service",
-        }, headers=admin_headers())
+        response = await client.post(
+            "/users/bad-user/action",
+            json={
+                "action": "suspend",
+                "reason": "Violation of terms of service",
+            },
+            headers=admin_headers(),
+        )
         assert response.status_code == 200
         assert response.json()["action"] == "suspend"
 
     async def test_non_admin_cannot_act(self, client):
-        response = await client.post("/users/bad-user/action", json={
-            "action": "suspend",
-            "reason": "Try to suspend",
-        }, headers=user_headers())
+        response = await client.post(
+            "/users/bad-user/action",
+            json={
+                "action": "suspend",
+                "reason": "Try to suspend",
+            },
+            headers=user_headers(),
+        )
         assert response.status_code == 403
 
 
 class TestAuditLog:
     async def test_audit_log_records_actions(self, client):
         # Perform an action
-        await client.post("/users/test-user/action", json={
-            "action": "warn",
-            "reason": "First warning",
-        }, headers=admin_headers())
+        await client.post(
+            "/users/test-user/action",
+            json={
+                "action": "warn",
+                "reason": "First warning",
+            },
+            headers=admin_headers(),
+        )
 
         # Check audit log
         response = await client.get("/audit-log", headers=admin_headers())

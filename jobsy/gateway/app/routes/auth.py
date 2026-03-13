@@ -21,6 +21,7 @@ from shared.auth import (
     verify_password,
 )
 from shared.database import get_db
+from shared.email_utils import send_email
 from shared.events import publish_event
 from shared.models.user import (
     AddRoleRequest,
@@ -146,14 +147,17 @@ async def register(request: Request, data: UserCreate, db: AsyncSession = Depend
             },
         )
 
-        await publish_event("profile.updated", {
-            "id": profile_id,
-            "user_id": user.id,
-            "display_name": data.display_name,
-            "bio": data.bio,
-            "parish": data.parish,
-            "service_category": data.service_category,
-        })
+        await publish_event(
+            "profile.updated",
+            {
+                "id": profile_id,
+                "user_id": user.id,
+                "display_name": data.display_name,
+                "bio": data.bio,
+                "parish": data.parish,
+                "service_category": data.service_category,
+            },
+        )
 
     return _token_response(user)
 
@@ -290,9 +294,7 @@ async def oauth_authenticate(request: Request, data: OAuthRequest, db: AsyncSess
 
     # 1. Look up by OAuth provider + ID (returning user)
     result = await db.execute(
-        select(User).where(
-            and_(User.oauth_provider == data.provider, User.oauth_id == oauth_sub)
-        )
+        select(User).where(and_(User.oauth_provider == data.provider, User.oauth_id == oauth_sub))
     )
     user = result.scalar_one_or_none()
 
@@ -348,22 +350,54 @@ async def oauth_authenticate(request: Request, data: OAuthRequest, db: AsyncSess
 _OTP_EXPIRY_MINUTES = 10
 
 
+_OTP_EMAIL_HTML = (
+    '<div style="font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto; padding: 20px;">'
+    '<h2 style="color: #0D9488;">Jobsy Password Reset</h2>'
+    "<p>Your verification code is:</p>"
+    '<div style="font-size: 32px; font-weight: bold; color: #0D9488; letter-spacing: 4px; padding: 20px 0;">'
+    "{otp}</div>"
+    "<p>This code expires in {minutes} minutes.</p>"
+    '<p style="color: #666; font-size: 12px;">If you didn\'t request this, please ignore this email.</p>'
+    "</div>"
+)
+
+
+def _send_otp_email(to: str, otp: str) -> bool:
+    """Send an OTP code via email."""
+    html = _OTP_EMAIL_HTML.format(otp=otp, minutes=_OTP_EXPIRY_MINUTES)
+    text = f"Your Jobsy password reset code is: {otp}. Expires in {_OTP_EXPIRY_MINUTES} minutes."
+    return send_email(to=to, subject="Jobsy Password Reset Code", html_body=html, text_body=text)
+
+
 @router.post("/forgot-password")
 async def forgot_password(request: Request, data: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)):
-    """Request a password reset OTP via SMS."""
+    """Request a password reset OTP via SMS or email."""
     await _check_auth_rate_limit(request)
 
-    generic_response = {"message": "If this phone is registered, you will receive a reset code."}
+    if not data.phone and not data.email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="At least one of phone or email must be provided.",
+        )
 
-    result = await db.execute(select(User).where(User.phone == data.phone))
-    user = result.scalar_one_or_none()
+    generic_response = {"message": "If this account is registered, you will receive a reset code."}
+
+    user = None
+    if data.email:
+        result = await db.execute(select(User).where(User.email == data.email))
+        user = result.scalar_one_or_none()
+    elif data.phone:
+        result = await db.execute(select(User).where(User.phone == data.phone))
+        user = result.scalar_one_or_none()
+
     if not user:
         return generic_response
 
     otp = f"{secrets.randbelow(900000) + 100000}"
+    phone = user.phone or data.phone or ""
 
     otp_record = PasswordResetOTP(
-        phone=data.phone,
+        phone=phone,
         otp_hash=hash_password(otp),
         expires_at=datetime.now(UTC) + timedelta(minutes=_OTP_EXPIRY_MINUTES),
         created_at=datetime.now(UTC),
@@ -371,10 +405,22 @@ async def forgot_password(request: Request, data: ForgotPasswordRequest, db: Asy
     db.add(otp_record)
     await db.flush()
 
-    send_sms(
-        to=data.phone,
-        body=f"Your Jobsy password reset code is: {otp}. Expires in {_OTP_EXPIRY_MINUTES} minutes.",
-    )
+    sent = False
+    if data.email:
+        # Email-first flow: send OTP via email
+        sent = _send_otp_email(to=data.email, otp=otp)
+    elif data.phone:
+        # SMS-first flow: try SMS, fall back to email
+        sent = send_sms(
+            to=data.phone,
+            body=f"Your Jobsy password reset code is: {otp}. Expires in {_OTP_EXPIRY_MINUTES} minutes.",
+        )
+        if not sent and user.email:
+            logger.info("SMS failed for %s, falling back to email %s", data.phone, user.email)
+            sent = _send_otp_email(to=user.email, otp=otp)
+
+    if not sent:
+        logger.warning("Could not deliver OTP for user %s via any channel", user.id)
 
     return generic_response
 

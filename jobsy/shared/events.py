@@ -53,7 +53,9 @@ async def get_connection():
                 return None
             logger.warning(
                 "RabbitMQ connection attempt %d/%d failed, retrying in %ds",
-                attempt, CONNECTION_RETRIES, delay,
+                attempt,
+                CONNECTION_RETRIES,
+                delay,
             )
             await asyncio.sleep(delay)
             delay = min(delay * 2, 30)
@@ -82,11 +84,13 @@ async def publish_event(routing_key: str, data: dict[str, Any]) -> None:
         channel = await connection.channel()
         exchange = await channel.declare_exchange(EXCHANGE_NAME, aio_pika.ExchangeType.TOPIC, durable=True)
         message = aio_pika.Message(
-            body=json.dumps({
-                "event_type": routing_key,
-                "timestamp": datetime.now(UTC).isoformat(),
-                "data": data,
-            }).encode(),
+            body=json.dumps(
+                {
+                    "event_type": routing_key,
+                    "timestamp": datetime.now(UTC).isoformat(),
+                    "data": data,
+                }
+            ).encode(),
             content_type="application/json",
             delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
         )
@@ -147,7 +151,9 @@ async def consume_events(queue_name: str, routing_key: str, callback: Callable) 
                         if retry_count < MAX_RETRIES:
                             logger.warning(
                                 "Retrying event from %s (attempt %d/%d)",
-                                routing_key, retry_count + 1, MAX_RETRIES,
+                                routing_key,
+                                retry_count + 1,
+                                MAX_RETRIES,
                             )
                             await message.ack()
                             retry_msg = aio_pika.Message(
@@ -160,7 +166,8 @@ async def consume_events(queue_name: str, routing_key: str, callback: Callable) 
                         else:
                             logger.exception(
                                 "Event from %s failed after %d retries, sending to DLQ",
-                                routing_key, MAX_RETRIES,
+                                routing_key,
+                                MAX_RETRIES,
                             )
                             await message.reject(requeue=False)
         except asyncio.CancelledError:
@@ -169,6 +176,7 @@ async def consume_events(queue_name: str, routing_key: str, callback: Callable) 
         except Exception:
             logger.warning(
                 "RabbitMQ unavailable for consumer %s, retrying in %ds",
-                queue_name, RECONNECT_DELAY,
+                queue_name,
+                RECONNECT_DELAY,
             )
             await asyncio.sleep(RECONNECT_DELAY)

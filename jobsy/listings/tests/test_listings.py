@@ -51,9 +51,13 @@ class TestCreateListing:
         assert data["budget_max"] == "1500.00"
 
     async def test_create_listing_missing_required_field(self, client):
-        response = await client.post("/", json={
-            "title": "Incomplete",
-        }, headers={"X-User-ID": "poster-3"})
+        response = await client.post(
+            "/",
+            json={
+                "title": "Incomplete",
+            },
+            headers={"X-User-ID": "poster-3"},
+        )
         assert response.status_code == 422
 
 
@@ -61,11 +65,15 @@ class TestListListings:
     async def test_list_active_listings(self, client):
         # Seed two listings
         await client.post("/", json=VALID_LISTING, headers={"X-User-ID": "poster-list-1"})
-        await client.post("/", json={
-            "title": "Paint my fence",
-            "description": "White picket fence needs painting.",
-            "category": "painting",
-        }, headers={"X-User-ID": "poster-list-2"})
+        await client.post(
+            "/",
+            json={
+                "title": "Paint my fence",
+                "description": "White picket fence needs painting.",
+                "category": "painting",
+            },
+            headers={"X-User-ID": "poster-list-2"},
+        )
 
         response = await client.get("/")
         assert response.status_code == 200
@@ -73,11 +81,15 @@ class TestListListings:
         assert len(listings) >= 2
 
     async def test_list_filter_by_category(self, client):
-        await client.post("/", json={
-            "title": "Electrical work",
-            "description": "Install ceiling fan.",
-            "category": "electrical",
-        }, headers={"X-User-ID": "poster-cat"})
+        await client.post(
+            "/",
+            json={
+                "title": "Electrical work",
+                "description": "Install ceiling fan.",
+                "category": "electrical",
+            },
+            headers={"X-User-ID": "poster-cat"},
+        )
 
         response = await client.get("/?category=electrical")
         assert response.status_code == 200
@@ -117,9 +129,13 @@ class TestUpdateListing:
         create_resp = await client.post("/", json=VALID_LISTING, headers={"X-User-ID": "poster-upd"})
         listing_id = create_resp.json()["id"]
 
-        response = await client.put(f"/{listing_id}", json={
-            "title": "Updated title",
-        }, headers={"X-User-ID": "poster-upd"})
+        response = await client.put(
+            f"/{listing_id}",
+            json={
+                "title": "Updated title",
+            },
+            headers={"X-User-ID": "poster-upd"},
+        )
 
         assert response.status_code == 200
         assert response.json()["title"] == "Updated title"
@@ -128,9 +144,13 @@ class TestUpdateListing:
         create_resp = await client.post("/", json=VALID_LISTING, headers={"X-User-ID": "poster-own"})
         listing_id = create_resp.json()["id"]
 
-        response = await client.put(f"/{listing_id}", json={
-            "title": "Hijacked",
-        }, headers={"X-User-ID": "not-the-owner"})
+        response = await client.put(
+            f"/{listing_id}",
+            json={
+                "title": "Hijacked",
+            },
+            headers={"X-User-ID": "not-the-owner"},
+        )
 
         assert response.status_code == 403
 

@@ -24,10 +24,14 @@ class TestGetMyProfile:
 
     async def test_get_my_profile_after_create(self, client):
         # Create the profile first
-        await client.put("/me", json={
-            "display_name": "Jane Doe",
-            "is_provider": True,
-        }, headers={"X-User-ID": "user-jane"})
+        await client.put(
+            "/me",
+            json={
+                "display_name": "Jane Doe",
+                "is_provider": True,
+            },
+            headers={"X-User-ID": "user-jane"},
+        )
 
         response = await client.get("/me", headers={"X-User-ID": "user-jane"})
         assert response.status_code == 200
@@ -38,12 +42,16 @@ class TestGetMyProfile:
 
 class TestCreateOrUpdateProfile:
     async def test_create_profile(self, client):
-        response = await client.put("/me", json={
-            "display_name": "John Smith",
-            "is_provider": False,
-            "bio": "I need odd jobs done.",
-            "parish": "Kingston",
-        }, headers={"X-User-ID": "user-john"})
+        response = await client.put(
+            "/me",
+            json={
+                "display_name": "John Smith",
+                "is_provider": False,
+                "bio": "I need odd jobs done.",
+                "parish": "Kingston",
+            },
+            headers={"X-User-ID": "user-john"},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -56,18 +64,26 @@ class TestCreateOrUpdateProfile:
 
     async def test_update_existing_profile(self, client):
         # Create profile
-        await client.put("/me", json={
-            "display_name": "Original Name",
-            "is_provider": False,
-        }, headers={"X-User-ID": "user-update"})
+        await client.put(
+            "/me",
+            json={
+                "display_name": "Original Name",
+                "is_provider": False,
+            },
+            headers={"X-User-ID": "user-update"},
+        )
 
         # Update profile
-        response = await client.put("/me", json={
-            "display_name": "Updated Name",
-            "is_provider": True,
-            "bio": "Now I am a provider.",
-            "service_category": "plumbing",
-        }, headers={"X-User-ID": "user-update"})
+        response = await client.put(
+            "/me",
+            json={
+                "display_name": "Updated Name",
+                "is_provider": True,
+                "bio": "Now I am a provider.",
+                "service_category": "plumbing",
+            },
+            headers={"X-User-ID": "user-update"},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -77,15 +93,19 @@ class TestCreateOrUpdateProfile:
         assert data["service_category"] == "plumbing"
 
     async def test_create_profile_with_optional_fields(self, client):
-        response = await client.put("/me", json={
-            "display_name": "Full Profile",
-            "is_provider": True,
-            "bio": "Experienced handyman",
-            "service_category": "electrical",
-            "skills": ["wiring", "outlets"],
-            "hourly_rate": "50.00",
-            "parish": "St. Andrew",
-        }, headers={"X-User-ID": "user-full"})
+        response = await client.put(
+            "/me",
+            json={
+                "display_name": "Full Profile",
+                "is_provider": True,
+                "bio": "Experienced handyman",
+                "service_category": "electrical",
+                "skills": ["wiring", "outlets"],
+                "hourly_rate": "50.00",
+                "parish": "St. Andrew",
+            },
+            headers={"X-User-ID": "user-full"},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -97,10 +117,14 @@ class TestCreateOrUpdateProfile:
 class TestGetProfileByUserId:
     async def test_get_profile_by_user_id(self, client):
         # Create the profile first
-        await client.put("/me", json={
-            "display_name": "Findable User",
-            "is_provider": True,
-        }, headers={"X-User-ID": "user-findable"})
+        await client.put(
+            "/me",
+            json={
+                "display_name": "Findable User",
+                "is_provider": True,
+            },
+            headers={"X-User-ID": "user-findable"},
+        )
 
         # Fetch by user_id (public endpoint, no X-User-ID needed)
         response = await client.get("/user-findable")
@@ -120,8 +144,11 @@ class TestAuthRequired:
         assert response.status_code == 401
 
     async def test_put_me_without_header(self, client):
-        response = await client.put("/me", json={
-            "display_name": "No Auth",
-            "is_provider": False,
-        })
+        response = await client.put(
+            "/me",
+            json={
+                "display_name": "No Auth",
+                "is_provider": False,
+            },
+        )
         assert response.status_code == 401

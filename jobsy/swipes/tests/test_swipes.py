@@ -37,11 +37,15 @@ class TestRecordSwipe:
         assert "id" in data
 
     async def test_record_swipe_left(self, client):
-        response = await client.post("/", json={
-            "target_id": "profile-xyz",
-            "target_type": "profile",
-            "direction": "left",
-        }, headers={"X-User-ID": "swiper-2"})
+        response = await client.post(
+            "/",
+            json={
+                "target_id": "profile-xyz",
+                "target_type": "profile",
+                "direction": "left",
+            },
+            headers={"X-User-ID": "swiper-2"},
+        )
 
         assert response.status_code == 201
         assert response.json()["direction"] == "left"
@@ -61,19 +65,27 @@ class TestRecordSwipe:
         assert second.status_code == 409
 
     async def test_invalid_direction_rejected(self, client):
-        response = await client.post("/", json={
-            "target_id": "listing-bad",
-            "target_type": "listing",
-            "direction": "up",
-        }, headers={"X-User-ID": "swiper-bad"})
+        response = await client.post(
+            "/",
+            json={
+                "target_id": "listing-bad",
+                "target_type": "listing",
+                "direction": "up",
+            },
+            headers={"X-User-ID": "swiper-bad"},
+        )
         assert response.status_code == 422
 
     async def test_invalid_target_type_rejected(self, client):
-        response = await client.post("/", json={
-            "target_id": "listing-bad",
-            "target_type": "invalid",
-            "direction": "right",
-        }, headers={"X-User-ID": "swiper-bad2"})
+        response = await client.post(
+            "/",
+            json={
+                "target_id": "listing-bad",
+                "target_type": "invalid",
+                "direction": "right",
+            },
+            headers={"X-User-ID": "swiper-bad2"},
+        )
         assert response.status_code == 422
 
 
@@ -81,16 +93,24 @@ class TestSwipeHistory:
     async def test_get_swipe_history(self, client):
         headers = {"X-User-ID": "swiper-hist"}
         # Create some swipes
-        await client.post("/", json={
-            "target_id": "listing-h1",
-            "target_type": "listing",
-            "direction": "right",
-        }, headers=headers)
-        await client.post("/", json={
-            "target_id": "profile-h2",
-            "target_type": "profile",
-            "direction": "left",
-        }, headers=headers)
+        await client.post(
+            "/",
+            json={
+                "target_id": "listing-h1",
+                "target_type": "listing",
+                "direction": "right",
+            },
+            headers=headers,
+        )
+        await client.post(
+            "/",
+            json={
+                "target_id": "profile-h2",
+                "target_type": "profile",
+                "direction": "left",
+            },
+            headers=headers,
+        )
 
         response = await client.get("/history", headers=headers)
         assert response.status_code == 200

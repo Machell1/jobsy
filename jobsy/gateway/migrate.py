@@ -37,23 +37,16 @@ async def migrate() -> None:
         logger.info("Applying migration 002 (OAuth + password reset)...")
 
         # Make phone and password_hash nullable
-        await conn.execute(text(
-            "ALTER TABLE users ALTER COLUMN phone DROP NOT NULL"
-        ))
-        await conn.execute(text(
-            "ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL"
-        ))
+        await conn.execute(text("ALTER TABLE users ALTER COLUMN phone DROP NOT NULL"))
+        await conn.execute(text("ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL"))
 
         # Add OAuth columns
-        await conn.execute(text(
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(20)"
-        ))
-        await conn.execute(text(
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_id VARCHAR(255)"
-        ))
+        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(20)"))
+        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_id VARCHAR(255)"))
 
         # Password reset OTPs table
-        await conn.execute(text("""
+        await conn.execute(
+            text("""
             CREATE TABLE IF NOT EXISTS password_reset_otps (
                 id SERIAL PRIMARY KEY,
                 phone VARCHAR(20) NOT NULL,
@@ -62,52 +55,50 @@ async def migrate() -> None:
                 used BOOLEAN DEFAULT false,
                 created_at TIMESTAMPTZ DEFAULT now()
             )
-        """))
+        """)
+        )
 
         # ── Migration 003: Multi-role, social, followers ──────────────
         logger.info("Applying migration 003 (multi-role, social, followers)...")
 
         # Users: multi-role support
-        await conn.execute(text(
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS roles JSONB DEFAULT '[]'"
-        ))
-        await conn.execute(text(
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS active_role VARCHAR(20) DEFAULT 'user'"
-        ))
+        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS roles JSONB DEFAULT '[]'"))
+        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS active_role VARCHAR(20) DEFAULT 'user'"))
 
         # Profiles: role flags
         for col in ["is_hirer", "is_advertiser"]:
-            await conn.execute(text(
-                f"ALTER TABLE profiles ADD COLUMN IF NOT EXISTS {col} BOOLEAN DEFAULT false"
-            ))
+            await conn.execute(text(f"ALTER TABLE profiles ADD COLUMN IF NOT EXISTS {col} BOOLEAN DEFAULT false"))
 
         # Profiles: social media links
         for col in [
-            "instagram_url", "twitter_url", "tiktok_url",
-            "youtube_url", "linkedin_url", "portfolio_url",
+            "instagram_url",
+            "twitter_url",
+            "tiktok_url",
+            "youtube_url",
+            "linkedin_url",
+            "portfolio_url",
         ]:
-            await conn.execute(text(
-                f"ALTER TABLE profiles ADD COLUMN IF NOT EXISTS {col} VARCHAR(500)"
-            ))
+            await conn.execute(text(f"ALTER TABLE profiles ADD COLUMN IF NOT EXISTS {col} VARCHAR(500)"))
 
         # Profiles: follower counts
         for col in ["follower_count", "following_count"]:
-            await conn.execute(text(
-                f"ALTER TABLE profiles ADD COLUMN IF NOT EXISTS {col} INTEGER DEFAULT 0"
-            ))
+            await conn.execute(text(f"ALTER TABLE profiles ADD COLUMN IF NOT EXISTS {col} INTEGER DEFAULT 0"))
 
         # Follows table
-        await conn.execute(text("""
+        await conn.execute(
+            text("""
             CREATE TABLE IF NOT EXISTS follows (
                 id VARCHAR PRIMARY KEY,
                 follower_id VARCHAR NOT NULL,
                 following_id VARCHAR NOT NULL,
                 created_at TIMESTAMPTZ NOT NULL
             )
-        """))
+        """)
+        )
 
         # User tags table
-        await conn.execute(text("""
+        await conn.execute(
+            text("""
             CREATE TABLE IF NOT EXISTS user_tags (
                 id VARCHAR PRIMARY KEY,
                 tagger_id VARCHAR NOT NULL,
@@ -116,7 +107,8 @@ async def migrate() -> None:
                 entity_id VARCHAR NOT NULL,
                 created_at TIMESTAMPTZ NOT NULL
             )
-        """))
+        """)
+        )
 
         logger.info("All migrations applied successfully")
 

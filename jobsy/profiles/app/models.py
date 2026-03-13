@@ -232,9 +232,7 @@ class ServicePackage(Base):
     sort_order = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), nullable=False)
 
-    __table_args__ = (
-        Index("idx_sp_service", "service_id"),
-    )
+    __table_args__ = (Index("idx_sp_service", "service_id"),)
 
 
 class AvailabilitySlot(Base):

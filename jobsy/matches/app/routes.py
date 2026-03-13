@@ -16,6 +16,7 @@ from .models import Match
 class MatchStatusUpdate(BaseModel):
     status: Literal["completed", "cancelled"]
 
+
 router = APIRouter(tags=["matches"])
 
 

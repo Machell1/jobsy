@@ -147,9 +147,8 @@ async def chat_websocket(websocket: WebSocket, conversation_id: str):
 
     # Start Redis listener for cross-instance messages
     import asyncio
-    listener_task = asyncio.create_task(
-        _start_redis_listener(conversation_id, websocket, user_id)
-    )
+
+    listener_task = asyncio.create_task(_start_redis_listener(conversation_id, websocket, user_id))
 
     redis_client = await _get_redis()
     if not redis_client and (os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PRODUCTION")):
@@ -180,11 +179,14 @@ async def chat_websocket(websocket: WebSocket, conversation_id: str):
                 await redis_client.publish(f"chat:{conversation_id}", json.dumps(msg))
 
             # Emit event for notifications service
-            await publish_event("message.new", {
-                "message_id": msg["id"],
-                "conversation_id": conversation_id,
-                "sender_id": user_id,
-            })
+            await publish_event(
+                "message.new",
+                {
+                    "message_id": msg["id"],
+                    "conversation_id": conversation_id,
+                    "sender_id": user_id,
+                },
+            )
 
     except WebSocketDisconnect:
         logger.info("User %s disconnected from conversation %s", user_id, conversation_id)

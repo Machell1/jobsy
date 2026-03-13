@@ -131,12 +131,15 @@ async def create_review(
     # Update aggregated ratings
     await _update_user_rating(data.reviewee_id, db)
 
-    await publish_event("review.created", {
-        "review_id": review.id,
-        "reviewer_id": reviewer_id,
-        "reviewee_id": data.reviewee_id,
-        "rating": data.rating,
-    })
+    await publish_event(
+        "review.created",
+        {
+            "review_id": review.id,
+            "reviewer_id": reviewer_id,
+            "reviewee_id": data.reviewee_id,
+            "rating": data.rating,
+        },
+    )
 
     return {
         "id": review.id,

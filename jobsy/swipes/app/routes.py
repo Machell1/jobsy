@@ -48,17 +48,23 @@ async def record_swipe(data: SwipeCreate, request: Request, db: AsyncSession = D
 
     # Publish event for right swipes (matches service listens)
     if data.direction == "right":
-        await publish_event("swipe.right", {
-            "swiper_id": user_id,
-            "target_id": data.target_id,
-            "target_type": data.target_type,
-        })
+        await publish_event(
+            "swipe.right",
+            {
+                "swiper_id": user_id,
+                "target_id": data.target_id,
+                "target_type": data.target_type,
+            },
+        )
     else:
-        await publish_event("swipe.left", {
-            "swiper_id": user_id,
-            "target_id": data.target_id,
-            "target_type": data.target_type,
-        })
+        await publish_event(
+            "swipe.left",
+            {
+                "swiper_id": user_id,
+                "target_id": data.target_id,
+                "target_type": data.target_type,
+            },
+        )
 
     return swipe
 
@@ -72,11 +78,7 @@ async def get_swipe_history(
 ):
     user_id = _get_user_id(request)
     query = (
-        select(Swipe)
-        .where(Swipe.swiper_id == user_id)
-        .order_by(Swipe.created_at.desc())
-        .offset(offset)
-        .limit(limit)
+        select(Swipe).where(Swipe.swiper_id == user_id).order_by(Swipe.created_at.desc()).offset(offset).limit(limit)
     )
     result = await db.execute(query)
     return result.scalars().all()

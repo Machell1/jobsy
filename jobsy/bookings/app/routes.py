@@ -184,6 +184,7 @@ def _check_booking_access(booking: Booking, user_id: str) -> None:
 
 # --- Routes ---
 
+
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_booking(
     data: BookingCreate,
@@ -196,6 +197,7 @@ async def create_booking(
 
     from datetime import date as date_type
     from datetime import time as time_type
+
     scheduled_date = date_type.fromisoformat(data.scheduled_date) if data.scheduled_date else None
     scheduled_time_start = time_type.fromisoformat(data.scheduled_time_start) if data.scheduled_time_start else None
     scheduled_time_end = time_type.fromisoformat(data.scheduled_time_end) if data.scheduled_time_end else None
@@ -224,15 +226,24 @@ async def create_booking(
     await db.flush()
 
     await _create_event(
-        db, booking.id, "status_change", customer_id, "customer",
-        from_status=None, to_status="inquiry", note="Booking inquiry created",
+        db,
+        booking.id,
+        "status_change",
+        customer_id,
+        "customer",
+        from_status=None,
+        to_status="inquiry",
+        note="Booking inquiry created",
     )
 
-    await publish_event("booking.created", {
-        "booking_id": booking.id,
-        "customer_id": customer_id,
-        "provider_id": data.provider_id,
-    })
+    await publish_event(
+        "booking.created",
+        {
+            "booking_id": booking.id,
+            "customer_id": customer_id,
+            "provider_id": data.provider_id,
+        },
+    )
 
     return _booking_response(booking)
 
@@ -275,17 +286,15 @@ async def booking_stats(
 
     # Total bookings (as customer or provider)
     total_result = await db.execute(
-        select(func.count(Booking.id)).where(
-            (Booking.customer_id == user_id) | (Booking.provider_id == user_id)
-        )
+        select(func.count(Booking.id)).where((Booking.customer_id == user_id) | (Booking.provider_id == user_id))
     )
     total = total_result.scalar() or 0
 
     # By status
     status_result = await db.execute(
-        select(Booking.status, func.count(Booking.id)).where(
-            (Booking.customer_id == user_id) | (Booking.provider_id == user_id)
-        ).group_by(Booking.status)
+        select(Booking.status, func.count(Booking.id))
+        .where((Booking.customer_id == user_id) | (Booking.provider_id == user_id))
+        .group_by(Booking.status)
     )
     by_status = {row[0]: row[1] for row in status_result.all()}
 
@@ -361,16 +370,25 @@ async def update_booking_status(
 
     actor_role = "provider" if user_id == booking.provider_id else "customer"
     await _create_event(
-        db, booking.id, "status_change", user_id, actor_role,
-        from_status=old_status, to_status=data.status, note=data.note,
+        db,
+        booking.id,
+        "status_change",
+        user_id,
+        actor_role,
+        from_status=old_status,
+        to_status=data.status,
+        note=data.note,
     )
 
-    await publish_event("booking.status_changed", {
-        "booking_id": booking.id,
-        "from_status": old_status,
-        "to_status": data.status,
-        "actor_id": user_id,
-    })
+    await publish_event(
+        "booking.status_changed",
+        {
+            "booking_id": booking.id,
+            "from_status": old_status,
+            "to_status": data.status,
+            "actor_id": user_id,
+        },
+    )
 
     return _booking_response(booking)
 
@@ -389,22 +407,23 @@ async def reschedule_booking(
 
     from datetime import date as date_type
     from datetime import time as time_type
+
     now = datetime.now(UTC)
     booking.scheduled_date = date_type.fromisoformat(data.scheduled_date)
     booking.scheduled_time_start = (
-        time_type.fromisoformat(data.scheduled_time_start)
-        if data.scheduled_time_start else None
+        time_type.fromisoformat(data.scheduled_time_start) if data.scheduled_time_start else None
     )
-    booking.scheduled_time_end = (
-        time_type.fromisoformat(data.scheduled_time_end)
-        if data.scheduled_time_end else None
-    )
+    booking.scheduled_time_end = time_type.fromisoformat(data.scheduled_time_end) if data.scheduled_time_end else None
     booking.updated_at = now
     await db.flush()
 
     actor_role = "provider" if user_id == booking.provider_id else "customer"
     await _create_event(
-        db, booking.id, "reschedule", user_id, actor_role,
+        db,
+        booking.id,
+        "reschedule",
+        user_id,
+        actor_role,
         note=data.note,
         metadata={
             "scheduled_date": data.scheduled_date,
@@ -453,8 +472,13 @@ async def create_quote(
     await db.flush()
 
     await _create_event(
-        db, booking.id, "status_change", user_id, "provider",
-        from_status=old_status, to_status="quote_sent",
+        db,
+        booking.id,
+        "status_change",
+        user_id,
+        "provider",
+        from_status=old_status,
+        to_status="quote_sent",
         note=f"Quote of {data.amount} {data.currency} sent",
     )
 
@@ -472,9 +496,7 @@ async def list_quotes(
     booking = await _get_booking_or_404(db, booking_id)
     _check_booking_access(booking, user_id)
 
-    result = await db.execute(
-        select(Quote).where(Quote.booking_id == booking_id).order_by(Quote.created_at.desc())
-    )
+    result = await db.execute(select(Quote).where(Quote.booking_id == booking_id).order_by(Quote.created_at.desc()))
     quotes = result.scalars().all()
     return [_quote_response(q) for q in quotes]
 
@@ -494,9 +516,7 @@ async def respond_to_quote(
     if booking.customer_id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the customer can respond to quotes")
 
-    result = await db.execute(
-        select(Quote).where(Quote.id == quote_id, Quote.booking_id == booking_id)
-    )
+    result = await db.execute(select(Quote).where(Quote.id == quote_id, Quote.booking_id == booking_id))
     quote = result.scalar_one_or_none()
     if not quote:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quote not found")
@@ -513,8 +533,13 @@ async def respond_to_quote(
         await db.flush()
 
         await _create_event(
-            db, booking.id, "status_change", user_id, "customer",
-            from_status=old_status, to_status="quote_accepted",
+            db,
+            booking.id,
+            "status_change",
+            user_id,
+            "customer",
+            from_status=old_status,
+            to_status="quote_accepted",
             note=f"Quote of {quote.amount} accepted",
         )
     else:
@@ -523,7 +548,11 @@ async def respond_to_quote(
         await db.flush()
 
         await _create_event(
-            db, booking.id, "quote_rejected", user_id, "customer",
+            db,
+            booking.id,
+            "quote_rejected",
+            user_id,
+            "customer",
             note=f"Quote of {quote.amount} rejected",
         )
 

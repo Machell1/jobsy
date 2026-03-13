@@ -65,9 +65,7 @@ async def upload(
     if content_type in ALLOWED_IMAGE_TYPES:
         try:
             thumb_data = create_thumbnail(file_data, content_type)
-            thumb_result = upload_file(
-                thumb_data, content_type, f"{user_folder}/thumbs"
-            )
+            thumb_result = upload_file(thumb_data, content_type, f"{user_folder}/thumbs")
             thumbnail_url = thumb_result["url"]
         except Exception:  # noqa: S110
             pass  # Thumbnail generation failure is non-fatal

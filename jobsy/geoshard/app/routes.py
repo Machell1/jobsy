@@ -46,14 +46,16 @@ async def find_nearby(
     for entry in entries:
         dist = haversine_km(lat, lng, float(entry.latitude), float(entry.longitude))
         if dist <= radius_km:
-            nearby.append({
-                "entity_id": entry.entity_id,
-                "entity_type": entry.entity_type,
-                "parish": entry.parish,
-                "distance_km": round(dist, 2),
-                "latitude": float(entry.latitude),
-                "longitude": float(entry.longitude),
-            })
+            nearby.append(
+                {
+                    "entity_id": entry.entity_id,
+                    "entity_type": entry.entity_type,
+                    "parish": entry.parish,
+                    "distance_km": round(dist, 2),
+                    "latitude": float(entry.latitude),
+                    "longitude": float(entry.longitude),
+                }
+            )
 
     # Sort by distance and apply limit
     nearby.sort(key=lambda x: x["distance_km"])

@@ -22,9 +22,7 @@ class SubscribeRequest(BaseModel):
 @router.post("/subscribe", status_code=status.HTTP_201_CREATED)
 async def subscribe_newsletter(data: SubscribeRequest, db: AsyncSession = Depends(get_db)):
     """Subscribe an email to the newsletter (no auth required)."""
-    result = await db.execute(
-        select(NewsletterSubscriber).where(NewsletterSubscriber.email == data.email)
-    )
+    result = await db.execute(select(NewsletterSubscriber).where(NewsletterSubscriber.email == data.email))
     existing = result.scalar_one_or_none()
     if existing:
         if not existing.is_active:
@@ -55,9 +53,7 @@ class DeviceRegister(BaseModel):
 
 
 @router.post("/devices", status_code=status.HTTP_201_CREATED)
-async def register_device(
-    data: DeviceRegister, request: Request, db: AsyncSession = Depends(get_db)
-):
+async def register_device(data: DeviceRegister, request: Request, db: AsyncSession = Depends(get_db)):
     """Register a device token for push notifications."""
     user_id = _get_user_id(request)
 
@@ -178,13 +174,27 @@ async def mark_all_read(request: Request, db: AsyncSession = Depends(get_db)):
 # --- Notification Preferences ---
 
 PREF_FIELDS = [
-    "message_push", "message_email", "message_in_app",
-    "booking_push", "booking_email", "booking_in_app",
-    "payment_push", "payment_email", "payment_in_app",
-    "review_push", "review_email", "review_in_app",
-    "verification_push", "verification_email", "verification_in_app",
-    "content_push", "content_email", "content_in_app",
-    "system_push", "system_email", "system_in_app",
+    "message_push",
+    "message_email",
+    "message_in_app",
+    "booking_push",
+    "booking_email",
+    "booking_in_app",
+    "payment_push",
+    "payment_email",
+    "payment_in_app",
+    "review_push",
+    "review_email",
+    "review_in_app",
+    "verification_push",
+    "verification_email",
+    "verification_in_app",
+    "content_push",
+    "content_email",
+    "content_in_app",
+    "system_push",
+    "system_email",
+    "system_in_app",
 ]
 
 
@@ -192,9 +202,7 @@ PREF_FIELDS = [
 async def get_preferences(request: Request, db: AsyncSession = Depends(get_db)):
     """Get notification preferences for the current user."""
     user_id = _get_user_id(request)
-    result = await db.execute(
-        select(NotificationPreference).where(NotificationPreference.user_id == user_id)
-    )
+    result = await db.execute(select(NotificationPreference).where(NotificationPreference.user_id == user_id))
     pref = result.scalar_one_or_none()
 
     if not pref:
@@ -241,9 +249,7 @@ async def update_preferences(
     user_id = _get_user_id(request)
     now = datetime.now(UTC)
 
-    result = await db.execute(
-        select(NotificationPreference).where(NotificationPreference.user_id == user_id)
-    )
+    result = await db.execute(select(NotificationPreference).where(NotificationPreference.user_id == user_id))
     pref = result.scalar_one_or_none()
 
     if not pref:

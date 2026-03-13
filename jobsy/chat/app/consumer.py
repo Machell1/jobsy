@@ -27,9 +27,7 @@ async def handle_match_created(payload: dict) -> None:
 
     async with async_session_factory() as db:
         # Check if conversation already exists for this match
-        result = await db.execute(
-            select(Conversation).where(Conversation.match_id == match_id)
-        )
+        result = await db.execute(select(Conversation).where(Conversation.match_id == match_id))
         if result.scalar_one_or_none():
             logger.info("Conversation already exists for match %s", match_id)
             return

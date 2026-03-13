@@ -147,6 +147,7 @@ async def delete_conversation(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
 
     from sqlalchemy import delete as sa_delete
+
     await db.execute(sa_delete(Message).where(Message.conversation_id == conversation_id))
     await db.execute(sa_delete(Conversation).where(Conversation.id == conversation_id))
     await db.flush()

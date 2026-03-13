@@ -27,9 +27,7 @@ def upgrade() -> None:
 
     # Partial unique index: only applies when oauth_provider is set
     op.execute(
-        "CREATE UNIQUE INDEX uq_oauth_provider_id "
-        "ON users (oauth_provider, oauth_id) "
-        "WHERE oauth_provider IS NOT NULL"
+        "CREATE UNIQUE INDEX uq_oauth_provider_id ON users (oauth_provider, oauth_id) WHERE oauth_provider IS NOT NULL"
     )
 
     # At least one auth method must exist
@@ -44,9 +42,7 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("phone", sa.String(20), nullable=False),
         sa.Column("otp_hash", sa.String(255), nullable=False),
-        sa.Column(
-            "expires_at", sa.DateTime(timezone=True), nullable=False
-        ),
+        sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("used", sa.Boolean(), server_default=sa.text("false")),
         sa.Column(
             "created_at",

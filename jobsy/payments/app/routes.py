@@ -185,13 +185,16 @@ async def initiate_payment(
     db.add(txn)
     await db.flush()
 
-    await publish_event("payment.created", {
-        "transaction_id": txn.id,
-        "payer_id": payer_id,
-        "payee_id": data.payee_id,
-        "amount": float(amount),
-        "currency": data.currency,
-    })
+    await publish_event(
+        "payment.created",
+        {
+            "transaction_id": txn.id,
+            "payer_id": payer_id,
+            "payee_id": data.payee_id,
+            "amount": float(amount),
+            "currency": data.currency,
+        },
+    )
 
     return {
         "transaction_id": txn.id,
@@ -221,13 +224,7 @@ async def list_transactions(
     else:
         condition = or_(Transaction.payer_id == user_id, Transaction.payee_id == user_id)
 
-    query = (
-        select(Transaction)
-        .where(condition)
-        .order_by(Transaction.created_at.desc())
-        .offset(offset)
-        .limit(limit)
-    )
+    query = select(Transaction).where(condition).order_by(Transaction.created_at.desc()).offset(offset).limit(limit)
     result = await db.execute(query)
     txns = result.scalars().all()
 
@@ -350,14 +347,17 @@ async def create_booking_payment(
     db.add(txn)
     await db.flush()
 
-    await publish_event("payment.booking_created", {
-        "transaction_id": txn.id,
-        "booking_id": data.booking_id,
-        "payer_id": payer_id,
-        "payee_id": data.payee_id,
-        "amount": float(amount),
-        "platform_fee": float(platform_fee),
-    })
+    await publish_event(
+        "payment.booking_created",
+        {
+            "transaction_id": txn.id,
+            "booking_id": data.booking_id,
+            "payer_id": payer_id,
+            "payee_id": data.payee_id,
+            "amount": float(amount),
+            "platform_fee": float(platform_fee),
+        },
+    )
 
     return {
         "transaction_id": txn.id,
@@ -425,11 +425,14 @@ async def create_refund(
     txn.updated_at = now
     await db.flush()
 
-    await publish_event("payment.refunded", {
-        "refund_id": refund.id,
-        "transaction_id": txn.id,
-        "amount": float(refund_amount),
-    })
+    await publish_event(
+        "payment.refunded",
+        {
+            "refund_id": refund.id,
+            "transaction_id": txn.id,
+            "amount": float(refund_amount),
+        },
+    )
 
     return {
         "refund_id": refund.id,
@@ -557,11 +560,7 @@ async def list_payouts(
     """List payout history."""
     user_id = _get_user_id(request)
     query = (
-        select(Payout)
-        .where(Payout.user_id == user_id)
-        .order_by(Payout.requested_at.desc())
-        .offset(offset)
-        .limit(limit)
+        select(Payout).where(Payout.user_id == user_id).order_by(Payout.requested_at.desc()).offset(offset).limit(limit)
     )
     result = await db.execute(query)
     payouts = result.scalars().all()
@@ -613,26 +612,25 @@ async def stripe_webhook(
 
     if event_type == "payment_intent.succeeded":
         pi_id = data["id"]
-        result = await db.execute(
-            select(Transaction).where(Transaction.stripe_payment_intent_id == pi_id)
-        )
+        result = await db.execute(select(Transaction).where(Transaction.stripe_payment_intent_id == pi_id))
         txn = result.scalar_one_or_none()
         if txn:
             txn.status = "completed"
             txn.updated_at = now
             await db.flush()
-            await publish_event("payment.completed", {
-                "transaction_id": txn.id,
-                "payer_id": txn.payer_id,
-                "payee_id": txn.payee_id,
-                "amount": float(txn.amount),
-            })
+            await publish_event(
+                "payment.completed",
+                {
+                    "transaction_id": txn.id,
+                    "payer_id": txn.payer_id,
+                    "payee_id": txn.payee_id,
+                    "amount": float(txn.amount),
+                },
+            )
 
     elif event_type == "payment_intent.payment_failed":
         pi_id = data["id"]
-        result = await db.execute(
-            select(Transaction).where(Transaction.stripe_payment_intent_id == pi_id)
-        )
+        result = await db.execute(select(Transaction).where(Transaction.stripe_payment_intent_id == pi_id))
         txn = result.scalar_one_or_none()
         if txn:
             txn.status = "failed"
@@ -641,9 +639,7 @@ async def stripe_webhook(
 
     elif event_type == "payout.paid":
         payout_id = data["id"]
-        result = await db.execute(
-            select(Payout).where(Payout.stripe_payout_id == payout_id)
-        )
+        result = await db.execute(select(Payout).where(Payout.stripe_payout_id == payout_id))
         payout = result.scalar_one_or_none()
         if payout:
             payout.status = "completed"
@@ -652,9 +648,7 @@ async def stripe_webhook(
 
     elif event_type == "payout.failed":
         payout_id = data["id"]
-        result = await db.execute(
-            select(Payout).where(Payout.stripe_payout_id == payout_id)
-        )
+        result = await db.execute(select(Payout).where(Payout.stripe_payout_id == payout_id))
         payout = result.scalar_one_or_none()
         if payout:
             payout.status = "failed"

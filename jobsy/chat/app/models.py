@@ -31,6 +31,4 @@ class Message(Base):
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), nullable=False)
 
-    __table_args__ = (
-        Index("idx_messages_convo", "conversation_id", "created_at"),
-    )
+    __table_args__ = (Index("idx_messages_convo", "conversation_id", "created_at"),)

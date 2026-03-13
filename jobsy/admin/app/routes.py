@@ -99,9 +99,7 @@ async def get_dashboard_stats(
     )
     stats["resolved_moderation"] = resolved_result.scalar() or 0
 
-    actions_result = await db.execute(
-        select(func.count()).select_from(AuditLog)
-    )
+    actions_result = await db.execute(select(func.count()).select_from(AuditLog))
     stats["total_admin_actions"] = actions_result.scalar() or 0
 
     # Cache results
@@ -187,7 +185,8 @@ async def resolve_moderation_item(
     await db.flush()
 
     await _log_action(
-        db, admin_id,
+        db,
+        admin_id,
         action=f"moderation.{data.action}",
         target_type=item.item_type,
         target_id=item.item_id,
@@ -229,7 +228,8 @@ async def admin_user_action(
         profile.is_active = True
 
     await _log_action(
-        db, admin_id,
+        db,
+        admin_id,
         action=f"user.{data.action}",
         target_type="user",
         target_id=user_id,
@@ -237,11 +237,14 @@ async def admin_user_action(
     )
     await db.flush()
 
-    await publish_event(f"user.{data.action}", {
-        "user_id": user_id,
-        "admin_id": admin_id,
-        "reason": data.reason,
-    })
+    await publish_event(
+        f"user.{data.action}",
+        {
+            "user_id": user_id,
+            "admin_id": admin_id,
+            "reason": data.reason,
+        },
+    )
 
     return {
         "status": "ok",
@@ -264,12 +267,7 @@ async def get_audit_log(
     db: AsyncSession = Depends(get_db),
 ):
     """View the admin audit log."""
-    query = (
-        select(AuditLog)
-        .order_by(AuditLog.created_at.desc())
-        .offset(offset)
-        .limit(limit)
-    )
+    query = select(AuditLog).order_by(AuditLog.created_at.desc()).offset(offset).limit(limit)
 
     if action:
         query = query.where(AuditLog.action == action)
@@ -326,25 +324,27 @@ async def list_pending_verifications(
             select(VerificationAsset).where(VerificationAsset.verification_request_id == item.id)
         )
         assets = assets_result.scalars().all()
-        response.append({
-            "id": item.id,
-            "user_id": item.user_id,
-            "type": item.type,
-            "document_urls": item.document_urls,
-            "status": item.status,
-            "submitted_at": item.submitted_at.isoformat() if item.submitted_at else None,
-            "created_at": item.created_at.isoformat(),
-            "assets": [
-                {
-                    "id": a.id,
-                    "asset_type": a.asset_type,
-                    "file_url": a.file_url,
-                    "thumbnail_url": a.thumbnail_url,
-                    "mime_type": a.mime_type,
-                }
-                for a in assets
-            ],
-        })
+        response.append(
+            {
+                "id": item.id,
+                "user_id": item.user_id,
+                "type": item.type,
+                "document_urls": item.document_urls,
+                "status": item.status,
+                "submitted_at": item.submitted_at.isoformat() if item.submitted_at else None,
+                "created_at": item.created_at.isoformat(),
+                "assets": [
+                    {
+                        "id": a.id,
+                        "asset_type": a.asset_type,
+                        "file_url": a.file_url,
+                        "thumbnail_url": a.thumbnail_url,
+                        "mime_type": a.mime_type,
+                    }
+                    for a in assets
+                ],
+            }
+        )
     return response
 
 
@@ -356,9 +356,7 @@ async def review_verification(
     db: AsyncSession = Depends(get_db),
 ):
     """Review a verification request: approve, reject, or request resubmission."""
-    result = await db.execute(
-        select(VerificationRequest).where(VerificationRequest.id == request_id)
-    )
+    result = await db.execute(select(VerificationRequest).where(VerificationRequest.id == request_id))
     verification = result.scalar_one_or_none()
     if not verification:
         raise HTTPException(
@@ -379,17 +377,13 @@ async def review_verification(
         verification.badge_level = data.badge_level
 
         # Update Profile.is_verified
-        profile_result = await db.execute(
-            select(Profile).where(Profile.user_id == verification.user_id)
-        )
+        profile_result = await db.execute(select(Profile).where(Profile.user_id == verification.user_id))
         profile = profile_result.scalar_one_or_none()
         if profile:
             profile.is_verified = True
 
         # Update provider_profiles.verification_status based on type
-        pp_result = await db.execute(
-            select(ProviderProfile).where(ProviderProfile.user_id == verification.user_id)
-        )
+        pp_result = await db.execute(select(ProviderProfile).where(ProviderProfile.user_id == verification.user_id))
         pp = pp_result.scalar_one_or_none()
         if pp:
             if verification.type == "photo":
@@ -397,11 +391,14 @@ async def review_verification(
             elif verification.type in ("government_id", "licence", "certification"):
                 pp.verification_status = "advanced_verified"
 
-        await publish_event("profile.verified", {
-            "user_id": verification.user_id,
-            "verification_request_id": verification.id,
-            "badge_level": data.badge_level,
-        })
+        await publish_event(
+            "profile.verified",
+            {
+                "user_id": verification.user_id,
+                "verification_request_id": verification.id,
+                "badge_level": data.badge_level,
+            },
+        )
 
     elif data.decision == "reject":
         verification.status = "rejected"
@@ -419,7 +416,8 @@ async def review_verification(
 
     # Log in audit trail
     await _log_action(
-        db, admin_id,
+        db,
+        admin_id,
         action=f"verification.{data.decision}",
         target_type="verification_request",
         target_id=request_id,
@@ -442,7 +440,8 @@ async def get_verification_stats(
 ):
     """Get verification statistics."""
     pending_result = await db.execute(
-        select(func.count()).select_from(VerificationRequest)
+        select(func.count())
+        .select_from(VerificationRequest)
         .where(VerificationRequest.status.in_(["pending", "submitted", "under_review"]))
     )
     pending_count = pending_result.scalar() or 0
@@ -450,7 +449,8 @@ async def get_verification_stats(
     today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
 
     approved_result = await db.execute(
-        select(func.count()).select_from(VerificationRequest)
+        select(func.count())
+        .select_from(VerificationRequest)
         .where(
             VerificationRequest.status == "approved",
             VerificationRequest.reviewed_at >= today_start,
@@ -459,7 +459,8 @@ async def get_verification_stats(
     approved_today = approved_result.scalar() or 0
 
     rejected_result = await db.execute(
-        select(func.count()).select_from(VerificationRequest)
+        select(func.count())
+        .select_from(VerificationRequest)
         .where(
             VerificationRequest.status == "rejected",
             VerificationRequest.reviewed_at >= today_start,
@@ -472,8 +473,7 @@ async def get_verification_stats(
     avg_result = await db.execute(
         select(
             func.avg(
-                extract("epoch", VerificationRequest.reviewed_at) -
-                extract("epoch", VerificationRequest.submitted_at)
+                extract("epoch", VerificationRequest.reviewed_at) - extract("epoch", VerificationRequest.submitted_at)
             )
         ).where(
             VerificationRequest.reviewed_at.is_not(None),
@@ -632,7 +632,8 @@ async def resolve_report(
     await db.flush()
 
     await _log_action(
-        db, admin_id,
+        db,
+        admin_id,
         action=f"report.{data.status}",
         target_type="report",
         target_id=report_id,
@@ -674,7 +675,8 @@ async def create_suspension(
     await db.flush()
 
     await _log_action(
-        db, admin_id,
+        db,
+        admin_id,
         action=f"suspension.{data.suspension_type}",
         target_type="user",
         target_id=data.user_id,
@@ -683,11 +685,14 @@ async def create_suspension(
     )
     await db.flush()
 
-    await publish_event(f"user.{data.suspension_type}", {
-        "user_id": data.user_id,
-        "suspension_id": suspension.id,
-        "admin_id": admin_id,
-    })
+    await publish_event(
+        f"user.{data.suspension_type}",
+        {
+            "user_id": data.user_id,
+            "suspension_id": suspension.id,
+            "admin_id": admin_id,
+        },
+    )
 
     return {"id": suspension.id, "status": "active"}
 
@@ -778,16 +783,15 @@ async def review_appeal(
 
     # If approved, deactivate the suspension
     if data.decision == "approved":
-        susp_result = await db.execute(
-            select(Suspension).where(Suspension.id == appeal.suspension_id)
-        )
+        susp_result = await db.execute(select(Suspension).where(Suspension.id == appeal.suspension_id))
         suspension = susp_result.scalar_one_or_none()
         if suspension:
             suspension.is_active = False
             await db.flush()
 
     await _log_action(
-        db, admin_id,
+        db,
+        admin_id,
         action=f"appeal.{data.decision}",
         target_type="appeal",
         target_id=appeal_id,
@@ -857,28 +861,24 @@ async def get_user_detail(
     db: AsyncSession = Depends(get_db),
 ):
     """Full user detail (profile + provider profile + stats)."""
-    result = await db.execute(
-        select(Profile).where(Profile.user_id == user_id)
-    )
+    result = await db.execute(select(Profile).where(Profile.user_id == user_id))
     profile = result.scalar_one_or_none()
     if not profile:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     # Get provider profile if exists
-    pp_result = await db.execute(
-        select(ProviderProfile).where(ProviderProfile.user_id == user_id)
-    )
+    pp_result = await db.execute(select(ProviderProfile).where(ProviderProfile.user_id == user_id))
     pp = pp_result.scalar_one_or_none()
 
     # Count reports
-    report_count = (await db.execute(
-        select(func.count()).select_from(Report).where(Report.reporter_id == user_id)
-    )).scalar() or 0
+    report_count = (
+        await db.execute(select(func.count()).select_from(Report).where(Report.reporter_id == user_id))
+    ).scalar() or 0
 
     # Count suspensions
-    suspension_count = (await db.execute(
-        select(func.count()).select_from(Suspension).where(Suspension.user_id == user_id)
-    )).scalar() or 0
+    suspension_count = (
+        await db.execute(select(func.count()).select_from(Suspension).where(Suspension.user_id == user_id))
+    ).scalar() or 0
 
     return {
         "profile": {
@@ -893,7 +893,9 @@ async def get_user_detail(
         "provider_profile": {
             "id": pp.id,
             "verification_status": pp.verification_status,
-        } if pp else None,
+        }
+        if pp
+        else None,
         "stats": {
             "reports_filed": report_count,
             "suspensions": suspension_count,
@@ -914,9 +916,7 @@ async def update_user_status(
     db: AsyncSession = Depends(get_db),
 ):
     """Change user status (active, suspended, banned)."""
-    result = await db.execute(
-        select(Profile).where(Profile.user_id == user_id)
-    )
+    result = await db.execute(select(Profile).where(Profile.user_id == user_id))
     profile = result.scalar_one_or_none()
     if not profile:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -939,7 +939,8 @@ async def update_user_status(
         await db.flush()
 
     await _log_action(
-        db, admin_id,
+        db,
+        admin_id,
         action=f"user.{data.status}",
         target_type="user",
         target_id=user_id,
@@ -992,10 +993,12 @@ async def get_booking_detail(
 ):
     """Booking detail with full event history."""
     result = await db.execute(
-        select(AuditLog).where(
+        select(AuditLog)
+        .where(
             AuditLog.target_type == "booking",
             AuditLog.target_id == booking_id,
-        ).order_by(AuditLog.created_at.asc())
+        )
+        .order_by(AuditLog.created_at.asc())
     )
     entries = result.scalars().all()
 
@@ -1060,9 +1063,7 @@ async def list_categories(
     db: AsyncSession = Depends(get_db),
 ):
     """List all categories."""
-    result = await db.execute(
-        select(Category).order_by(Category.sort_order)
-    )
+    result = await db.execute(select(Category).order_by(Category.sort_order))
     categories = result.scalars().all()
     return [
         {
@@ -1112,8 +1113,11 @@ async def create_category(
     await db.flush()
 
     await _log_action(
-        db, admin_id, action="category.create",
-        target_type="category", target_id=cat.id,
+        db,
+        admin_id,
+        action="category.create",
+        target_type="category",
+        target_id=cat.id,
     )
     await db.flush()
 
@@ -1137,9 +1141,7 @@ async def update_category(
     db: AsyncSession = Depends(get_db),
 ):
     """Update a category."""
-    result = await db.execute(
-        select(Category).where(Category.id == category_id)
-    )
+    result = await db.execute(select(Category).where(Category.id == category_id))
     cat = result.scalar_one_or_none()
     if not cat:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
@@ -1149,8 +1151,11 @@ async def update_category(
     await db.flush()
 
     await _log_action(
-        db, admin_id, action="category.update",
-        target_type="category", target_id=category_id,
+        db,
+        admin_id,
+        action="category.update",
+        target_type="category",
+        target_id=category_id,
     )
     await db.flush()
 
@@ -1164,9 +1169,7 @@ async def delete_category(
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a category."""
-    result = await db.execute(
-        select(Category).where(Category.id == category_id)
-    )
+    result = await db.execute(select(Category).where(Category.id == category_id))
     cat = result.scalar_one_or_none()
     if not cat:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
@@ -1175,8 +1178,11 @@ async def delete_category(
     await db.flush()
 
     await _log_action(
-        db, admin_id, action="category.delete",
-        target_type="category", target_id=category_id,
+        db,
+        admin_id,
+        action="category.delete",
+        target_type="category",
+        target_id=category_id,
     )
     await db.flush()
 
@@ -1230,8 +1236,11 @@ async def create_role(
     await db.flush()
 
     await _log_action(
-        db, admin_id, action="role.create",
-        target_type="role", target_id=role.id,
+        db,
+        admin_id,
+        action="role.create",
+        target_type="role",
+        target_id=role.id,
     )
     await db.flush()
 
@@ -1251,9 +1260,7 @@ async def assign_admin_role(
 ):
     """Assign admin role to user."""
     # Verify role exists
-    role_result = await db.execute(
-        select(AdminRole).where(AdminRole.id == data.role_id)
-    )
+    role_result = await db.execute(select(AdminRole).where(AdminRole.id == data.role_id))
     if not role_result.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
 
@@ -1269,8 +1276,11 @@ async def assign_admin_role(
     await db.flush()
 
     await _log_action(
-        db, admin_id, action="role.assign",
-        target_type="user", target_id=user_id,
+        db,
+        admin_id,
+        action="role.assign",
+        target_type="user",
+        target_id=user_id,
         details={"role_id": data.role_id},
     )
     await db.flush()
@@ -1348,8 +1358,11 @@ async def moderate_post(
     await db.flush()
 
     await _log_action(
-        db, admin_id, action=f"content.{data.decision}",
-        target_type="post", target_id=post_id,
+        db,
+        admin_id,
+        action=f"content.{data.decision}",
+        target_type="post",
+        target_id=post_id,
         reason=data.resolution,
     )
     await db.flush()
@@ -1371,39 +1384,37 @@ async def analytics_overview(
     week_ago = now - timedelta(days=7)
 
     # Total users
-    total_users = (await db.execute(
-        select(func.count()).select_from(Profile)
-    )).scalar() or 0
+    total_users = (await db.execute(select(func.count()).select_from(Profile))).scalar() or 0
 
     # Active users (is_active = True)
-    active_users = (await db.execute(
-        select(func.count()).select_from(Profile).where(Profile.is_active.is_(True))
-    )).scalar() or 0
+    active_users = (
+        await db.execute(select(func.count()).select_from(Profile).where(Profile.is_active.is_(True)))
+    ).scalar() or 0
 
     # Verified users
-    verified_users = (await db.execute(
-        select(func.count()).select_from(Profile).where(Profile.is_verified.is_(True))
-    )).scalar() or 0
+    verified_users = (
+        await db.execute(select(func.count()).select_from(Profile).where(Profile.is_verified.is_(True)))
+    ).scalar() or 0
 
     # Reports this week
-    reports_week = (await db.execute(
-        select(func.count()).select_from(Report).where(Report.created_at >= week_ago)
-    )).scalar() or 0
+    reports_week = (
+        await db.execute(select(func.count()).select_from(Report).where(Report.created_at >= week_ago))
+    ).scalar() or 0
 
     # Pending reports
-    pending_reports = (await db.execute(
-        select(func.count()).select_from(Report).where(Report.status == "pending")
-    )).scalar() or 0
+    pending_reports = (
+        await db.execute(select(func.count()).select_from(Report).where(Report.status == "pending"))
+    ).scalar() or 0
 
     # Active suspensions
-    active_suspensions = (await db.execute(
-        select(func.count()).select_from(Suspension).where(Suspension.is_active.is_(True))
-    )).scalar() or 0
+    active_suspensions = (
+        await db.execute(select(func.count()).select_from(Suspension).where(Suspension.is_active.is_(True)))
+    ).scalar() or 0
 
     # Audit actions today
-    actions_today = (await db.execute(
-        select(func.count()).select_from(AuditLog).where(AuditLog.created_at >= today_start)
-    )).scalar() or 0
+    actions_today = (
+        await db.execute(select(func.count()).select_from(AuditLog).where(AuditLog.created_at >= today_start))
+    ).scalar() or 0
 
     return {
         "total_users": total_users,

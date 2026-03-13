@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
+
 @router.get("/token")
 async def get_stream_token(user: dict = Depends(get_current_user)):
     """Generate a Stream Chat user token for the authenticated user."""

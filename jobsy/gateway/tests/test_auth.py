@@ -45,47 +45,62 @@ async def seeded_user(test_session):
 
 class TestRegister:
     async def test_register_success(self, client):
-        response = await client.post("/auth/register", json={
-            "phone": "+18769876543",
-            "password": "SecurePass1!",
-            "role": "user",
-        })
+        response = await client.post(
+            "/auth/register",
+            json={
+                "phone": "+18769876543",
+                "password": "SecurePass1!",
+                "role": "user",
+            },
+        )
         assert response.status_code == 201
         data = response.json()
         assert "access_token" in data
         assert "refresh_token" in data
 
     async def test_register_duplicate_phone(self, client, seeded_user):
-        response = await client.post("/auth/register", json={
-            "phone": "+18761234567",
-            "password": "SecurePass1!",
-            "role": "user",
-        })
+        response = await client.post(
+            "/auth/register",
+            json={
+                "phone": "+18761234567",
+                "password": "SecurePass1!",
+                "role": "user",
+            },
+        )
         assert response.status_code == 409
 
 
 class TestLogin:
     async def test_login_success(self, client, seeded_user):
-        response = await client.post("/auth/login", json={
-            "phone": "+18761234567",
-            "password": "TestPass123!",
-        })
+        response = await client.post(
+            "/auth/login",
+            json={
+                "phone": "+18761234567",
+                "password": "TestPass123!",
+            },
+        )
         assert response.status_code == 200
         data = response.json()
         assert "access_token" in data
 
     async def test_login_wrong_password(self, client, seeded_user):
-        response = await client.post("/auth/login", json={
-            "phone": "+18761234567",
-            "password": "WrongPass!",
-        })
+        response = await client.post(
+            "/auth/login",
+            json={
+                "phone": "+18761234567",
+                "password": "WrongPass!",
+            },
+        )
         assert response.status_code == 401
 
     async def test_login_nonexistent_user(self, client):
-        response = await client.post("/auth/login", json={
-            "phone": "+18760000000",
-            "password": "SomePass!",
-        })
+        response = await client.post(
+            "/auth/login",
+            json={
+                "phone": "+18760000000",
+                "password": "SomePass!",
+            },
+        )
         assert response.status_code == 401
 
 

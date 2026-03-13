@@ -16,9 +16,7 @@ class DeviceToken(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), nullable=False)
 
-    __table_args__ = (
-        Index("idx_device_user_token", "user_id", "token", unique=True),
-    )
+    __table_args__ = (Index("idx_device_user_token", "user_id", "token", unique=True),)
 
 
 class NewsletterSubscriber(Base):

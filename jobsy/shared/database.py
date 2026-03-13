@@ -12,13 +12,15 @@ logger = logging.getLogger(__name__)
 
 _engine_kwargs: dict = {"echo": False}
 if not DATABASE_URL.startswith("sqlite"):
-    _engine_kwargs.update({
-        "pool_size": 10,
-        "max_overflow": 20,
-        "pool_timeout": 30,
-        "pool_recycle": 1800,
-        "pool_pre_ping": True,
-    })
+    _engine_kwargs.update(
+        {
+            "pool_size": 10,
+            "max_overflow": 20,
+            "pool_timeout": 30,
+            "pool_recycle": 1800,
+            "pool_pre_ping": True,
+        }
+    )
 
 engine = create_async_engine(DATABASE_URL, **_engine_kwargs)
 async_session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -63,6 +65,5 @@ async def init_db():
         logger.info("Database tables initialised successfully")
     except Exception:
         logger.warning(
-            "Could not initialise database tables on startup -- "
-            "tables will be created on first successful connection"
+            "Could not initialise database tables on startup -- tables will be created on first successful connection"
         )

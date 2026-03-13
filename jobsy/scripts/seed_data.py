@@ -26,33 +26,50 @@ from shared.auth import hash_password
 from shared.config import DATABASE_URL
 
 PARISHES = [
-    "Kingston", "St. Andrew", "St. Thomas", "Portland", "St. Mary",
-    "St. Ann", "Trelawny", "St. James", "Hanover", "Westmoreland",
-    "St. Elizabeth", "Manchester", "Clarendon", "St. Catherine",
+    "Kingston",
+    "St. Andrew",
+    "St. Thomas",
+    "Portland",
+    "St. Mary",
+    "St. Ann",
+    "Trelawny",
+    "St. James",
+    "Hanover",
+    "Westmoreland",
+    "St. Elizabeth",
+    "Manchester",
+    "Clarendon",
+    "St. Catherine",
 ]
 
 # Approximate coordinates for Jamaican parishes (lat, lng)
 PARISH_COORDS = {
-    "Kingston":       (17.9714,  -76.7920),
-    "St. Andrew":     (18.0179,  -76.7674),
-    "St. Thomas":     (17.9500,  -76.3500),
-    "Portland":       (18.1750,  -76.4100),
-    "St. Mary":       (18.2700,  -76.8500),
-    "St. Ann":        (18.4100,  -77.2000),
-    "Trelawny":       (18.3500,  -77.6100),
-    "St. James":      (18.4762,  -77.8939),
-    "Hanover":        (18.4100,  -78.1300),
-    "Westmoreland":   (18.2700,  -78.1500),
-    "St. Elizabeth":  (18.0000,  -77.8300),
-    "Manchester":     (18.0300,  -77.5000),
-    "Clarendon":      (17.9600,  -77.2400),
-    "St. Catherine":  (18.0300,  -76.9500),
+    "Kingston": (17.9714, -76.7920),
+    "St. Andrew": (18.0179, -76.7674),
+    "St. Thomas": (17.9500, -76.3500),
+    "Portland": (18.1750, -76.4100),
+    "St. Mary": (18.2700, -76.8500),
+    "St. Ann": (18.4100, -77.2000),
+    "Trelawny": (18.3500, -77.6100),
+    "St. James": (18.4762, -77.8939),
+    "Hanover": (18.4100, -78.1300),
+    "Westmoreland": (18.2700, -78.1500),
+    "St. Elizabeth": (18.0000, -77.8300),
+    "Manchester": (18.0300, -77.5000),
+    "Clarendon": (17.9600, -77.2400),
+    "St. Catherine": (18.0300, -76.9500),
 }
 
 CATEGORIES = [
-    "Home Services", "Beauty & Wellness", "Tutoring & Education",
-    "Technology", "Automotive", "Events & Entertainment",
-    "Health & Fitness", "Professional Services", "Skilled Trades",
+    "Home Services",
+    "Beauty & Wellness",
+    "Tutoring & Education",
+    "Technology",
+    "Automotive",
+    "Events & Entertainment",
+    "Health & Fitness",
+    "Professional Services",
+    "Skilled Trades",
     "Creative Services",
 ]
 
@@ -230,16 +247,12 @@ PROVIDERS = [
         "listings": [
             {
                 "title": "Personal Training (4 weeks)",
-                "description": (
-                    "Customized workout plan with 3 sessions per week. Includes nutrition guide."
-                ),
+                "description": ("Customized workout plan with 3 sessions per week. Includes nutrition guide."),
                 "budget": 20000,
             },
             {
                 "title": "Online Fitness Coaching",
-                "description": (
-                    "Weekly check-ins, meal plans, and workout programs delivered via WhatsApp."
-                ),
+                "description": ("Weekly check-ins, meal plans, and workout programs delivered via WhatsApp."),
                 "budget": 8000,
             },
         ],
@@ -261,9 +274,7 @@ PROVIDERS = [
             },
             {
                 "title": "Business Registration Package",
-                "description": (
-                    "Company registration, TRN, GCT, and NIS setup. Start your business right."
-                ),
+                "description": ("Company registration, TRN, GCT, and NIS setup. Start your business right."),
                 "budget": 35000,
             },
         ],
@@ -275,24 +286,19 @@ PROVIDERS = [
         "parish": "Trelawny",
         "category": "Creative Services",
         "bio": (
-            "Graphic designer and photographer."
-            " Specializing in brand identity and event photography across Jamaica."
+            "Graphic designer and photographer. Specializing in brand identity and event photography across Jamaica."
         ),
         "skills": ["Graphic Design", "Photography", "Branding", "Social Media"],
         "hourly_rate": 3000,
         "listings": [
             {
                 "title": "Brand Identity Package",
-                "description": (
-                    "Logo design, business cards, social media templates. 3 concept rounds included."
-                ),
+                "description": ("Logo design, business cards, social media templates. 3 concept rounds included."),
                 "budget": 30000,
             },
             {
                 "title": "Event Photography",
-                "description": (
-                    "Professional event coverage with edited photos delivered within 5 business days."
-                ),
+                "description": ("Professional event coverage with edited photos delivered within 5 business days."),
                 "budget": 20000,
             },
         ],
@@ -362,7 +368,7 @@ async def seed():
         password_hash = hash_password("DemoPass123!")
 
         profile_ids: list[tuple[str, str]] = []  # (profile_id, parish)
-        listing_ids: list[tuple[str, str]] = []   # (listing_id, parish)
+        listing_ids: list[tuple[str, str]] = []  # (listing_id, parish)
 
         for p in PROVIDERS:
             user_id = _uid()
@@ -396,44 +402,50 @@ async def seed():
 
             for lst in p["listings"]:
                 listing_id = _uid()
-                session.add(Listing(
-                    id=listing_id,
-                    poster_id=user_id,
-                    title=lst["title"],
-                    description=lst["description"],
-                    category=p["category"],
-                    parish=p["parish"],
-                    budget_min=lst["budget"],
-                    budget_max=lst["budget"],
-                    currency="JMD",
-                    status="active",
-                    created_at=_now(),
-                    updated_at=_now(),
-                ))
+                session.add(
+                    Listing(
+                        id=listing_id,
+                        poster_id=user_id,
+                        title=lst["title"],
+                        description=lst["description"],
+                        category=p["category"],
+                        parish=p["parish"],
+                        budget_min=lst["budget"],
+                        budget_max=lst["budget"],
+                        currency="JMD",
+                        status="active",
+                        created_at=_now(),
+                        updated_at=_now(),
+                    )
+                )
                 listing_ids.append((listing_id, p["parish"]))
 
         print("Seeding customer accounts...")
         for c in CUSTOMERS:
             user_id = _uid()
-            session.add(User(
-                id=user_id,
-                phone=c["phone"],
-                email=c["email"],
-                password_hash=password_hash,
-                role="user",
-                is_verified=True,
-                created_at=_now(),
-                updated_at=_now(),
-            ))
+            session.add(
+                User(
+                    id=user_id,
+                    phone=c["phone"],
+                    email=c["email"],
+                    password_hash=password_hash,
+                    role="user",
+                    is_verified=True,
+                    created_at=_now(),
+                    updated_at=_now(),
+                )
+            )
             profile_id = _uid()
-            session.add(Profile(
-                id=profile_id,
-                user_id=user_id,
-                display_name=c["name"],
-                parish=c["parish"],
-                created_at=_now(),
-                updated_at=_now(),
-            ))
+            session.add(
+                Profile(
+                    id=profile_id,
+                    user_id=user_id,
+                    display_name=c["name"],
+                    parish=c["parish"],
+                    created_at=_now(),
+                    updated_at=_now(),
+                )
+            )
             profile_ids.append((profile_id, c["parish"]))
 
         # --- Ad Placements ---
@@ -444,14 +456,16 @@ async def seed():
             {"name": "listing_sidebar", "description": "Sidebar ad on listing details", "position": "sidebar"},
         ]
         for ap in ad_placements:
-            session.add(AdPlacement(
-                id=_uid(),
-                name=ap["name"],
-                description=ap["description"],
-                position=ap["position"],
-                is_active=True,
-                created_at=_now(),
-            ))
+            session.add(
+                AdPlacement(
+                    id=_uid(),
+                    name=ap["name"],
+                    description=ap["description"],
+                    position=ap["position"],
+                    is_active=True,
+                    created_at=_now(),
+                )
+            )
 
         # --- Ad Campaigns ---
         print("Seeding ad campaigns...")
@@ -484,59 +498,65 @@ async def seed():
             },
         ]
         for ac in ad_campaigns:
-            session.add(AdCampaign(
-                id=_uid(),
-                advertiser_name=ac["advertiser_name"],
-                advertiser_email=ac["advertiser_email"],
-                title=ac["title"],
-                description=ac["description"],
-                click_url=ac["click_url"],
-                target_parishes=ac["target_parishes"],
-                target_categories=ac["target_categories"],
-                budget_total=ac["budget_total"],
-                budget_daily=ac["budget_daily"],
-                cost_per_click=ac["cost_per_click"],
-                cost_per_impression=ac["cost_per_impression"],
-                status="active",
-                created_at=_now(),
-                updated_at=_now(),
-            ))
+            session.add(
+                AdCampaign(
+                    id=_uid(),
+                    advertiser_name=ac["advertiser_name"],
+                    advertiser_email=ac["advertiser_email"],
+                    title=ac["title"],
+                    description=ac["description"],
+                    click_url=ac["click_url"],
+                    target_parishes=ac["target_parishes"],
+                    target_categories=ac["target_categories"],
+                    budget_total=ac["budget_total"],
+                    budget_daily=ac["budget_daily"],
+                    cost_per_click=ac["cost_per_click"],
+                    cost_per_impression=ac["cost_per_impression"],
+                    status="active",
+                    created_at=_now(),
+                    updated_at=_now(),
+                )
+            )
 
         # --- Geoshard Entries for profiles and listings ---
         print("Seeding geoshard entries...")
         geo_count = 0
         for entity_id, parish in profile_ids:
             lat, lng = PARISH_COORDS.get(parish, (18.1096, -77.2975))
-            session.add(GeoshardEntry(
-                id=_uid(),
-                entity_id=entity_id,
-                entity_type="profile",
-                geohash=_encode_geohash(lat, lng),
-                s2_cell_id=_fake_s2_cell(lat, lng),
-                latitude=lat,
-                longitude=lng,
-                parish=parish,
-                is_active="true",
-                created_at=_now(),
-                updated_at=_now(),
-            ))
+            session.add(
+                GeoshardEntry(
+                    id=_uid(),
+                    entity_id=entity_id,
+                    entity_type="profile",
+                    geohash=_encode_geohash(lat, lng),
+                    s2_cell_id=_fake_s2_cell(lat, lng),
+                    latitude=lat,
+                    longitude=lng,
+                    parish=parish,
+                    is_active="true",
+                    created_at=_now(),
+                    updated_at=_now(),
+                )
+            )
             geo_count += 1
 
         for entity_id, parish in listing_ids:
             lat, lng = PARISH_COORDS.get(parish, (18.1096, -77.2975))
-            session.add(GeoshardEntry(
-                id=_uid(),
-                entity_id=entity_id,
-                entity_type="listing",
-                geohash=_encode_geohash(lat, lng),
-                s2_cell_id=_fake_s2_cell(lat, lng),
-                latitude=lat,
-                longitude=lng,
-                parish=parish,
-                is_active="true",
-                created_at=_now(),
-                updated_at=_now(),
-            ))
+            session.add(
+                GeoshardEntry(
+                    id=_uid(),
+                    entity_id=entity_id,
+                    entity_type="listing",
+                    geohash=_encode_geohash(lat, lng),
+                    s2_cell_id=_fake_s2_cell(lat, lng),
+                    latitude=lat,
+                    longitude=lng,
+                    parish=parish,
+                    is_active="true",
+                    created_at=_now(),
+                    updated_at=_now(),
+                )
+            )
             geo_count += 1
 
         await session.commit()

@@ -34,7 +34,8 @@ class OAuthRequest(BaseModel):
 
 
 class ForgotPasswordRequest(BaseModel):
-    phone: str = Field(..., pattern=r"^\+1876\d{7}$")
+    phone: str = ""
+    email: str = ""
 
 
 class ResetPasswordRequest(BaseModel):

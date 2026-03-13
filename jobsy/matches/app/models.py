@@ -15,6 +15,4 @@ class Match(Base):
     status = Column(String(20), default="active")
     created_at = Column(DateTime(timezone=True), nullable=False)
 
-    __table_args__ = (
-        UniqueConstraint("user_a_id", "user_b_id", "listing_id", name="uq_match_unique"),
-    )
+    __table_args__ = (UniqueConstraint("user_a_id", "user_b_id", "listing_id", name="uq_match_unique"),)

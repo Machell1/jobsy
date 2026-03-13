@@ -51,21 +51,24 @@ async def create_listing(data: ListingCreate, request: Request, db: AsyncSession
     db.add(listing)
     await db.flush()
 
-    await publish_event("listing.created", {
-        "id": listing.id,
-        "listing_id": listing.id,
-        "poster_id": user_id,
-        "title": listing.title,
-        "description": listing.description,
-        "category": listing.category,
-        "budget_min": float(listing.budget_min) if listing.budget_min else None,
-        "budget_max": float(listing.budget_max) if listing.budget_max else None,
-        "status": listing.status,
-        "latitude": data.latitude,
-        "longitude": data.longitude,
-        "parish": parish,
-        "created_at": listing.created_at.isoformat(),
-    })
+    await publish_event(
+        "listing.created",
+        {
+            "id": listing.id,
+            "listing_id": listing.id,
+            "poster_id": user_id,
+            "title": listing.title,
+            "description": listing.description,
+            "category": listing.category,
+            "budget_min": float(listing.budget_min) if listing.budget_min else None,
+            "budget_max": float(listing.budget_max) if listing.budget_max else None,
+            "status": listing.status,
+            "latitude": data.latitude,
+            "longitude": data.longitude,
+            "parish": parish,
+            "created_at": listing.created_at.isoformat(),
+        },
+    )
 
     return listing
 
@@ -97,12 +100,7 @@ async def listing_feed(
 ):
     """Get a batch of active listings for the swipe feed."""
     _get_user_id(request)
-    query = (
-        select(Listing)
-        .where(Listing.status == "active")
-        .order_by(Listing.created_at.desc())
-        .limit(limit)
-    )
+    query = select(Listing).where(Listing.status == "active").order_by(Listing.created_at.desc()).limit(limit)
     result = await db.execute(query)
     return result.scalars().all()
 
@@ -135,9 +133,7 @@ async def get_listing(listing_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.put("/{listing_id}", response_model=ListingResponse)
-async def update_listing(
-    listing_id: str, data: ListingUpdate, request: Request, db: AsyncSession = Depends(get_db)
-):
+async def update_listing(listing_id: str, data: ListingUpdate, request: Request, db: AsyncSession = Depends(get_db)):
     user_id = _get_user_id(request)
     result = await db.execute(select(Listing).where(Listing.id == listing_id))
     listing = result.scalar_one_or_none()
@@ -151,21 +147,24 @@ async def update_listing(
     listing.updated_at = datetime.now(UTC)
     await db.flush()
 
-    await publish_event("listing.updated", {
-        "id": listing.id,
-        "listing_id": listing.id,
-        "poster_id": listing.poster_id,
-        "title": listing.title,
-        "description": listing.description,
-        "category": listing.category,
-        "budget_min": float(listing.budget_min) if listing.budget_min else None,
-        "budget_max": float(listing.budget_max) if listing.budget_max else None,
-        "status": listing.status,
-        "latitude": float(listing.latitude) if listing.latitude else None,
-        "longitude": float(listing.longitude) if listing.longitude else None,
-        "parish": listing.parish,
-        "created_at": listing.created_at.isoformat(),
-    })
+    await publish_event(
+        "listing.updated",
+        {
+            "id": listing.id,
+            "listing_id": listing.id,
+            "poster_id": listing.poster_id,
+            "title": listing.title,
+            "description": listing.description,
+            "category": listing.category,
+            "budget_min": float(listing.budget_min) if listing.budget_min else None,
+            "budget_max": float(listing.budget_max) if listing.budget_max else None,
+            "status": listing.status,
+            "latitude": float(listing.latitude) if listing.latitude else None,
+            "longitude": float(listing.longitude) if listing.longitude else None,
+            "parish": listing.parish,
+            "created_at": listing.created_at.isoformat(),
+        },
+    )
 
     return listing
 
@@ -176,7 +175,10 @@ class StatusUpdate(BaseModel):
 
 @router.patch("/{listing_id}/status")
 async def update_listing_status(
-    listing_id: str, data: StatusUpdate, request: Request, db: AsyncSession = Depends(get_db),
+    listing_id: str,
+    data: StatusUpdate,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
 ):
     """Quick status update without requiring a full PUT."""
     user_id = _get_user_id(request)
@@ -208,8 +210,11 @@ async def delete_listing(listing_id: str, request: Request, db: AsyncSession = D
     listing.updated_at = datetime.now(UTC)
     await db.flush()
 
-    await publish_event("listing.cancelled", {
-        "id": listing.id,
-        "listing_id": listing.id,
-        "poster_id": listing.poster_id,
-    })
+    await publish_event(
+        "listing.cancelled",
+        {
+            "id": listing.id,
+            "listing_id": listing.id,
+            "poster_id": listing.poster_id,
+        },
+    )

@@ -54,7 +54,8 @@ class Post(Base):
     moderation_note = Column(Text, nullable=True)
     moderation_reviewed_by = Column(String, nullable=True)
     moderation_reviewed_at = Column(
-        DateTime(timezone=True), nullable=True,
+        DateTime(timezone=True),
+        nullable=True,
     )
     like_count = Column(Integer, default=0)
     comment_count = Column(Integer, default=0)
@@ -108,7 +109,9 @@ class PostLike(Base):
 
     __table_args__ = (
         UniqueConstraint(
-            "user_id", "target_type", "target_id",
+            "user_id",
+            "target_type",
+            "target_id",
             name="uq_post_likes_user_target",
         ),
         Index("idx_like_user", "user_id"),

@@ -920,6 +920,10 @@ async def _apply_migrations() -> None:
             await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_csig_contract ON contract_signatures(contract_id)"))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_csig_signer ON contract_signatures(signer_id)"))
 
+            # Migration 019: email column on users for password reset fallback
+            await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255)"))
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_email ON users(email)"))
+
         logger.info("Database migrations applied successfully")
     except Exception:
         logger.warning("Could not apply migrations on startup -- will retry on next deploy")

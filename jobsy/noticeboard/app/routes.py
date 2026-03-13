@@ -111,6 +111,7 @@ def _comment_response(c: Comment) -> dict:
 
 # --- Notice Board Routes ---
 
+
 @router.post("/boards", status_code=status.HTTP_201_CREATED)
 async def create_board(
     request: Request,
@@ -189,6 +190,7 @@ async def update_board(
 
 
 # --- Post Routes ---
+
 
 @router.post("/posts", status_code=status.HTTP_201_CREATED)
 async def create_post(
@@ -373,6 +375,7 @@ async def resubmit_post(
 
 # --- Comment Routes ---
 
+
 @router.post("/posts/{post_id}/comments", status_code=status.HTTP_201_CREATED)
 async def create_comment(
     post_id: str,
@@ -456,6 +459,7 @@ async def delete_comment(
 
 
 # --- Like Routes ---
+
 
 @router.post("/like", status_code=status.HTTP_201_CREATED)
 async def like_target(
@@ -541,6 +545,7 @@ async def unlike_target(
 
 
 # --- Moderation Routes ---
+
 
 @router.get("/moderation/pending")
 async def list_pending(

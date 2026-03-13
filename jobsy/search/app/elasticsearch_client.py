@@ -183,7 +183,8 @@ async def _fallback_search_listings(
         where = " AND ".join(conditions)
 
         count_result = await session.execute(
-            text(f"SELECT COUNT(*) FROM listings WHERE {where}"), params  # noqa: S608
+            text(f"SELECT COUNT(*) FROM listings WHERE {where}"),
+            params,  # noqa: S608
         )
         total = count_result.scalar() or 0
 
@@ -243,7 +244,8 @@ async def _fallback_search_profiles(
         where = " AND ".join(conditions)
 
         count_result = await session.execute(
-            text(f"SELECT COUNT(*) FROM profiles WHERE {where}"), params  # noqa: S608
+            text(f"SELECT COUNT(*) FROM profiles WHERE {where}"),
+            params,  # noqa: S608
         )
         total = count_result.scalar() or 0
 
@@ -290,21 +292,27 @@ async def search_listings(
     if not client:
         logger.info("Elasticsearch unavailable, using database fallback for listings search")
         return await _fallback_search_listings(
-            query=query, parish=parish, category=category,
-            listing_type=listing_type, limit=limit, offset=offset,
+            query=query,
+            parish=parish,
+            category=category,
+            listing_type=listing_type,
+            limit=limit,
+            offset=offset,
         )
 
     must = []
     filter_clauses = []
 
     if query:
-        must.append({
-            "multi_match": {
-                "query": query,
-                "fields": ["title^3", "description", "skills^2"],
-                "fuzziness": "AUTO",
+        must.append(
+            {
+                "multi_match": {
+                    "query": query,
+                    "fields": ["title^3", "description", "skills^2"],
+                    "fuzziness": "AUTO",
+                }
             }
-        })
+        )
 
     filter_clauses.append({"term": {"status": "active"}})
 
@@ -316,12 +324,14 @@ async def search_listings(
         filter_clauses.append({"term": {"listing_type": listing_type}})
 
     if lat is not None and lon is not None:
-        filter_clauses.append({
-            "geo_distance": {
-                "distance": f"{radius_km}km",
-                "location": {"lat": lat, "lon": lon},
+        filter_clauses.append(
+            {
+                "geo_distance": {
+                    "distance": f"{radius_km}km",
+                    "location": {"lat": lat, "lon": lon},
+                }
             }
-        })
+        )
 
     body: dict[str, Any] = {
         "query": {
@@ -337,20 +347,20 @@ async def search_listings(
 
     # Add distance sort if geo query
     if lat is not None and lon is not None:
-        body["sort"].insert(0, {
-            "_geo_distance": {
-                "location": {"lat": lat, "lon": lon},
-                "order": "asc",
-                "unit": "km",
-            }
-        })
+        body["sort"].insert(
+            0,
+            {
+                "_geo_distance": {
+                    "location": {"lat": lat, "lon": lon},
+                    "order": "asc",
+                    "unit": "km",
+                }
+            },
+        )
 
     result = await client.search(index=LISTINGS_INDEX, body=body)
 
-    hits = [
-        {**hit["_source"], "_score": hit["_score"]}
-        for hit in result["hits"]["hits"]
-    ]
+    hits = [{**hit["_source"], "_score": hit["_score"]} for hit in result["hits"]["hits"]]
 
     return {
         "hits": hits,
@@ -371,21 +381,26 @@ async def search_profiles(
     if not client:
         logger.info("Elasticsearch unavailable, using database fallback for profiles search")
         return await _fallback_search_profiles(
-            query=query, parish=parish, skills=skills,
-            limit=limit, offset=offset,
+            query=query,
+            parish=parish,
+            skills=skills,
+            limit=limit,
+            offset=offset,
         )
 
     must = []
     filter_clauses = []
 
     if query:
-        must.append({
-            "multi_match": {
-                "query": query,
-                "fields": ["display_name^2", "bio", "skills^3"],
-                "fuzziness": "AUTO",
+        must.append(
+            {
+                "multi_match": {
+                    "query": query,
+                    "fields": ["display_name^2", "bio", "skills^3"],
+                    "fuzziness": "AUTO",
+                }
             }
-        })
+        )
 
     if parish:
         filter_clauses.append({"term": {"parish": parish}})
@@ -410,10 +425,7 @@ async def search_profiles(
 
     result = await client.search(index=PROFILES_INDEX, body=body)
 
-    hits = [
-        {**hit["_source"], "_score": hit["_score"]}
-        for hit in result["hits"]["hits"]
-    ]
+    hits = [{**hit["_source"], "_score": hit["_score"]} for hit in result["hits"]["hits"]]
 
     return {
         "hits": hits,

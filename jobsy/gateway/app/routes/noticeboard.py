@@ -32,16 +32,20 @@ class PostCreate(BaseModel):
     content: str
     media_urls: list[str] | None = None
     media_type: str | None = Field(
-        default=None, max_length=20,
+        default=None,
+        max_length=20,
     )
     external_link: str | None = Field(
-        default=None, max_length=500,
+        default=None,
+        max_length=500,
     )
     post_type: str = Field(
-        default="standard", max_length=20,
+        default="standard",
+        max_length=20,
     )
     profession_tag: str | None = Field(
-        default=None, max_length=100,
+        default=None,
+        max_length=100,
     )
 
 
@@ -57,14 +61,16 @@ class CommentCreate(BaseModel):
 
 class LikeRequest(BaseModel):
     target_type: str = Field(
-        ..., pattern="^(post|comment)$",
+        ...,
+        pattern="^(post|comment)$",
     )
     target_id: str
 
 
 class ModerationReview(BaseModel):
     decision: str = Field(
-        ..., pattern="^(approve|decline|hide)$",
+        ...,
+        pattern="^(approve|decline|hide)$",
     )
     moderation_note: str | None = None
 
@@ -119,6 +125,7 @@ def _comment_response(c: Comment) -> dict:
 
 
 # --- Notice Board Routes ---
+
 
 @router.post("/boards", status_code=status.HTTP_201_CREATED)
 async def create_board(
@@ -226,6 +233,7 @@ async def update_board(
 
 # --- Post Routes ---
 
+
 @router.post("/posts", status_code=status.HTTP_201_CREATED)
 async def create_post(
     data: PostCreate,
@@ -277,7 +285,8 @@ async def create_post(
 @router.get("/posts/mine")
 async def list_my_posts(
     status_filter: str | None = Query(
-        default=None, alias="status",
+        default=None,
+        alias="status",
     ),
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=20, le=100),
@@ -293,9 +302,13 @@ async def list_my_posts(
         query = query.where(
             Post.moderation_status == status_filter,
         )
-    query = query.order_by(
-        Post.created_at.desc(),
-    ).offset(offset).limit(limit)
+    query = (
+        query.order_by(
+            Post.created_at.desc(),
+        )
+        .offset(offset)
+        .limit(limit)
+    )
 
     result = await db.execute(query)
     posts = result.scalars().all()
@@ -321,9 +334,13 @@ async def public_feed(
         query = query.where(Post.post_type == category)
     if parish:
         query = query.where(Post.profession_tag == parish)
-    query = query.order_by(
-        Post.created_at.desc(),
-    ).offset(offset).limit(limit)
+    query = (
+        query.order_by(
+            Post.created_at.desc(),
+        )
+        .offset(offset)
+        .limit(limit)
+    )
 
     result = await db.execute(query)
     posts = result.scalars().all()
@@ -456,6 +473,7 @@ async def resubmit_post(
 
 # --- Comment Routes ---
 
+
 @router.post(
     "/posts/{post_id}/comments",
     status_code=status.HTTP_201_CREATED,
@@ -494,10 +512,7 @@ async def create_comment(
     db.add(comment)
 
     await db.execute(
-        text(
-            "UPDATE posts SET comment_count = "
-            "comment_count + 1 WHERE id = :post_id"
-        ),
+        text("UPDATE posts SET comment_count = comment_count + 1 WHERE id = :post_id"),
         {"post_id": post_id},
     )
     await db.flush()
@@ -561,6 +576,7 @@ async def delete_comment(
 
 # --- Like Routes ---
 
+
 @router.post("/like", status_code=status.HTTP_201_CREATED)
 async def like_target(
     data: LikeRequest,
@@ -594,18 +610,12 @@ async def like_target(
 
     if data.target_type == "post":
         await db.execute(
-            text(
-                "UPDATE posts SET like_count = "
-                "like_count + 1 WHERE id = :target_id"
-            ),
+            text("UPDATE posts SET like_count = like_count + 1 WHERE id = :target_id"),
             {"target_id": data.target_id},
         )
     else:
         await db.execute(
-            text(
-                "UPDATE comments SET like_count = "
-                "like_count + 1 WHERE id = :target_id"
-            ),
+            text("UPDATE comments SET like_count = like_count + 1 WHERE id = :target_id"),
             {"target_id": data.target_id},
         )
     await db.flush()
@@ -644,20 +654,12 @@ async def unlike_target(
 
     if data.target_type == "post":
         await db.execute(
-            text(
-                "UPDATE posts SET like_count = "
-                "GREATEST(like_count - 1, 0) "
-                "WHERE id = :target_id"
-            ),
+            text("UPDATE posts SET like_count = GREATEST(like_count - 1, 0) WHERE id = :target_id"),
             {"target_id": data.target_id},
         )
     else:
         await db.execute(
-            text(
-                "UPDATE comments SET like_count = "
-                "GREATEST(like_count - 1, 0) "
-                "WHERE id = :target_id"
-            ),
+            text("UPDATE comments SET like_count = GREATEST(like_count - 1, 0) WHERE id = :target_id"),
             {"target_id": data.target_id},
         )
     await db.flush()
@@ -667,10 +669,12 @@ async def unlike_target(
 
 # --- Moderation Routes ---
 
+
 @router.get("/moderation/pending")
 async def list_pending(
     item_type: str = Query(
-        default="post", alias="type",
+        default="post",
+        alias="type",
     ),
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=20, le=100),

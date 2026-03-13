@@ -15,6 +15,4 @@ class Swipe(Base):
     direction = Column(String(5), nullable=False)  # 'left' or 'right'
     created_at = Column(DateTime(timezone=True), nullable=False)
 
-    __table_args__ = (
-        UniqueConstraint("swiper_id", "target_id", "target_type", name="uq_swipe_unique"),
-    )
+    __table_args__ = (UniqueConstraint("swiper_id", "target_id", "target_type", name="uq_swipe_unique"),)

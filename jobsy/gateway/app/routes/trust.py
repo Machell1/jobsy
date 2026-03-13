@@ -20,9 +20,7 @@ router = APIRouter(tags=["trust"])
 
 
 class ReportCreate(BaseModel):
-    target_type: str = Field(
-        ..., pattern=r"^(user|post|comment|message|listing|review)$"
-    )
+    target_type: str = Field(..., pattern=r"^(user|post|comment|message|listing|review)$")
     target_id: str
     reason: str = Field(
         ...,
@@ -103,9 +101,7 @@ async def block_user(
 ):
     """Block another user."""
     if user["user_id"] == user_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot block yourself"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot block yourself")
 
     # Check if already blocked
     existing = await db.execute(
@@ -115,9 +111,7 @@ async def block_user(
         )
     )
     if existing.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="User already blocked"
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User already blocked")
 
     block = BlockedUser(
         id=str(uuid.uuid4()),
@@ -145,9 +139,7 @@ async def unblock_user(
     )
     block = result.scalar_one_or_none()
     if not block:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Block not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Block not found")
 
     await db.delete(block)
     await db.flush()

@@ -91,12 +91,15 @@ async def _create_and_publish_match(db, user_a: str, user_b: str, listing_id=Non
         match.user_b_id,
         listing_id,
     )
-    await publish_event("match.created", {
-        "match_id": match.id,
-        "user_a_id": match.user_a_id,
-        "user_b_id": match.user_b_id,
-        "listing_id": listing_id,
-    })
+    await publish_event(
+        "match.created",
+        {
+            "match_id": match.id,
+            "user_a_id": match.user_a_id,
+            "user_b_id": match.user_b_id,
+            "listing_id": listing_id,
+        },
+    )
 
 
 async def handle_swipe_right(payload: dict) -> None:

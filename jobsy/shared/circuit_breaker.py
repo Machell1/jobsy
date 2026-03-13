@@ -14,12 +14,14 @@ from collections import defaultdict
 logger = logging.getLogger(__name__)
 
 # Circuit breaker state per service
-_circuits: dict[str, dict] = defaultdict(lambda: {
-    "state": "closed",
-    "failure_count": 0,
-    "last_failure_time": 0.0,
-    "success_count": 0,
-})
+_circuits: dict[str, dict] = defaultdict(
+    lambda: {
+        "state": "closed",
+        "failure_count": 0,
+        "last_failure_time": 0.0,
+        "success_count": 0,
+    }
+)
 
 # Configuration
 FAILURE_THRESHOLD = 5  # failures before opening circuit
@@ -32,9 +34,9 @@ def get_circuit_state(service_name: str) -> str:
     circuit = _circuits[service_name]
 
     if circuit["state"] == "open" and time.time() - circuit["last_failure_time"] >= RESET_TIMEOUT_SECONDS:
-            circuit["state"] = "half_open"
-            circuit["success_count"] = 0
-            logger.info("Circuit for %s moved to HALF_OPEN", service_name)
+        circuit["state"] = "half_open"
+        circuit["success_count"] = 0
+        logger.info("Circuit for %s moved to HALF_OPEN", service_name)
 
     return circuit["state"]
 
@@ -72,7 +74,8 @@ def record_failure(service_name: str) -> None:
         circuit["state"] = "open"
         logger.warning(
             "Circuit for %s OPENED after %d failures",
-            service_name, circuit["failure_count"],
+            service_name,
+            circuit["failure_count"],
         )
 
 

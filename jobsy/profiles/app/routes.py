@@ -63,10 +63,18 @@ router = APIRouter(tags=["profiles"])
 # --- Seed data ---
 
 CATEGORY_SEEDS = [
-    "Home Services", "Cleaning", "Beauty & Wellness", "Automotive",
-    "Technology", "Tutoring & Education", "Events & Entertainment",
-    "Health & Fitness", "Professional Services", "Skilled Trades",
-    "Creative Services", "Construction",
+    "Home Services",
+    "Cleaning",
+    "Beauty & Wellness",
+    "Automotive",
+    "Technology",
+    "Tutoring & Education",
+    "Events & Entertainment",
+    "Health & Fitness",
+    "Professional Services",
+    "Skilled Trades",
+    "Creative Services",
+    "Construction",
 ]
 
 
@@ -81,14 +89,16 @@ async def seed_categories(db: AsyncSession) -> None:
         return
     now = datetime.now(UTC)
     for i, name in enumerate(CATEGORY_SEEDS):
-        db.add(Category(
-            id=str(uuid.uuid4()),
-            name=name,
-            slug=_slugify(name),
-            is_active=True,
-            sort_order=i,
-            created_at=now,
-        ))
+        db.add(
+            Category(
+                id=str(uuid.uuid4()),
+                name=name,
+                slug=_slugify(name),
+                is_active=True,
+                sort_order=i,
+                created_at=now,
+            )
+        )
     await db.flush()
 
 
@@ -102,9 +112,7 @@ def _get_user_id(request: Request) -> str:
 
 async def _get_provider_profile(user_id: str, db: AsyncSession) -> ProviderProfile:
     """Get the current user's provider profile or raise 404."""
-    result = await db.execute(
-        select(ProviderProfile).where(ProviderProfile.user_id == user_id)
-    )
+    result = await db.execute(select(ProviderProfile).where(ProviderProfile.user_id == user_id))
     pp = result.scalar_one_or_none()
     if not pp:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider profile not found")
@@ -179,17 +187,20 @@ async def update_or_create_profile(
 
     await db.flush()
 
-    await publish_event("profile.updated", {
-        "id": profile.id,
-        "user_id": user_id,
-        "display_name": profile.display_name,
-        "bio": profile.bio,
-        "skills": profile.skills,
-        "service_category": profile.service_category,
-        "latitude": data.latitude,
-        "longitude": data.longitude,
-        "parish": parish,
-    })
+    await publish_event(
+        "profile.updated",
+        {
+            "id": profile.id,
+            "user_id": user_id,
+            "display_name": profile.display_name,
+            "bio": profile.bio,
+            "skills": profile.skills,
+            "service_category": profile.service_category,
+            "latitude": data.latitude,
+            "longitude": data.longitude,
+            "parish": parish,
+        },
+    )
 
     return profile
 
@@ -289,10 +300,13 @@ async def follow_user(data: FollowRequest, request: Request, db: AsyncSession = 
     await _update_follower_counts(follower_id, following_id, db)
     await db.flush()
 
-    await publish_event("user.followed", {
-        "follower_id": follower_id,
-        "following_id": following_id,
-    })
+    await publish_event(
+        "user.followed",
+        {
+            "follower_id": follower_id,
+            "following_id": following_id,
+        },
+    )
 
     return {"status": "following", "following_id": following_id}
 
@@ -362,18 +376,14 @@ async def _update_follower_counts(follower_id: str, following_id: str, db: Async
     follower_profile = await db.execute(select(Profile).where(Profile.user_id == follower_id))
     fp = follower_profile.scalar_one_or_none()
     if fp:
-        count_result = await db.execute(
-            select(func.count()).where(Follow.follower_id == follower_id)
-        )
+        count_result = await db.execute(select(func.count()).where(Follow.follower_id == follower_id))
         fp.following_count = count_result.scalar() or 0
 
     # Update follower_count for followed user
     following_profile = await db.execute(select(Profile).where(Profile.user_id == following_id))
     fgp = following_profile.scalar_one_or_none()
     if fgp:
-        count_result = await db.execute(
-            select(func.count()).where(Follow.following_id == following_id)
-        )
+        count_result = await db.execute(select(func.count()).where(Follow.following_id == following_id))
         fgp.follower_count = count_result.scalar() or 0
 
 
@@ -415,12 +425,15 @@ async def tag_user(data: TagUserRequest, request: Request, db: AsyncSession = De
     db.add(tag)
     await db.flush()
 
-    await publish_event("user.tagged", {
-        "tagger_id": tagger_id,
-        "tagged_user_id": data.tagged_user_id,
-        "entity_type": data.entity_type,
-        "entity_id": data.entity_id,
-    })
+    await publish_event(
+        "user.tagged",
+        {
+            "tagger_id": tagger_id,
+            "tagged_user_id": data.tagged_user_id,
+            "entity_type": data.entity_type,
+            "entity_id": data.entity_id,
+        },
+    )
 
     return {"id": tag.id, "tagged_user_id": data.tagged_user_id, "entity_type": data.entity_type}
 
@@ -478,9 +491,7 @@ class VerificationSubmit(BaseModel):
 
 
 @router.post("/verification/submit", status_code=status.HTTP_201_CREATED)
-async def submit_verification(
-    data: VerificationSubmit, request: Request, db: AsyncSession = Depends(get_db)
-):
+async def submit_verification(data: VerificationSubmit, request: Request, db: AsyncSession = Depends(get_db)):
     """Submit documents for provider verification (legacy endpoint)."""
     user_id = _get_user_id(request)
 
@@ -550,11 +561,7 @@ async def verification_status(request: Request, db: AsyncSession = Depends(get_d
 async def list_categories(db: AsyncSession = Depends(get_db)):
     """List all active categories."""
     await seed_categories(db)
-    result = await db.execute(
-        select(Category)
-        .where(Category.is_active.is_(True))
-        .order_by(Category.sort_order)
-    )
+    result = await db.execute(select(Category).where(Category.is_active.is_(True)).order_by(Category.sort_order))
     return result.scalars().all()
 
 
@@ -567,7 +574,8 @@ async def get_category_by_slug(slug: str, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
 
     count_result = await db.execute(
-        select(func.count()).select_from(ProviderService)
+        select(func.count())
+        .select_from(ProviderService)
         .where(ProviderService.category_id == cat.id, ProviderService.is_active.is_(True))
     )
     provider_count = count_result.scalar() or 0
@@ -592,16 +600,12 @@ async def get_category_by_slug(slug: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/provider-profile", status_code=status.HTTP_201_CREATED, response_model=ProviderProfileResponse)
-async def create_provider_profile(
-    data: ProviderProfileCreate, request: Request, db: AsyncSession = Depends(get_db)
-):
+async def create_provider_profile(data: ProviderProfileCreate, request: Request, db: AsyncSession = Depends(get_db)):
     """Create provider profile (begins onboarding)."""
     user_id = _get_user_id(request)
 
     # Check existing
-    existing = await db.execute(
-        select(ProviderProfile).where(ProviderProfile.user_id == user_id)
-    )
+    existing = await db.execute(select(ProviderProfile).where(ProviderProfile.user_id == user_id))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Provider profile already exists")
 
@@ -642,9 +646,7 @@ async def get_my_provider_profile(request: Request, db: AsyncSession = Depends(g
 
 
 @router.put("/provider-profile/me", response_model=ProviderProfileResponse)
-async def update_my_provider_profile(
-    data: ProviderProfileUpdate, request: Request, db: AsyncSession = Depends(get_db)
-):
+async def update_my_provider_profile(data: ProviderProfileUpdate, request: Request, db: AsyncSession = Depends(get_db)):
     """Update provider profile."""
     user_id = _get_user_id(request)
     pp = await _get_provider_profile(user_id, db)
@@ -655,11 +657,13 @@ async def update_my_provider_profile(
 
     # Recalculate completion
     svc_result = await db.execute(
-        select(func.count()).select_from(ProviderService)
+        select(func.count())
+        .select_from(ProviderService)
         .where(ProviderService.provider_id == pp.id, ProviderService.is_active.is_(True))
     )
     avail_result = await db.execute(
-        select(func.count()).select_from(AvailabilitySlot)
+        select(func.count())
+        .select_from(AvailabilitySlot)
         .where(AvailabilitySlot.provider_id == pp.id, AvailabilitySlot.is_active.is_(True))
     )
     port_result = await db.execute(
@@ -679,9 +683,7 @@ async def update_my_provider_profile(
 @router.get("/provider-profile/{user_id}", response_model=ProviderProfileResponse)
 async def get_provider_profile_public(user_id: str, db: AsyncSession = Depends(get_db)):
     """Get a provider's public profile."""
-    result = await db.execute(
-        select(ProviderProfile).where(ProviderProfile.user_id == user_id)
-    )
+    result = await db.execute(select(ProviderProfile).where(ProviderProfile.user_id == user_id))
     pp = result.scalar_one_or_none()
     if not pp:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider profile not found")
@@ -693,9 +695,7 @@ async def get_provider_profile_public(user_id: str, db: AsyncSession = Depends(g
 
 
 @router.put("/provider-profile/me/onboarding-step", response_model=ProviderProfileResponse)
-async def update_onboarding_step(
-    data: OnboardingStepUpdate, request: Request, db: AsyncSession = Depends(get_db)
-):
+async def update_onboarding_step(data: OnboardingStepUpdate, request: Request, db: AsyncSession = Depends(get_db)):
     """Update onboarding progress."""
     user_id = _get_user_id(request)
     pp = await _get_provider_profile(user_id, db)
@@ -713,9 +713,7 @@ async def update_onboarding_step(
 
 
 @router.post("/services", status_code=status.HTTP_201_CREATED, response_model=ProviderServiceResponse)
-async def create_service(
-    data: ProviderServiceCreate, request: Request, db: AsyncSession = Depends(get_db)
-):
+async def create_service(data: ProviderServiceCreate, request: Request, db: AsyncSession = Depends(get_db)):
     """Create service for current provider."""
     user_id = _get_user_id(request)
     pp = await _get_provider_profile(user_id, db)
@@ -766,9 +764,7 @@ async def update_service(
     pp = await _get_provider_profile(user_id, db)
 
     result = await db.execute(
-        select(ProviderService).where(
-            ProviderService.id == service_id, ProviderService.provider_id == pp.id
-        )
+        select(ProviderService).where(ProviderService.id == service_id, ProviderService.provider_id == pp.id)
     )
     svc = result.scalar_one_or_none()
     if not svc:
@@ -782,17 +778,13 @@ async def update_service(
 
 
 @router.delete("/services/{service_id}")
-async def deactivate_service(
-    service_id: str, request: Request, db: AsyncSession = Depends(get_db)
-):
+async def deactivate_service(service_id: str, request: Request, db: AsyncSession = Depends(get_db)):
     """Deactivate service."""
     user_id = _get_user_id(request)
     pp = await _get_provider_profile(user_id, db)
 
     result = await db.execute(
-        select(ProviderService).where(
-            ProviderService.id == service_id, ProviderService.provider_id == pp.id
-        )
+        select(ProviderService).where(ProviderService.id == service_id, ProviderService.provider_id == pp.id)
     )
     svc = result.scalar_one_or_none()
     if not svc:
@@ -826,9 +818,7 @@ async def create_package(
 
     # Verify service belongs to provider
     svc_result = await db.execute(
-        select(ProviderService).where(
-            ProviderService.id == service_id, ProviderService.provider_id == pp.id
-        )
+        select(ProviderService).where(ProviderService.id == service_id, ProviderService.provider_id == pp.id)
     )
     if not svc_result.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service not found")
@@ -870,9 +860,7 @@ async def update_package(
 
     # Verify ownership via service
     svc_result = await db.execute(
-        select(ProviderService).where(
-            ProviderService.id == pkg.service_id, ProviderService.provider_id == pp.id
-        )
+        select(ProviderService).where(ProviderService.id == pkg.service_id, ProviderService.provider_id == pp.id)
     )
     if not svc_result.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your package")
@@ -884,9 +872,7 @@ async def update_package(
 
 
 @router.delete("/packages/{package_id}")
-async def deactivate_package(
-    package_id: str, request: Request, db: AsyncSession = Depends(get_db)
-):
+async def deactivate_package(package_id: str, request: Request, db: AsyncSession = Depends(get_db)):
     """Deactivate package."""
     user_id = _get_user_id(request)
     pp = await _get_provider_profile(user_id, db)
@@ -897,9 +883,7 @@ async def deactivate_package(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Package not found")
 
     svc_result = await db.execute(
-        select(ProviderService).where(
-            ProviderService.id == pkg.service_id, ProviderService.provider_id == pp.id
-        )
+        select(ProviderService).where(ProviderService.id == pkg.service_id, ProviderService.provider_id == pp.id)
     )
     if not svc_result.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your package")
@@ -915,17 +899,13 @@ async def deactivate_package(
 
 
 @router.put("/availability")
-async def set_availability(
-    data: AvailabilityBulkUpdate, request: Request, db: AsyncSession = Depends(get_db)
-):
+async def set_availability(data: AvailabilityBulkUpdate, request: Request, db: AsyncSession = Depends(get_db)):
     """Set availability slots (bulk upsert — replaces all existing slots)."""
     user_id = _get_user_id(request)
     pp = await _get_provider_profile(user_id, db)
 
     # Delete existing slots
-    await db.execute(
-        delete(AvailabilitySlot).where(AvailabilitySlot.provider_id == pp.id)
-    )
+    await db.execute(delete(AvailabilitySlot).where(AvailabilitySlot.provider_id == pp.id))
 
     now = datetime.now(UTC)
     slots = []
@@ -1013,9 +993,7 @@ async def get_provider_availability(provider_id: str, db: AsyncSession = Depends
 
 
 @router.post("/portfolio", status_code=status.HTTP_201_CREATED, response_model=PortfolioItemResponse)
-async def add_portfolio_item(
-    data: PortfolioItemCreate, request: Request, db: AsyncSession = Depends(get_db)
-):
+async def add_portfolio_item(data: PortfolioItemCreate, request: Request, db: AsyncSession = Depends(get_db)):
     """Add portfolio item."""
     user_id = _get_user_id(request)
     pp = await _get_provider_profile(user_id, db)
@@ -1037,9 +1015,7 @@ async def list_my_portfolio(request: Request, db: AsyncSession = Depends(get_db)
     user_id = _get_user_id(request)
     pp = await _get_provider_profile(user_id, db)
     result = await db.execute(
-        select(PortfolioItem)
-        .where(PortfolioItem.provider_id == pp.id)
-        .order_by(PortfolioItem.sort_order)
+        select(PortfolioItem).where(PortfolioItem.provider_id == pp.id).order_by(PortfolioItem.sort_order)
     )
     return result.scalars().all()
 
@@ -1048,9 +1024,7 @@ async def list_my_portfolio(request: Request, db: AsyncSession = Depends(get_db)
 async def list_provider_portfolio(provider_id: str, db: AsyncSession = Depends(get_db)):
     """List provider's public portfolio."""
     result = await db.execute(
-        select(PortfolioItem)
-        .where(PortfolioItem.provider_id == provider_id)
-        .order_by(PortfolioItem.sort_order)
+        select(PortfolioItem).where(PortfolioItem.provider_id == provider_id).order_by(PortfolioItem.sort_order)
     )
     return result.scalars().all()
 
@@ -1077,9 +1051,7 @@ async def update_portfolio_item(
 
 
 @router.delete("/portfolio/{item_id}")
-async def delete_portfolio_item(
-    item_id: str, request: Request, db: AsyncSession = Depends(get_db)
-):
+async def delete_portfolio_item(item_id: str, request: Request, db: AsyncSession = Depends(get_db)):
     """Delete portfolio item."""
     user_id = _get_user_id(request)
     pp = await _get_provider_profile(user_id, db)
@@ -1148,48 +1120,46 @@ async def list_my_verifications(request: Request, db: AsyncSession = Depends(get
             select(VerificationAsset).where(VerificationAsset.verification_request_id == vr.id)
         )
         assets = assets_result.scalars().all()
-        response.append({
-            "id": vr.id,
-            "user_id": vr.user_id,
-            "type": vr.type,
-            "status": vr.status,
-            "submitted_at": vr.submitted_at.isoformat() if vr.submitted_at else None,
-            "reviewed_at": vr.reviewed_at.isoformat() if vr.reviewed_at else None,
-            "reviewer_notes": vr.reviewer_notes,
-            "rejection_reason": vr.rejection_reason,
-            "resubmission_guidance": vr.resubmission_guidance,
-            "badge_level": vr.badge_level,
-            "created_at": vr.created_at.isoformat(),
-            "updated_at": vr.updated_at.isoformat(),
-            "assets": [
-                {
-                    "id": a.id,
-                    "verification_request_id": a.verification_request_id,
-                    "asset_type": a.asset_type,
-                    "file_url": a.file_url,
-                    "file_key": a.file_key,
-                    "thumbnail_url": a.thumbnail_url,
-                    "mime_type": a.mime_type,
-                    "file_size_bytes": a.file_size_bytes,
-                    "created_at": a.created_at.isoformat(),
-                }
-                for a in assets
-            ],
-        })
+        response.append(
+            {
+                "id": vr.id,
+                "user_id": vr.user_id,
+                "type": vr.type,
+                "status": vr.status,
+                "submitted_at": vr.submitted_at.isoformat() if vr.submitted_at else None,
+                "reviewed_at": vr.reviewed_at.isoformat() if vr.reviewed_at else None,
+                "reviewer_notes": vr.reviewer_notes,
+                "rejection_reason": vr.rejection_reason,
+                "resubmission_guidance": vr.resubmission_guidance,
+                "badge_level": vr.badge_level,
+                "created_at": vr.created_at.isoformat(),
+                "updated_at": vr.updated_at.isoformat(),
+                "assets": [
+                    {
+                        "id": a.id,
+                        "verification_request_id": a.verification_request_id,
+                        "asset_type": a.asset_type,
+                        "file_url": a.file_url,
+                        "file_key": a.file_key,
+                        "thumbnail_url": a.thumbnail_url,
+                        "mime_type": a.mime_type,
+                        "file_size_bytes": a.file_size_bytes,
+                        "created_at": a.created_at.isoformat(),
+                    }
+                    for a in assets
+                ],
+            }
+        )
     return response
 
 
 @router.get("/verification/{request_id}")
-async def get_verification_request(
-    request_id: str, request: Request, db: AsyncSession = Depends(get_db)
-):
+async def get_verification_request(request_id: str, request: Request, db: AsyncSession = Depends(get_db)):
     """Get verification request detail with assets."""
     user_id = _get_user_id(request)
 
     result = await db.execute(
-        select(VerificationRequest).where(
-            VerificationRequest.id == request_id, VerificationRequest.user_id == user_id
-        )
+        select(VerificationRequest).where(VerificationRequest.id == request_id, VerificationRequest.user_id == user_id)
     )
     vr = result.scalar_one_or_none()
     if not vr:
@@ -1239,9 +1209,7 @@ async def add_verification_asset(
     user_id = _get_user_id(request)
 
     result = await db.execute(
-        select(VerificationRequest).where(
-            VerificationRequest.id == request_id, VerificationRequest.user_id == user_id
-        )
+        select(VerificationRequest).where(VerificationRequest.id == request_id, VerificationRequest.user_id == user_id)
     )
     vr = result.scalar_one_or_none()
     if not vr:
@@ -1272,16 +1240,12 @@ async def add_verification_asset(
 
 
 @router.post("/verification/{request_id}/submit")
-async def submit_verification_request(
-    request_id: str, request: Request, db: AsyncSession = Depends(get_db)
-):
+async def submit_verification_request(request_id: str, request: Request, db: AsyncSession = Depends(get_db)):
     """Submit verification request for review."""
     user_id = _get_user_id(request)
 
     result = await db.execute(
-        select(VerificationRequest).where(
-            VerificationRequest.id == request_id, VerificationRequest.user_id == user_id
-        )
+        select(VerificationRequest).where(VerificationRequest.id == request_id, VerificationRequest.user_id == user_id)
     )
     vr = result.scalar_one_or_none()
     if not vr:
@@ -1291,7 +1255,8 @@ async def submit_verification_request(
 
     # Must have at least 1 asset
     asset_count = await db.execute(
-        select(func.count()).select_from(VerificationAsset)
+        select(func.count())
+        .select_from(VerificationAsset)
         .where(VerificationAsset.verification_request_id == request_id)
     )
     if not asset_count.scalar():
@@ -1315,16 +1280,12 @@ async def submit_verification_request(
 
 
 @router.post("/verification/{request_id}/resubmit")
-async def resubmit_verification(
-    request_id: str, request: Request, db: AsyncSession = Depends(get_db)
-):
+async def resubmit_verification(request_id: str, request: Request, db: AsyncSession = Depends(get_db)):
     """Resubmit verification after rejection."""
     user_id = _get_user_id(request)
 
     result = await db.execute(
-        select(VerificationRequest).where(
-            VerificationRequest.id == request_id, VerificationRequest.user_id == user_id
-        )
+        select(VerificationRequest).where(VerificationRequest.id == request_id, VerificationRequest.user_id == user_id)
     )
     vr = result.scalar_one_or_none()
     if not vr:
@@ -1378,9 +1339,7 @@ class UserPortfolioUpdate(BaseModel):
 
 
 @router.post("/me/portfolio", status_code=status.HTTP_201_CREATED)
-async def add_user_portfolio_item(
-    data: UserPortfolioCreate, request: Request, db: AsyncSession = Depends(get_db)
-):
+async def add_user_portfolio_item(data: UserPortfolioCreate, request: Request, db: AsyncSession = Depends(get_db)):
     """Add portfolio item for the current user."""
     user_id = _get_user_id(request)
     now = datetime.now(UTC)
@@ -1419,9 +1378,7 @@ async def list_user_portfolio(request: Request, db: AsyncSession = Depends(get_d
     user_id = _get_user_id(request)
 
     result = await db.execute(
-        select(PortfolioItem)
-        .where(PortfolioItem.user_id == user_id)
-        .order_by(PortfolioItem.display_order)
+        select(PortfolioItem).where(PortfolioItem.user_id == user_id).order_by(PortfolioItem.display_order)
     )
     items = result.scalars().all()
 
@@ -1471,9 +1428,7 @@ async def update_user_portfolio_item(
 
 
 @router.delete("/me/portfolio/{item_id}")
-async def delete_user_portfolio_item(
-    item_id: str, request: Request, db: AsyncSession = Depends(get_db)
-):
+async def delete_user_portfolio_item(item_id: str, request: Request, db: AsyncSession = Depends(get_db)):
     """Delete a portfolio item."""
     user_id = _get_user_id(request)
 
@@ -1495,9 +1450,7 @@ async def my_profile_analytics(request: Request, db: AsyncSession = Depends(get_
     user_id = _get_user_id(request)
 
     # Total profile views
-    views_result = await db.execute(
-        select(func.count()).where(ProfileView.profile_user_id == user_id)
-    )
+    views_result = await db.execute(select(func.count()).where(ProfileView.profile_user_id == user_id))
     total_views = views_result.scalar() or 0
 
     # Views last 7 days
@@ -1531,9 +1484,7 @@ async def my_profile_analytics(request: Request, db: AsyncSession = Depends(get_
     sources = {row[0] or "unknown": row[1] for row in sources_result.all()}
 
     # Portfolio item count
-    portfolio_result = await db.execute(
-        select(func.count()).where(PortfolioItem.user_id == user_id)
-    )
+    portfolio_result = await db.execute(select(func.count()).where(PortfolioItem.user_id == user_id))
     portfolio_count = portfolio_result.scalar() or 0
 
     return {
@@ -1633,9 +1584,7 @@ async def generate_share_link(request: Request, db: AsyncSession = Depends(get_d
         base_slug = profile.display_name.lower().replace(" ", "-") if profile.display_name else user_id
         base_slug = quote(base_slug, safe="-")
         # Check uniqueness
-        check = await db.execute(
-            select(func.count()).where(Profile.public_url_slug == base_slug)
-        )
+        check = await db.execute(select(func.count()).where(Profile.public_url_slug == base_slug))
         if check.scalar():
             base_slug = f"{base_slug}-{str(uuid.uuid4())[:8]}"
         profile.public_url_slug = base_slug
@@ -1699,14 +1648,10 @@ async def public_user_portfolio(user_id: str, db: AsyncSession = Depends(get_db)
 @router.get("/{identifier}", response_model=ProfileResponse)
 async def get_profile(identifier: str, db: AsyncSession = Depends(get_db)):
     # Try user_id first, then fall back to profile id
-    result = await db.execute(
-        select(Profile).where(Profile.user_id == identifier, Profile.is_active.is_(True))
-    )
+    result = await db.execute(select(Profile).where(Profile.user_id == identifier, Profile.is_active.is_(True)))
     profile = result.scalar_one_or_none()
     if not profile:
-        result = await db.execute(
-            select(Profile).where(Profile.id == identifier, Profile.is_active.is_(True))
-        )
+        result = await db.execute(select(Profile).where(Profile.id == identifier, Profile.is_active.is_(True)))
         profile = result.scalar_one_or_none()
     if not profile:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")

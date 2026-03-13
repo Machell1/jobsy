@@ -91,9 +91,7 @@ async def handle_new_message(payload: dict) -> None:
 
     # Look up conversation participants directly from the shared database
     async with async_session_factory() as db:
-        result = await db.execute(
-            select(_Conversation).where(_Conversation.id == conversation_id)
-        )
+        result = await db.execute(select(_Conversation).where(_Conversation.id == conversation_id))
         conversation = result.scalar_one_or_none()
 
     if conversation is None:

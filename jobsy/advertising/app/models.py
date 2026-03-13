@@ -44,9 +44,7 @@ class AdCampaign(Base):
     created_at = Column(DateTime(timezone=True), nullable=False)
     updated_at = Column(DateTime(timezone=True), nullable=False)
 
-    __table_args__ = (
-        Index("idx_campaign_status", "status"),
-    )
+    __table_args__ = (Index("idx_campaign_status", "status"),)
 
 
 class AdImpression(Base):

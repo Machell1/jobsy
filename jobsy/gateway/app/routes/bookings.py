@@ -32,7 +32,9 @@ VALID_TRANSITIONS = {
     "quote_sent": {"quote_accepted", "cancelled"},
     "quote_accepted": {"booking_confirmed", "cancelled"},
     "booking_confirmed": {
-        "in_progress", "cancelled", "rescheduled",
+        "in_progress",
+        "cancelled",
+        "rescheduled",
     },
     "in_progress": {"completed", "disputed"},
     "completed": {"reviewed", "disputed"},
@@ -52,10 +54,12 @@ class BookingCreate(BaseModel):
     scheduled_time_start: str | None = None
     scheduled_time_end: str | None = None
     location_mode: str | None = Field(
-        default="onsite", max_length=20,
+        default="onsite",
+        max_length=20,
     )
     location_text: str | None = Field(
-        default=None, max_length=500,
+        default=None,
+        max_length=500,
     )
     parish: str | None = Field(default=None, max_length=50)
 
@@ -95,41 +99,20 @@ def _booking_response(b: Booking) -> dict:
         "title": b.title,
         "description": b.description,
         "status": b.status,
-        "scheduled_date": (
-            b.scheduled_date.isoformat()
-            if b.scheduled_date else None
-        ),
-        "scheduled_time_start": (
-            b.scheduled_time_start.isoformat()
-            if b.scheduled_time_start else None
-        ),
-        "scheduled_time_end": (
-            b.scheduled_time_end.isoformat()
-            if b.scheduled_time_end else None
-        ),
+        "scheduled_date": (b.scheduled_date.isoformat() if b.scheduled_date else None),
+        "scheduled_time_start": (b.scheduled_time_start.isoformat() if b.scheduled_time_start else None),
+        "scheduled_time_end": (b.scheduled_time_end.isoformat() if b.scheduled_time_end else None),
         "location_mode": b.location_mode,
         "location_text": b.location_text,
         "parish": b.parish,
-        "latitude": (
-            float(b.latitude) if b.latitude is not None
-            else None
-        ),
-        "longitude": (
-            float(b.longitude) if b.longitude is not None
-            else None
-        ),
-        "total_amount": (
-            float(b.total_amount) if b.total_amount is not None
-            else None
-        ),
+        "latitude": (float(b.latitude) if b.latitude is not None else None),
+        "longitude": (float(b.longitude) if b.longitude is not None else None),
+        "total_amount": (float(b.total_amount) if b.total_amount is not None else None),
         "currency": b.currency,
         "payment_status": b.payment_status,
         "cancellation_reason": b.cancellation_reason,
         "cancelled_by": b.cancelled_by,
-        "completed_at": (
-            b.completed_at.isoformat() if b.completed_at
-            else None
-        ),
+        "completed_at": (b.completed_at.isoformat() if b.completed_at else None),
         "created_at": b.created_at.isoformat(),
         "updated_at": b.updated_at.isoformat(),
     }
@@ -158,10 +141,7 @@ def _quote_response(q: Quote) -> dict:
         "amount": float(q.amount),
         "currency": q.currency,
         "description": q.description,
-        "valid_until": (
-            q.valid_until.isoformat() if q.valid_until
-            else None
-        ),
+        "valid_until": (q.valid_until.isoformat() if q.valid_until else None),
         "status": q.status,
         "created_at": q.created_at.isoformat(),
         "updated_at": q.updated_at.isoformat(),
@@ -197,7 +177,8 @@ async def _create_event(
 
 
 async def _get_booking_or_404(
-    db: AsyncSession, booking_id: str,
+    db: AsyncSession,
+    booking_id: str,
 ) -> Booking:
     result = await db.execute(
         select(Booking).where(Booking.id == booking_id),
@@ -212,12 +193,10 @@ async def _get_booking_or_404(
 
 
 def _check_booking_access(
-    booking: Booking, user_id: str,
+    booking: Booking,
+    user_id: str,
 ) -> None:
-    if (
-        booking.customer_id != user_id
-        and booking.provider_id != user_id
-    ):
+    if booking.customer_id != user_id and booking.provider_id != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized for this booking",
@@ -225,6 +204,7 @@ def _check_booking_access(
 
 
 # --- Routes ---
+
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_booking(
@@ -236,18 +216,9 @@ async def create_booking(
     customer_id = user["user_id"]
     now = datetime.now(UTC)
 
-    scheduled_date = (
-        date_type.fromisoformat(data.scheduled_date)
-        if data.scheduled_date else None
-    )
-    scheduled_time_start = (
-        time_type.fromisoformat(data.scheduled_time_start)
-        if data.scheduled_time_start else None
-    )
-    scheduled_time_end = (
-        time_type.fromisoformat(data.scheduled_time_end)
-        if data.scheduled_time_end else None
-    )
+    scheduled_date = date_type.fromisoformat(data.scheduled_date) if data.scheduled_date else None
+    scheduled_time_start = time_type.fromisoformat(data.scheduled_time_start) if data.scheduled_time_start else None
+    scheduled_time_end = time_type.fromisoformat(data.scheduled_time_end) if data.scheduled_time_end else None
 
     booking = Booking(
         id=str(uuid.uuid4()),
@@ -273,17 +244,24 @@ async def create_booking(
     await db.flush()
 
     await _create_event(
-        db, booking.id, "status_change",
-        customer_id, "customer",
-        from_status=None, to_status="inquiry",
+        db,
+        booking.id,
+        "status_change",
+        customer_id,
+        "customer",
+        from_status=None,
+        to_status="inquiry",
         note="Booking inquiry created",
     )
 
-    await publish_event("booking.created", {
-        "booking_id": booking.id,
-        "customer_id": customer_id,
-        "provider_id": data.provider_id,
-    })
+    await publish_event(
+        "booking.created",
+        {
+            "booking_id": booking.id,
+            "customer_id": customer_id,
+            "provider_id": data.provider_id,
+        },
+    )
 
     return _booking_response(booking)
 
@@ -292,7 +270,8 @@ async def create_booking(
 async def list_bookings(
     role: str = Query(default="customer"),
     status_filter: str | None = Query(
-        default=None, alias="status",
+        default=None,
+        alias="status",
     ),
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=20, le=100),
@@ -312,9 +291,13 @@ async def list_bookings(
     if status_filter:
         query = query.where(Booking.status == status_filter)
 
-    query = query.order_by(
-        Booking.created_at.desc(),
-    ).offset(offset).limit(limit)
+    query = (
+        query.order_by(
+            Booking.created_at.desc(),
+        )
+        .offset(offset)
+        .limit(limit)
+    )
     result = await db.execute(query)
     bookings = result.scalars().all()
     return [_booking_response(b) for b in bookings]
@@ -329,24 +312,19 @@ async def booking_stats(
     user_id = user["user_id"]
 
     total_result = await db.execute(
-        select(func.count(Booking.id)).where(
-            (Booking.customer_id == user_id)
-            | (Booking.provider_id == user_id)
-        )
+        select(func.count(Booking.id)).where((Booking.customer_id == user_id) | (Booking.provider_id == user_id))
     )
     total = total_result.scalar() or 0
 
     status_result = await db.execute(
         select(
-            Booking.status, func.count(Booking.id),
-        ).where(
-            (Booking.customer_id == user_id)
-            | (Booking.provider_id == user_id)
-        ).group_by(Booking.status)
+            Booking.status,
+            func.count(Booking.id),
+        )
+        .where((Booking.customer_id == user_id) | (Booking.provider_id == user_id))
+        .group_by(Booking.status)
     )
-    by_status = {
-        row[0]: row[1] for row in status_result.all()
-    }
+    by_status = {row[0]: row[1] for row in status_result.all()}
 
     completed = by_status.get("completed", 0)
     rate = (completed / total * 100) if total > 0 else 0
@@ -370,16 +348,12 @@ async def get_booking(
     _check_booking_access(booking, user_id)
 
     events_result = await db.execute(
-        select(BookingEvent)
-        .where(BookingEvent.booking_id == booking_id)
-        .order_by(BookingEvent.created_at)
+        select(BookingEvent).where(BookingEvent.booking_id == booking_id).order_by(BookingEvent.created_at)
     )
     events = events_result.scalars().all()
 
     quotes_result = await db.execute(
-        select(Quote)
-        .where(Quote.booking_id == booking_id)
-        .order_by(Quote.created_at.desc())
+        select(Quote).where(Quote.booking_id == booking_id).order_by(Quote.created_at.desc())
     )
     quotes = quotes_result.scalars().all()
 
@@ -405,10 +379,7 @@ async def update_booking_status(
     if data.status not in allowed:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=(
-                f"Cannot transition from '{booking.status}'"
-                f" to '{data.status}'"
-            ),
+            detail=(f"Cannot transition from '{booking.status}' to '{data.status}'"),
         )
 
     old_status = booking.status
@@ -425,23 +396,27 @@ async def update_booking_status(
 
     await db.flush()
 
-    actor_role = (
-        "provider" if user_id == booking.provider_id
-        else "customer"
-    )
+    actor_role = "provider" if user_id == booking.provider_id else "customer"
     await _create_event(
-        db, booking.id, "status_change",
-        user_id, actor_role,
-        from_status=old_status, to_status=data.status,
+        db,
+        booking.id,
+        "status_change",
+        user_id,
+        actor_role,
+        from_status=old_status,
+        to_status=data.status,
         note=data.note,
     )
 
-    await publish_event("booking.status_changed", {
-        "booking_id": booking.id,
-        "from_status": old_status,
-        "to_status": data.status,
-        "actor_id": user_id,
-    })
+    await publish_event(
+        "booking.status_changed",
+        {
+            "booking_id": booking.id,
+            "from_status": old_status,
+            "to_status": data.status,
+            "actor_id": user_id,
+        },
+    )
 
     return _booking_response(booking)
 
@@ -463,29 +438,23 @@ async def reschedule_booking(
         data.scheduled_date,
     )
     booking.scheduled_time_start = (
-        time_type.fromisoformat(data.scheduled_time_start)
-        if data.scheduled_time_start else None
+        time_type.fromisoformat(data.scheduled_time_start) if data.scheduled_time_start else None
     )
-    booking.scheduled_time_end = (
-        time_type.fromisoformat(data.scheduled_time_end)
-        if data.scheduled_time_end else None
-    )
+    booking.scheduled_time_end = time_type.fromisoformat(data.scheduled_time_end) if data.scheduled_time_end else None
     booking.updated_at = now
     await db.flush()
 
-    actor_role = (
-        "provider" if user_id == booking.provider_id
-        else "customer"
-    )
+    actor_role = "provider" if user_id == booking.provider_id else "customer"
     await _create_event(
-        db, booking.id, "reschedule",
-        user_id, actor_role,
+        db,
+        booking.id,
+        "reschedule",
+        user_id,
+        actor_role,
         note=data.note,
         metadata={
             "scheduled_date": data.scheduled_date,
-            "scheduled_time_start": (
-                data.scheduled_time_start
-            ),
+            "scheduled_time_start": (data.scheduled_time_start),
             "scheduled_time_end": data.scheduled_time_end,
         },
     )
@@ -514,10 +483,7 @@ async def create_quote(
         )
 
     now = datetime.now(UTC)
-    valid_until = (
-        datetime.fromisoformat(data.valid_until)
-        if data.valid_until else None
-    )
+    valid_until = datetime.fromisoformat(data.valid_until) if data.valid_until else None
 
     quote = Quote(
         id=str(uuid.uuid4()),
@@ -539,9 +505,13 @@ async def create_quote(
     await db.flush()
 
     await _create_event(
-        db, booking.id, "status_change",
-        user_id, "provider",
-        from_status=old_status, to_status="quote_sent",
+        db,
+        booking.id,
+        "status_change",
+        user_id,
+        "provider",
+        from_status=old_status,
+        to_status="quote_sent",
         note=f"Quote of {data.amount} {data.currency} sent",
     )
 
@@ -559,11 +529,7 @@ async def list_quotes(
     booking = await _get_booking_or_404(db, booking_id)
     _check_booking_access(booking, user_id)
 
-    result = await db.execute(
-        select(Quote)
-        .where(Quote.booking_id == booking_id)
-        .order_by(Quote.created_at.desc())
-    )
+    result = await db.execute(select(Quote).where(Quote.booking_id == booking_id).order_by(Quote.created_at.desc()))
     quotes = result.scalars().all()
     return [_quote_response(q) for q in quotes]
 
@@ -611,8 +577,11 @@ async def respond_to_quote(
         await db.flush()
 
         await _create_event(
-            db, booking.id, "status_change",
-            user_id, "customer",
+            db,
+            booking.id,
+            "status_change",
+            user_id,
+            "customer",
             from_status=old_status,
             to_status="quote_accepted",
             note=f"Quote of {quote.amount} accepted",
@@ -623,8 +592,11 @@ async def respond_to_quote(
         await db.flush()
 
         await _create_event(
-            db, booking.id, "quote_rejected",
-            user_id, "customer",
+            db,
+            booking.id,
+            "quote_rejected",
+            user_id,
+            "customer",
             note=f"Quote of {quote.amount} rejected",
         )
 

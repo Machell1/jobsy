@@ -74,9 +74,7 @@ class BranchUpdate(BaseModel):
 
 
 async def _get_my_business(user_id: str, db: AsyncSession) -> BusinessProfile:
-    result = await db.execute(
-        select(BusinessProfile).where(BusinessProfile.user_id == user_id)
-    )
+    result = await db.execute(select(BusinessProfile).where(BusinessProfile.user_id == user_id))
     biz = result.scalar_one_or_none()
     if not biz:
         raise HTTPException(
@@ -97,9 +95,7 @@ async def register_business(
 ):
     """Register a new business account."""
     # Check if user already has a business
-    existing = await db.execute(
-        select(BusinessProfile).where(BusinessProfile.user_id == user["user_id"])
-    )
+    existing = await db.execute(select(BusinessProfile).where(BusinessProfile.user_id == user["user_id"]))
     if existing.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -182,9 +178,7 @@ async def add_staff(
         )
     )
     if existing.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Staff member already exists"
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Staff member already exists")
 
     now = datetime.now(UTC)
     staff = BusinessStaff(
@@ -249,9 +243,7 @@ async def remove_staff(
     )
     staff = result.scalar_one_or_none()
     if not staff:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Staff member not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Staff member not found")
 
     await db.delete(staff)
     await db.flush()
@@ -276,9 +268,7 @@ async def update_staff_role(
     )
     staff = result.scalar_one_or_none()
     if not staff:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Staff member not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Staff member not found")
 
     staff.role = data.role
     await db.flush()
@@ -363,9 +353,7 @@ async def update_branch(
     )
     branch = result.scalar_one_or_none()
     if not branch:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Branch not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Branch not found")
 
     for field, value in data.model_dump(exclude_unset=True).items():
         if field == "name":
@@ -394,9 +382,7 @@ async def remove_branch(
     )
     branch = result.scalar_one_or_none()
     if not branch:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Branch not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Branch not found")
 
     branch.is_active = False
     branch.updated_at = datetime.now(UTC)
@@ -423,8 +409,5 @@ async def team_calendar(
         "business_id": biz.id,
         "business_name": biz.business_name,
         "staff_count": len(staff),
-        "staff": [
-            {"user_id": s.user_id, "role": s.role}
-            for s in staff
-        ],
+        "staff": [{"user_id": s.user_id, "role": s.role} for s in staff],
     }

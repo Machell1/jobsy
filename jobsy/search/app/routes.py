@@ -156,17 +156,21 @@ async def suggest(
     suggestions = []
     for hit in results.get("hits", []):
         if type == "listings":
-            suggestions.append({
-                "id": hit.get("id"),
-                "text": hit.get("title"),
-                "category": hit.get("category"),
-            })
+            suggestions.append(
+                {
+                    "id": hit.get("id"),
+                    "text": hit.get("title"),
+                    "category": hit.get("category"),
+                }
+            )
         else:
-            suggestions.append({
-                "id": hit.get("id"),
-                "text": hit.get("display_name"),
-                "skills": hit.get("skills", [])[:3],
-            })
+            suggestions.append(
+                {
+                    "id": hit.get("id"),
+                    "text": hit.get("display_name"),
+                    "skills": hit.get("skills", [])[:3],
+                }
+            )
 
     return {"suggestions": suggestions, "query": q}
 

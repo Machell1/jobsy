@@ -20,10 +20,20 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["proxy"])
 
 # Headers that must not be forwarded between proxy hops
-_HOP_BY_HOP = frozenset({
-    "connection", "keep-alive", "proxy-authenticate", "proxy-authorization",
-    "te", "trailers", "transfer-encoding", "upgrade", "content-encoding", "content-length",
-})
+_HOP_BY_HOP = frozenset(
+    {
+        "connection",
+        "keep-alive",
+        "proxy-authenticate",
+        "proxy-authorization",
+        "te",
+        "trailers",
+        "transfer-encoding",
+        "upgrade",
+        "content-encoding",
+        "content-length",
+    }
+)
 
 
 async def _proxy_request(service: str, path: str, request: Request, user: dict) -> Response:
