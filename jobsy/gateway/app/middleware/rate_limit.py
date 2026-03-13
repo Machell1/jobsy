@@ -7,7 +7,11 @@ from fastapi import HTTPException, Request, status
 
 from shared.auth import decode_token
 
-from ..config import RATE_LIMIT_AUTHENTICATED, RATE_LIMIT_UNAUTHENTICATED
+from ..config import (
+    RATE_LIMIT_AUTH_ENDPOINTS,
+    RATE_LIMIT_AUTHENTICATED,
+    RATE_LIMIT_UNAUTHENTICATED,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +20,32 @@ async def rate_limit_check(request: Request) -> None:
     """Check rate limit. Uses in-memory fallback if Redis unavailable."""
     redis = getattr(request.app.state, "redis", None)
     if not redis:
+        return
+
+    # Stricter limit for auth endpoints (always IP-based)
+    path = request.url.path
+    if path.startswith("/auth/"):
+        client_ip = request.client.host if request.client else "unknown"
+        key = f"rate:auth:{client_ip}"
+        limit = RATE_LIMIT_AUTH_ENDPOINTS
+        now = time.time()
+        window_start = now - 60
+        try:
+            pipe = redis.pipeline()
+            pipe.zremrangebyscore(key, 0, window_start)
+            pipe.zadd(key, {str(now): now})
+            pipe.zcard(key)
+            pipe.expire(key, 120)
+            results = await pipe.execute()
+        except Exception:
+            logger.warning("Redis error during auth rate limit check, allowing request through")
+            return
+        request_count = results[2]
+        if request_count > limit:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Rate limit exceeded. Max {limit} requests per minute.",
+            )
         return
 
     # Determine client identity and limit

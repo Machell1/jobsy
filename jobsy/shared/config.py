@@ -38,10 +38,7 @@ if not REDIS_URL:
             REDIS_URL = f"redis://{_redis_host}:{_redis_port}/0"
             logging.info("REDIS_URL built from REDIS_HOST=%s", _redis_host)
         else:
-            raise RuntimeError(
-                "REDIS_URL environment variable must be set in production. "
-                "Set REDIS_URL or REDIS_HOST."
-            )
+            raise RuntimeError("REDIS_URL environment variable must be set in production. Set REDIS_URL or REDIS_HOST.")
     else:
         REDIS_URL = "redis://localhost:6379/0"
 
@@ -96,6 +93,9 @@ if not ELASTICSEARCH_URL:
             logging.warning("ELASTICSEARCH_URL not set in production — search will be unavailable")
     else:
         ELASTICSEARCH_URL = "http://localhost:9200"
+
+# Sentry
+SENTRY_DSN = os.getenv("SENTRY_DSN", "")
 
 # Twilio SMS
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")

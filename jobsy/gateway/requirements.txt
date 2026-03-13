@@ -17,3 +17,4 @@ google-auth>=2.23.0
 twilio>=9.0.0
 stream-chat>=4.0.0
 fpdf2>=2.7.0
+sentry-sdk[fastapi]>=2.0.0
