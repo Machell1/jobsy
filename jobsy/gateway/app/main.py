@@ -8,7 +8,6 @@ from contextlib import asynccontextmanager
 
 import httpx
 import redis.asyncio as aioredis
-import sentry_sdk
 import websockets
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from prometheus_fastapi_instrumentator import Instrumentator
@@ -34,12 +33,17 @@ setup_json_logging()
 logger = logging.getLogger(__name__)
 
 if SENTRY_DSN:
-    sentry_sdk.init(
-        dsn=SENTRY_DSN,
-        traces_sample_rate=0.1,
-        profiles_sample_rate=0.1,
-        environment=os.getenv("RAILWAY_ENVIRONMENT", "development"),
-    )
+    try:
+        import sentry_sdk
+
+        sentry_sdk.init(
+            dsn=SENTRY_DSN,
+            traces_sample_rate=0.1,
+            profiles_sample_rate=0.1,
+            environment=os.getenv("RAILWAY_ENVIRONMENT", "development"),
+        )
+    except ImportError:
+        logging.getLogger(__name__).warning("sentry-sdk not installed, skipping Sentry init")
 
 
 async def _apply_migrations() -> None:
@@ -758,7 +762,7 @@ async def _apply_migrations() -> None:
                 text(
                     "INSERT INTO admin_roles (id, role_name, permissions, description) "
                     "VALUES ('role_finance', 'finance', "
-                    "'[\"payments\",\"payouts\",\"refunds\"]', "
+                    '\'["payments","payouts","refunds"]\', '
                     "'Financial operations') "
                     "ON CONFLICT (role_name) DO NOTHING"
                 )
