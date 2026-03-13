@@ -1,24 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Page Not Found | Jobsy</title>
-  <meta http-equiv="X-Content-Type-Options" content="nosniff">
-  <meta http-equiv="X-Frame-Options" content="DENY">
-  <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://pagead2.googlesyndication.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' https://api.jobsyja.com https://*.up.railway.app http://localhost:8000; frame-src 'none'">
-  <link rel="icon" type="image/svg+xml" href="images/logo.svg">
-  <link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jobsy — Jamaica's Service Marketplace</title>
+  <script>
+    // GitHub Pages SPA redirect: redirect to index.html preserving the path as a hash
+    var path = window.location.pathname;
+    var hash = window.location.hash;
+    var search = window.location.search;
+    // If we're already using hash routing, just go to root
+    window.location.replace(window.location.origin + '/' + (hash || '#/'));
+  </script>
 </head>
 <body>
-  <main id="main-content">
-    <div class="container" style="text-align:center;padding:4rem 1rem">
-      <h1 style="font-size:4rem;color:var(--primary)">404</h1>
-      <p style="font-size:1.25rem;color:var(--text-light)">The page you're looking for doesn't exist.</p>
-      <p style="margin-top:2rem"><a href="index.html" class="btn btn-primary btn-lg">Browse Services &rarr;</a></p>
-    </div>
-  </main>
-  <script src="js/common.js"></script>
+  <p>Redirecting...</p>
 </body>
 </html>
