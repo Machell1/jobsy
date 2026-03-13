@@ -1,0 +1,29 @@
+name: Set Stream Chat Environment Variables
+
+on:
+  workflow_dispatch:
+
+jobs:
+  set-env:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+
+      - name: Set Stream Chat environment variables on Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          cd jobsy
+          railway variables set STREAM_API_KEY="${{ secrets.STREAM_API_KEY }}" --service gateway
+          railway variables set STREAM_API_SECRET="${{ secrets.STREAM_API_SECRET }}" --service gateway
+          echo "Stream Chat environment variables set successfully!"
+
+      - name: Trigger redeploy
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          cd jobsy
+          railway up --detach --service gateway
