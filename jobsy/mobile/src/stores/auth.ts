@@ -3,12 +3,20 @@ import { create } from "zustand";
 
 import * as authApi from "@/api/auth";
 import type { UserRole } from "@/api/auth";
+import { getMyProfile } from "@/api/profiles";
 
 interface User {
   id: string;
   role: string;
   roles: string[];
   activeRole: string;
+  displayName: string;
+  phone: string;
+  email: string;
+  bio: string;
+  avatarUrl: string | null;
+  parish: string | null;
+  isVerified: boolean;
 }
 
 interface AuthState {
@@ -82,22 +90,56 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (accessToken) {
         const payload = parseJwt(accessToken);
         if (payload && payload.sub && !isTokenExpired(payload)) {
+          const userId = payload.sub as string;
+          const role = (payload.role as string) || "user";
+          const roles = (payload.roles as string[]) || ["user"];
+          const activeRole = (payload.active_role as string) || role;
+
           set({
             user: {
-              id: payload.sub as string,
-              role: (payload.role as string) || "user",
-              roles: (payload.roles as string[]) || ["user"],
-              activeRole: (payload.active_role as string) || (payload.role as string) || "user",
+              id: userId,
+              role,
+              roles,
+              activeRole,
+              displayName: "",
+              phone: "",
+              email: "",
+              bio: "",
+              avatarUrl: null,
+              parish: null,
+              isVerified: false,
             },
             isAuthenticated: true,
           });
+
+          // Enrich with profile in background
+          try {
+            const profile = await getMyProfile();
+            set({
+              user: {
+                id: userId,
+                role,
+                roles,
+                activeRole,
+                displayName: profile.display_name || "",
+                phone: profile.phone || "",
+                email: profile.email || "",
+                bio: profile.bio || "",
+                avatarUrl: profile.avatar_url || null,
+                parish: profile.parish || null,
+                isVerified: profile.is_verified || false,
+              },
+            });
+          } catch {
+            // Profile may not exist yet
+          }
         } else {
           await SecureStore.deleteItemAsync("access_token");
           await SecureStore.deleteItemAsync("refresh_token");
         }
       }
     } catch {
-      // Token invalid or expired, will be refreshed on first API call
+      // Token invalid or expired
     } finally {
       set({ isLoading: false });
     }
@@ -152,7 +194,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const tokens = await authApi.switchRole(role);
     await SecureStore.setItemAsync("access_token", tokens.access_token);
     await SecureStore.setItemAsync("refresh_token", tokens.refresh_token);
-    setAuthFromTokens(tokens, set, role);
+    await setAuthFromTokens(tokens, set, role);
   },
 
   logout: async () => {

@@ -3,7 +3,7 @@ import * as SecureStore from "expo-secure-store";
 
 export const API_URL =
   process.env.EXPO_PUBLIC_API_URL ||
-  (__DEV__ ? "http://localhost:8000" : (() => { throw new Error("EXPO_PUBLIC_API_URL must be set in production"); })());
+  (__DEV__ ? "http://localhost:8000" : "https://api.jobsyja.com");
 
 export const api = axios.create({
   baseURL: API_URL,
