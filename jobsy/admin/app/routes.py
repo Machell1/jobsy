@@ -3,20 +3,21 @@
 import json
 import logging
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import redis.asyncio as aioredis
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.config import REDIS_URL
 from shared.database import get_db
 from shared.events import publish_event
+from shared.models.verification import VerificationReviewAction, VerificationStatsResponse
 
 from .deps import require_admin
-from .models import AuditLog, ModerationQueue, Profile, VerificationRequest
+from .models import AuditLog, ModerationQueue, Profile, ProviderProfile, VerificationAsset, VerificationRequest
 
 logger = logging.getLogger(__name__)
 
@@ -286,47 +287,62 @@ async def get_audit_log(
 @router.get("/verifications/pending")
 async def list_pending_verifications(
     admin_id: str = Depends(require_admin),
+    verification_type: str | None = Query(default=None, alias="type"),
     limit: int = Query(default=20, le=100),
     offset: int = 0,
     db: AsyncSession = Depends(get_db),
 ):
-    """List pending verification requests."""
+    """List pending/submitted verification requests with assets."""
     query = (
         select(VerificationRequest)
-        .where(VerificationRequest.status == "pending")
-        .order_by(VerificationRequest.submitted_at.asc())
+        .where(VerificationRequest.status.in_(["pending", "submitted"]))
+        .order_by(VerificationRequest.created_at.asc())
         .offset(offset)
         .limit(limit)
     )
 
+    if verification_type:
+        query = query.where(VerificationRequest.type == verification_type)
+
     result = await db.execute(query)
     items = result.scalars().all()
 
-    return [
-        {
+    response = []
+    for item in items:
+        assets_result = await db.execute(
+            select(VerificationAsset).where(VerificationAsset.verification_request_id == item.id)
+        )
+        assets = assets_result.scalars().all()
+        response.append({
             "id": item.id,
             "user_id": item.user_id,
+            "type": item.type,
             "document_urls": item.document_urls,
             "status": item.status,
-            "submitted_at": item.submitted_at.isoformat(),
-        }
-        for item in items
-    ]
-
-
-class VerificationReview(BaseModel):
-    action: str = Field(..., pattern=r"^(approve|reject)$")
-    reviewer_notes: str | None = None
+            "submitted_at": item.submitted_at.isoformat() if item.submitted_at else None,
+            "created_at": item.created_at.isoformat(),
+            "assets": [
+                {
+                    "id": a.id,
+                    "asset_type": a.asset_type,
+                    "file_url": a.file_url,
+                    "thumbnail_url": a.thumbnail_url,
+                    "mime_type": a.mime_type,
+                }
+                for a in assets
+            ],
+        })
+    return response
 
 
 @router.post("/verifications/{request_id}/review")
 async def review_verification(
     request_id: str,
-    data: VerificationReview,
+    data: VerificationReviewAction,
     admin_id: str = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """Approve or reject a verification request."""
+    """Review a verification request: approve, reject, or request resubmission."""
     result = await db.execute(
         select(VerificationRequest).where(VerificationRequest.id == request_id)
     )
@@ -337,16 +353,17 @@ async def review_verification(
             detail="Verification request not found",
         )
 
-    if verification.status != "pending":
+    if verification.status not in ("pending", "submitted", "under_review"):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Verification request already {verification.status}",
+            detail=f"Cannot review a request in '{verification.status}' state",
         )
 
     now = datetime.now(UTC)
 
-    if data.action == "approve":
+    if data.decision == "approve":
         verification.status = "approved"
+        verification.badge_level = data.badge_level
 
         # Update Profile.is_verified
         profile_result = await db.execute(
@@ -356,34 +373,110 @@ async def review_verification(
         if profile:
             profile.is_verified = True
 
-        # Publish profile.verified event
+        # Update provider_profiles.verification_status based on type
+        pp_result = await db.execute(
+            select(ProviderProfile).where(ProviderProfile.user_id == verification.user_id)
+        )
+        pp = pp_result.scalar_one_or_none()
+        if pp:
+            if verification.type == "photo":
+                pp.verification_status = "photo_verified"
+            elif verification.type in ("government_id", "licence", "certification"):
+                pp.verification_status = "advanced_verified"
+
         await publish_event("profile.verified", {
             "user_id": verification.user_id,
             "verification_request_id": verification.id,
+            "badge_level": data.badge_level,
         })
-    else:
+
+    elif data.decision == "reject":
         verification.status = "rejected"
+        verification.rejection_reason = data.rejection_reason
+
+    elif data.decision == "request_resubmission":
+        verification.status = "resubmission_requested"
+        verification.resubmission_guidance = data.resubmission_guidance
 
     verification.reviewer_notes = data.reviewer_notes
+    verification.reviewer_id = admin_id
     verification.reviewed_at = now
+    verification.updated_at = now
     await db.flush()
 
     # Log in audit trail
     await _log_action(
         db, admin_id,
-        action=f"verification.{data.action}",
+        action=f"verification.{data.decision}",
         target_type="verification_request",
         target_id=request_id,
         reason=data.reviewer_notes,
-        details={"user_id": verification.user_id},
+        details={"user_id": verification.user_id, "type": verification.type},
     )
     await db.flush()
 
     return {
         "status": verification.status,
-        "action": data.action,
+        "decision": data.decision,
         "request_id": request_id,
     }
+
+
+@router.get("/verifications/stats", response_model=VerificationStatsResponse)
+async def get_verification_stats(
+    admin_id: str = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get verification statistics."""
+    pending_result = await db.execute(
+        select(func.count()).select_from(VerificationRequest)
+        .where(VerificationRequest.status.in_(["pending", "submitted", "under_review"]))
+    )
+    pending_count = pending_result.scalar() or 0
+
+    today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+
+    approved_result = await db.execute(
+        select(func.count()).select_from(VerificationRequest)
+        .where(
+            VerificationRequest.status == "approved",
+            VerificationRequest.reviewed_at >= today_start,
+        )
+    )
+    approved_today = approved_result.scalar() or 0
+
+    rejected_result = await db.execute(
+        select(func.count()).select_from(VerificationRequest)
+        .where(
+            VerificationRequest.status == "rejected",
+            VerificationRequest.reviewed_at >= today_start,
+        )
+    )
+    rejected_today = rejected_result.scalar() or 0
+
+    # Average review time for requests reviewed in the last 30 days
+    thirty_days_ago = datetime.now(UTC) - timedelta(days=30)
+    avg_result = await db.execute(
+        select(
+            func.avg(
+                extract("epoch", VerificationRequest.reviewed_at) -
+                extract("epoch", VerificationRequest.submitted_at)
+            )
+        ).where(
+            VerificationRequest.reviewed_at.is_not(None),
+            VerificationRequest.submitted_at.is_not(None),
+            VerificationRequest.reviewed_at >= thirty_days_ago,
+        )
+    )
+    avg_seconds = avg_result.scalar()
+    avg_review_time_hours = round(avg_seconds / 3600, 1) if avg_seconds else None
+
+    return VerificationStatsResponse(
+        pending_count=pending_count,
+        approved_today=approved_today,
+        rejected_today=rejected_today,
+        avg_review_time_hours=avg_review_time_hours,
+    )
 
 
 # --- Content management ---

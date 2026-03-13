@@ -1,6 +1,6 @@
 """SQLAlchemy ORM models for the admin service."""
 
-from sqlalchemy import Boolean, Column, DateTime, Index, String, Text
+from sqlalchemy import Boolean, Column, DateTime, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 
 from shared.database import Base
@@ -48,18 +48,56 @@ class ModerationQueue(Base):
 
 
 class VerificationRequest(Base):
-    """Mirror of profiles VerificationRequest for cross-service queries."""
+    """Verification requests with full state machine support."""
 
     __tablename__ = "verification_requests"
     __table_args__ = {"extend_existing": True}
 
     id = Column(String, primary_key=True)
     user_id = Column(String, nullable=False)
+    type = Column(String(30), nullable=False, default="photo")
     document_urls = Column(JSONB, default=list)
-    status = Column(String(20), default="pending")
-    reviewer_notes = Column(String, nullable=True)
-    submitted_at = Column(DateTime(timezone=True), nullable=False)
+    status = Column(String(30), default="draft")
+    submitted_at = Column(DateTime(timezone=True), nullable=True)
     reviewed_at = Column(DateTime(timezone=True), nullable=True)
+    reviewer_id = Column(String, nullable=True)
+    reviewer_notes = Column(Text, nullable=True)
+    rejection_reason = Column(Text, nullable=True)
+    resubmission_guidance = Column(Text, nullable=True)
+    badge_level = Column(String(30), nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    updated_at = Column(DateTime(timezone=True), nullable=False)
+
+
+class VerificationAsset(Base):
+    """Assets attached to verification requests."""
+
+    __tablename__ = "verification_assets"
+    __table_args__ = {"extend_existing": True}
+
+    id = Column(String, primary_key=True)
+    verification_request_id = Column(String, nullable=False)
+    asset_type = Column(String(30), nullable=False)
+    file_url = Column(String(500), nullable=False)
+    file_key = Column(String(500), nullable=True)
+    thumbnail_url = Column(String(500), nullable=True)
+    mime_type = Column(String(50), nullable=True)
+    file_size_bytes = Column(Integer, nullable=True)
+    metadata_ = Column("metadata", JSONB, nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+
+
+class ProviderProfile(Base):
+    """Mirror of provider_profiles for cross-service queries."""
+
+    __tablename__ = "provider_profiles"
+    __table_args__ = {"extend_existing": True}
+
+    id = Column(String, primary_key=True)
+    user_id = Column(String, nullable=False)
+    profile_id = Column(String, nullable=False)
+    verification_status = Column(String(20), default="unverified")
 
 
 class Profile(Base):

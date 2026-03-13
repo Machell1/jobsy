@@ -256,6 +256,130 @@ async def _apply_migrations() -> None:
             await conn.execute(text(
                 "CREATE INDEX IF NOT EXISTS idx_like_target ON post_likes (target_id)"
             ))
+
+            # Migration 006: Provider onboarding + verification tables
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS categories ("
+                "id VARCHAR PRIMARY KEY, name VARCHAR(100) UNIQUE NOT NULL, "
+                "slug VARCHAR(100) UNIQUE NOT NULL, parent_id VARCHAR, "
+                "icon VARCHAR(50), description TEXT, "
+                "is_active BOOLEAN DEFAULT true, sort_order INTEGER DEFAULT 0, "
+                "created_at TIMESTAMPTZ DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_category_slug ON categories(slug)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_category_parent ON categories(parent_id)"
+            ))
+
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS provider_profiles ("
+                "id VARCHAR PRIMARY KEY, user_id VARCHAR UNIQUE NOT NULL, "
+                "profile_id VARCHAR UNIQUE NOT NULL, "
+                "headline VARCHAR(200), profession VARCHAR(100), "
+                "years_of_experience INTEGER, service_radius_km INTEGER DEFAULT 25, "
+                "pricing_mode VARCHAR(20) DEFAULT 'quote', "
+                "hourly_rate_min NUMERIC(10,2), hourly_rate_max NUMERIC(10,2), "
+                "currency VARCHAR(3) DEFAULT 'JMD', response_time_hours INTEGER, "
+                "notice_board_enabled BOOLEAN DEFAULT false, is_available BOOLEAN DEFAULT true, "
+                "verification_status VARCHAR(20) DEFAULT 'unverified', "
+                "onboarding_step INTEGER DEFAULT 0, onboarding_completed BOOLEAN DEFAULT false, "
+                "completion_percentage INTEGER DEFAULT 0, "
+                "total_bookings INTEGER DEFAULT 0, completed_bookings INTEGER DEFAULT 0, "
+                "cancellation_count INTEGER DEFAULT 0, "
+                "avg_rating NUMERIC(3,2) DEFAULT 0, review_count INTEGER DEFAULT 0, "
+                "profile_views INTEGER DEFAULT 0, profile_clicks INTEGER DEFAULT 0, "
+                "created_at TIMESTAMPTZ DEFAULT now(), updated_at TIMESTAMPTZ DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_pp_user_id ON provider_profiles(user_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_pp_profession ON provider_profiles(profession)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_pp_verification ON provider_profiles(verification_status)"
+            ))
+
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS provider_services ("
+                "id VARCHAR PRIMARY KEY, provider_id VARCHAR NOT NULL, "
+                "category_id VARCHAR NOT NULL, name VARCHAR(200) NOT NULL, "
+                "description TEXT, price_type VARCHAR(20) DEFAULT 'quote', "
+                "price_amount NUMERIC(10,2), currency VARCHAR(3) DEFAULT 'JMD', "
+                "duration_minutes INTEGER, is_active BOOLEAN DEFAULT true, "
+                "sort_order INTEGER DEFAULT 0, "
+                "created_at TIMESTAMPTZ DEFAULT now(), updated_at TIMESTAMPTZ DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_ps_provider ON provider_services(provider_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_ps_category ON provider_services(category_id)"
+            ))
+
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS service_packages ("
+                "id VARCHAR PRIMARY KEY, service_id VARCHAR NOT NULL, "
+                "name VARCHAR(200) NOT NULL, description TEXT, "
+                "price NUMERIC(10,2) NOT NULL, currency VARCHAR(3) DEFAULT 'JMD', "
+                "features JSONB DEFAULT '[]', duration_minutes INTEGER, "
+                "is_active BOOLEAN DEFAULT true, sort_order INTEGER DEFAULT 0, "
+                "created_at TIMESTAMPTZ DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_sp_service ON service_packages(service_id)"
+            ))
+
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS availability_slots ("
+                "id VARCHAR PRIMARY KEY, provider_id VARCHAR NOT NULL, "
+                "day_of_week INTEGER NOT NULL, start_time TIME NOT NULL, "
+                "end_time TIME NOT NULL, is_active BOOLEAN DEFAULT true, "
+                "created_at TIMESTAMPTZ DEFAULT now(), "
+                "UNIQUE(provider_id, day_of_week, start_time))"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_as_provider ON availability_slots(provider_id)"
+            ))
+
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS portfolio_items ("
+                "id VARCHAR PRIMARY KEY, provider_id VARCHAR NOT NULL, "
+                "title VARCHAR(200), description TEXT, "
+                "image_url VARCHAR(500) NOT NULL, thumbnail_url VARCHAR(500), "
+                "sort_order INTEGER DEFAULT 0, created_at TIMESTAMPTZ DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_pi_provider ON portfolio_items(provider_id)"
+            ))
+
+            # Extend existing verification_requests table with new columns
+            for col, col_type in [
+                ("type", "VARCHAR(30) DEFAULT 'photo'"),
+                ("reviewer_id", "VARCHAR"),
+                ("rejection_reason", "TEXT"),
+                ("resubmission_guidance", "TEXT"),
+                ("badge_level", "VARCHAR(30)"),
+                ("expires_at", "TIMESTAMPTZ"),
+                ("updated_at", "TIMESTAMPTZ DEFAULT now()"),
+            ]:
+                await conn.execute(text(
+                    f"ALTER TABLE verification_requests ADD COLUMN IF NOT EXISTS {col} {col_type}"
+                ))
+
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS verification_assets ("
+                "id VARCHAR PRIMARY KEY, verification_request_id VARCHAR NOT NULL, "
+                "asset_type VARCHAR(30) NOT NULL, file_url VARCHAR(500) NOT NULL, "
+                "file_key VARCHAR(500), thumbnail_url VARCHAR(500), "
+                "mime_type VARCHAR(50), file_size_bytes INTEGER, "
+                "metadata JSONB, created_at TIMESTAMPTZ DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_va_request ON verification_assets(verification_request_id)"
+            ))
         logger.info("Database migrations applied successfully")
     except Exception:
         logger.warning("Could not apply migrations on startup -- will retry on next deploy")
