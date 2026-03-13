@@ -356,6 +356,12 @@ async def _apply_migrations() -> None:
             ))
 
             # Extend existing verification_requests table with new columns
+            await conn.execute(text(
+                "ALTER TABLE verification_requests ALTER COLUMN submitted_at DROP NOT NULL"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE verification_requests ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now()"
+            ))
             for col, col_type in [
                 ("type", "VARCHAR(30) DEFAULT 'photo'"),
                 ("reviewer_id", "VARCHAR"),
