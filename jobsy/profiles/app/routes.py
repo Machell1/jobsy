@@ -1696,10 +1696,18 @@ async def public_user_portfolio(user_id: str, db: AsyncSession = Depends(get_db)
 
 
 # NOTE: This catch-all route MUST be declared after all fixed-path routes
-@router.get("/{user_id}", response_model=ProfileResponse)
-async def get_profile(user_id: str, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Profile).where(Profile.user_id == user_id, Profile.is_active.is_(True)))
+@router.get("/{identifier}", response_model=ProfileResponse)
+async def get_profile(identifier: str, db: AsyncSession = Depends(get_db)):
+    # Try user_id first, then fall back to profile id
+    result = await db.execute(
+        select(Profile).where(Profile.user_id == identifier, Profile.is_active.is_(True))
+    )
     profile = result.scalar_one_or_none()
+    if not profile:
+        result = await db.execute(
+            select(Profile).where(Profile.id == identifier, Profile.is_active.is_(True))
+        )
+        profile = result.scalar_one_or_none()
     if not profile:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
     return profile
