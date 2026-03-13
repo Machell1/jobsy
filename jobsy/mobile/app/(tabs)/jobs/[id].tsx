@@ -150,7 +150,6 @@ export default function JobDetailScreen() {
   const isHirer = user?.id === job?.hirer_id;
   const myBid = bids.find((b) => b.provider_id === user?.id);
   const canBid = !isHirer && !myBid && job?.status === "open";
-  const _acceptedBid = bids.find((b) => b.status === "accepted" || b.is_winner);
 
   if (loadingJob) {
     return (
