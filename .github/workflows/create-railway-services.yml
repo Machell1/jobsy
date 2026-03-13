@@ -1,0 +1,153 @@
+name: Create Railway Services
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create-services:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+
+      - name: Get project info
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          echo "Checking existing services..."
+          railway status 2>&1 || true
+          railway service list 2>&1 || true
+
+      - name: Create bookings service via API
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          echo "Creating bookings service..."
+          # Use Railway GraphQL API to create the service
+          RESULT=$(curl -s -X POST https://backboard.railway.app/graphql/v2 \
+            -H "Authorization: Bearer $RAILWAY_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "query": "mutation { serviceCreate(input: { name: \"bookings\", projectId: \"587dc5c7-d5ef-4c12-9353-06bfbc53643a\" }) { id name } }"
+            }')
+          echo "Create bookings result: $RESULT"
+          BOOKINGS_ID=$(echo $RESULT | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['serviceCreate']['id'])" 2>/dev/null || echo "")
+          echo "Bookings service ID: $BOOKINGS_ID"
+          
+          if [ -n "$BOOKINGS_ID" ]; then
+            # Connect to GitHub repo
+            echo "Connecting bookings to GitHub repo..."
+            CONNECT_RESULT=$(curl -s -X POST https://backboard.railway.app/graphql/v2 \
+              -H "Authorization: Bearer $RAILWAY_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"query\": \"mutation { serviceConnect(id: \\\"$BOOKINGS_ID\\\", input: { repo: \\\"Machell1/jobsy\\\", branch: \\\"main\\\" }) { id } }\"
+              }")
+            echo "Connect bookings result: $CONNECT_RESULT"
+            
+            # Set root directory and environment variables
+            echo "Setting bookings config..."
+            # Get the default environment ID
+            ENV_RESULT=$(curl -s -X POST https://backboard.railway.app/graphql/v2 \
+              -H "Authorization: Bearer $RAILWAY_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "query": "query { project(id: \"587dc5c7-d5ef-4c12-9353-06bfbc53643a\") { environments { edges { node { id name } } } } }"
+              }')
+            echo "Environments: $ENV_RESULT"
+            ENV_ID=$(echo $ENV_RESULT | python3 -c "import sys,json; edges=json.load(sys.stdin)['data']['project']['environments']['edges']; print([e['node']['id'] for e in edges if e['node']['name']=='production'][0])" 2>/dev/null || echo "")
+            echo "Production env ID: $ENV_ID"
+            
+            if [ -n "$ENV_ID" ]; then
+              # Set service instance config
+              curl -s -X POST https://backboard.railway.app/graphql/v2 \
+                -H "Authorization: Bearer $RAILWAY_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{
+                  \"query\": \"mutation { serviceInstanceUpdate(serviceId: \\\"$BOOKINGS_ID\\\", environmentId: \\\"$ENV_ID\\\", input: { rootDirectory: \\\"jobsy/bookings\\\", healthcheckPath: \\\"/health\\\" }) }\"
+                }"
+              echo "Bookings config set"
+              
+              # Set the railway config path
+              curl -s -X POST https://backboard.railway.app/graphql/v2 \
+                -H "Authorization: Bearer $RAILWAY_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{
+                  \"query\": \"mutation { variableUpsert(input: { projectId: \\\"587dc5c7-d5ef-4c12-9353-06bfbc53643a\\\", environmentId: \\\"$ENV_ID\\\", serviceId: \\\"$BOOKINGS_ID\\\", name: \\\"RAILWAY_DOCKERFILE_PATH\\\", value: \\\"bookings/Dockerfile\\\" }) }\"
+                }"
+            fi
+          fi
+
+      - name: Create noticeboard service via API
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          echo "Creating noticeboard service..."
+          RESULT=$(curl -s -X POST https://backboard.railway.app/graphql/v2 \
+            -H "Authorization: Bearer $RAILWAY_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "query": "mutation { serviceCreate(input: { name: \"noticeboard\", projectId: \"587dc5c7-d5ef-4c12-9353-06bfbc53643a\" }) { id name } }"
+            }')
+          echo "Create noticeboard result: $RESULT"
+          NOTICEBOARD_ID=$(echo $RESULT | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['serviceCreate']['id'])" 2>/dev/null || echo "")
+          echo "Noticeboard service ID: $NOTICEBOARD_ID"
+          
+          if [ -n "$NOTICEBOARD_ID" ]; then
+            echo "Connecting noticeboard to GitHub repo..."
+            CONNECT_RESULT=$(curl -s -X POST https://backboard.railway.app/graphql/v2 \
+              -H "Authorization: Bearer $RAILWAY_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"query\": \"mutation { serviceConnect(id: \\\"$NOTICEBOARD_ID\\\", input: { repo: \\\"Machell1/jobsy\\\", branch: \\\"main\\\" }) { id } }\"
+              }")
+            echo "Connect noticeboard result: $CONNECT_RESULT"
+            
+            ENV_RESULT=$(curl -s -X POST https://backboard.railway.app/graphql/v2 \
+              -H "Authorization: Bearer $RAILWAY_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "query": "query { project(id: \"587dc5c7-d5ef-4c12-9353-06bfbc53643a\") { environments { edges { node { id name } } } } }"
+              }')
+            ENV_ID=$(echo $ENV_RESULT | python3 -c "import sys,json; edges=json.load(sys.stdin)['data']['project']['environments']['edges']; print([e['node']['id'] for e in edges if e['node']['name']=='production'][0])" 2>/dev/null || echo "")
+            
+            if [ -n "$ENV_ID" ]; then
+              curl -s -X POST https://backboard.railway.app/graphql/v2 \
+                -H "Authorization: Bearer $RAILWAY_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{
+                  \"query\": \"mutation { serviceInstanceUpdate(serviceId: \\\"$NOTICEBOARD_ID\\\", environmentId: \\\"$ENV_ID\\\", input: { rootDirectory: \\\"jobsy/noticeboard\\\", healthcheckPath: \\\"/health\\\" }) }\"
+                }"
+              echo "Noticeboard config set"
+              
+              curl -s -X POST https://backboard.railway.app/graphql/v2 \
+                -H "Authorization: Bearer $RAILWAY_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{
+                  \"query\": \"mutation { variableUpsert(input: { projectId: \\\"587dc5c7-d5ef-4c12-9353-06bfbc53643a\\\", environmentId: \\\"$ENV_ID\\\", serviceId: \\\"$NOTICEBOARD_ID\\\", name: \\\"RAILWAY_DOCKERFILE_PATH\\\", value: \\\"noticeboard/Dockerfile\\\" }) }\"
+                }"
+            fi
+          fi
+
+      - name: Deploy new services
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          cd jobsy
+          echo "Deploying bookings..."
+          railway up --detach --service bookings || echo "Bookings deploy failed"
+          echo "Deploying noticeboard..."
+          railway up --detach --service noticeboard || echo "Noticeboard deploy failed"
+
+      - name: Wait for deployments
+        run: sleep 90
+
+      - name: Verify new services
+        run: |
+          echo "Testing bookings..."
+          curl -sv https://api.jobsyja.com/api/bookings/ 2>&1 | grep -E "HTTP|detail" | head -5
+          echo ""
+          echo "Testing noticeboard..."
+          curl -sv https://api.jobsyja.com/api/noticeboard/posts/feed 2>&1 | grep -E "HTTP|detail" | head -5
