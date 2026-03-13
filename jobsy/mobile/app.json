@@ -12,7 +12,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#1B5E20"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.williamsmachell.jobsy",
@@ -29,7 +31,11 @@
         "backgroundColor": "#1B5E20"
       },
       "package": "com.jobsy.app",
-      "permissions": ["ACCESS_FINE_LOCATION", "CAMERA", "READ_EXTERNAL_STORAGE"]
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -40,8 +46,11 @@
       "expo-notifications",
       [
         "expo-splash-screen",
-        { "backgroundColor": "#1B5E20" }
-      ]
+        {
+          "backgroundColor": "#1B5E20"
+        }
+      ],
+      "expo-font"
     ]
   }
 }
