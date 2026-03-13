@@ -1289,33 +1289,43 @@ async def list_bids(
     items = []
     for b in bids:
         resp = _bid_response(b)
-        # Attach provider profile info
-        profile_result = await db.execute(
-            text(
-                "SELECT display_name, avatar_url, parish "
-                "FROM profiles WHERE user_id = :uid"
-            ),
-            {"uid": b.provider_id},
-        )
-        profile = profile_result.first()
-        if profile:
-            resp["provider_display_name"] = profile[0]
-            resp["provider_avatar_url"] = profile[1]
-            resp["provider_parish"] = profile[2]
+        # Attach provider profile info (savepoint protects against missing table)
+        try:
+            async with db.begin_nested():
+                profile_result = await db.execute(
+                    text(
+                        "SELECT display_name, avatar_url, parish "
+                        "FROM profiles WHERE user_id = :uid"
+                    ),
+                    {"uid": b.provider_id},
+                )
+                profile = profile_result.first()
+                if profile:
+                    resp["provider_display_name"] = profile[0]
+                    resp["provider_avatar_url"] = profile[1]
+                    resp["provider_parish"] = profile[2]
+        except Exception:
+            logger.warning("Could not fetch profile for provider %s", b.provider_id)
 
-        # Rating info
-        rating_result = await db.execute(
-            text(
-                "SELECT avg_rating, total_reviews FROM reputation_metrics "
-                "WHERE user_id = :uid"
-            ),
-            {"uid": b.provider_id},
-        )
-        rating = rating_result.first()
-        if rating:
-            resp["provider_rating_avg"] = float(rating[0]) if rating[0] else 0
-            resp["provider_review_count"] = rating[1] or 0
-        else:
+        # Rating info (savepoint protects against missing table)
+        try:
+            async with db.begin_nested():
+                rating_result = await db.execute(
+                    text(
+                        "SELECT avg_rating, total_reviews FROM reputation_metrics "
+                        "WHERE user_id = :uid"
+                    ),
+                    {"uid": b.provider_id},
+                )
+                rating = rating_result.first()
+                if rating:
+                    resp["provider_rating_avg"] = float(rating[0]) if rating[0] else 0
+                    resp["provider_review_count"] = rating[1] or 0
+                else:
+                    resp["provider_rating_avg"] = 0
+                    resp["provider_review_count"] = 0
+        except Exception:
+            logger.warning("Could not fetch rating for provider %s", b.provider_id)
             resp["provider_rating_avg"] = 0
             resp["provider_review_count"] = 0
 
@@ -1471,7 +1481,9 @@ async def change_bid_status(
             "hirer_id": jp.hirer_id,
             "provider_id": bid.provider_id,
         })
-    else:
-        await db.flush()
+        resp = _bid_response(bid)
+        resp["contract"] = _contract_response(contract)
+        return resp
 
+    await db.flush()
     return _bid_response(bid)
