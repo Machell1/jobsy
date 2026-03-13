@@ -1,11 +1,11 @@
 """Price tracker - monitors products across multiple sites and detects deals."""
 
 from scraper import scrape_product, scrape_deal_aggregators, scrape_all_deals, scrape_lifestyle_deals, scrape_category_deals
-from scrapers import get_scraper_for_url, detect_site
+from scrapers import detect_site
 import logging
 from database import (
     get_active_products, update_price, add_product,
-    record_alert, get_product_count, get_site_counts,
+    record_alert, get_site_counts,
     save_aggregator_deal, log_deal_posted,
 )
 from notifier import send_deal_alert, send_tracking_notification, send_aggregator_deal, send_admin_message
@@ -241,7 +241,7 @@ def add_new_product(url_or_id):
     """Add a new product to track from any supported site."""
     site = detect_site(url_or_id)
     print(f"[Tracker] Detected site: {site}")
-    print(f"[Tracker] Scraping product info...")
+    print("[Tracker] Scraping product info...")
 
     scraped = scrape_product(url_or_id)
     if not scraped:

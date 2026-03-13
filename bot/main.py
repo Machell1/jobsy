@@ -41,11 +41,11 @@ def run_scheduler():
     breakdown = ", ".join(f"{s}: {c}" for s, c in site_counts.items()) if site_counts else "none"
 
     print(f"\n{'='*65}")
-    print(f"  Deal Alert Bot - Multi-Site Monitor")
+    print("  Deal Alert Bot - Multi-Site Monitor")
     print(f"  Price checks every {CHECK_INTERVAL_MINUTES} minutes")
     print(f"  Deal scans every {CHECK_INTERVAL_MINUTES * 2} minutes")
     print(f"  Tracking {get_product_count()} products ({breakdown})")
-    print(f"  Press Ctrl+C to stop")
+    print("  Press Ctrl+C to stop")
     print(f"{'='*65}\n")
 
     # Run immediately on start

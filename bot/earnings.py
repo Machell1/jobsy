@@ -178,14 +178,14 @@ def format_earnings_report(days=1):
         lines.append(f"  Tracked clicks: {total_clicks} ({ctr:.1f}% CTR)")
         lines.append(f"  Est. conversions: {est_conversions:.1f} ({DEFAULT_CONVERSION_RATE * 100:.0f}% rate)")
     else:
-        lines.append(f"  Tracked clicks: -- (no data yet)")
+        lines.append("  Tracked clicks: -- (no data yet)")
         lines.append(f"  Est. conversions: {est_conversions:.2f} (using {DEFAULT_CTR * 100:.0f}% CTR, {DEFAULT_CONVERSION_RATE * 100:.0f}% conv.)")
     lines.append(f"  With affiliate tags: {deals_with_tag}")
     if deals_without_tag > 0:
         lines.append(f"  Without tags: {deals_without_tag}")
 
     # Revenue by store
-    lines.append(f"\n<b>REVENUE BY STORE:</b>")
+    lines.append("\n<b>REVENUE BY STORE:</b>")
     missed_lines = []
     total_missed = 0.0
 
@@ -222,7 +222,7 @@ def format_earnings_report(days=1):
             lines.append(f"  {site.capitalize()}: {count} deals | ~${site_est:.2f}")
 
     # Totals
-    lines.append(f"\n<b>TOTALS:</b>")
+    lines.append("\n<b>TOTALS:</b>")
     lines.append(f"  Estimated: ~${funnel_total:.2f}")
     if total_actual > 0:
         lines.append(f"  Actual (API data): ${total_actual:.2f}")
@@ -239,7 +239,7 @@ def format_earnings_report(days=1):
 
     # Top deals by clicks
     if top_deals:
-        lines.append(f"\n<b>TOP DEALS (by clicks):</b>")
+        lines.append("\n<b>TOP DEALS (by clicks):</b>")
         for i, deal in enumerate(top_deals, 1):
             title = (deal.get("title") or "")[:40]
             clicks = deal.get("click_count", 0)
@@ -247,7 +247,7 @@ def format_earnings_report(days=1):
 
     # Missed revenue
     if missed_lines:
-        lines.append(f"\n⚠️ <b>MISSED REVENUE:</b>")
+        lines.append("\n⚠️ <b>MISSED REVENUE:</b>")
         lines.extend(missed_lines)
         lines.append(f"  → Configure tags to capture ~${total_missed:.2f} more")
 
@@ -324,7 +324,7 @@ def format_revenue_report(days=7):
 
     # Combined totals
     combined = total_actual + funnel_total
-    lines.append(f"\n<b>TOTALS:</b>")
+    lines.append("\n<b>TOTALS:</b>")
     if total_actual > 0:
         lines.append(f"  Actual revenue (API): ${total_actual:.2f}")
     lines.append(f"  Estimated revenue: ~${funnel_total:.2f}")

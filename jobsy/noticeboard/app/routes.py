@@ -359,7 +359,10 @@ async def resubmit_post(
     if post.author_id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     if post.moderation_status != "declined":
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Only declined posts can be resubmitted")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Only declined posts can be resubmitted",
+        )
 
     post.moderation_status = "pending_review"
     post.moderation_note = None

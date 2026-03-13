@@ -6,7 +6,7 @@ Deal aggregators: Slickdeals, DealNews
 Lifestyle deals: Groupon, Skyscanner, Expedia
 """
 
-from scrapers import get_scraper_for_url, detect_site, ALL_SCRAPERS, DEAL_AGGREGATORS, LIFESTYLE_SCRAPERS
+from scrapers import get_scraper_for_url, ALL_SCRAPERS, DEAL_AGGREGATORS, LIFESTYLE_SCRAPERS
 from scrapers.groupon import GrouponScraper
 from scrapers.skyscanner import SkyscannerScraper
 from scrapers.expedia import ExpediaScraper
@@ -24,7 +24,7 @@ def scrape_product(url_or_id):
         return AmazonScraper().scrape_product(url_or_id)
 
     print(f"[Scraper] Unsupported URL: {url_or_id}")
-    print(f"[Scraper] Supported: Amazon, Best Buy, Walmart, Target, eBay, Groupon, Skyscanner, Expedia")
+    print("[Scraper] Supported: Amazon, Best Buy, Walmart, Target, eBay, Groupon, Skyscanner, Expedia")
     return None
 
 

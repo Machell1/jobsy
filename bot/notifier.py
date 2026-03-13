@@ -75,7 +75,7 @@ def format_deal_message(product, old_price, new_price, drop_percent):
     )
 
     if product.get("lowest_price") and new_price <= product["lowest_price"]:
-        message += f"⭐ <b>ALL-TIME LOW PRICE!</b>\n"
+        message += "⭐ <b>ALL-TIME LOW PRICE!</b>\n"
 
     message += (
         f"\n"

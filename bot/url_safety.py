@@ -5,7 +5,7 @@ Blocks scam domains, phishing URLs, redirects to unknown sites, and
 suspicious patterns.
 """
 
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse
 
 # Trusted domains - ONLY links from these domains are sent to customers.
 # Sub-domains are allowed (e.g., smile.amazon.com passes for amazon.com).

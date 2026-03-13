@@ -194,7 +194,8 @@ async def create_booking(
     customer_id = _get_user_id(request)
     now = datetime.now(UTC)
 
-    from datetime import date as date_type, time as time_type
+    from datetime import date as date_type
+    from datetime import time as time_type
     scheduled_date = date_type.fromisoformat(data.scheduled_date) if data.scheduled_date else None
     scheduled_time_start = time_type.fromisoformat(data.scheduled_time_start) if data.scheduled_time_start else None
     scheduled_time_end = time_type.fromisoformat(data.scheduled_time_end) if data.scheduled_time_end else None
@@ -334,7 +335,6 @@ async def update_booking_status(
 ):
     """Update booking status with state machine validation."""
     user_id = _get_user_id(request)
-    user_role = _get_user_role(request)
     booking = await _get_booking_or_404(db, booking_id)
     _check_booking_access(booking, user_id)
 
@@ -387,11 +387,18 @@ async def reschedule_booking(
     booking = await _get_booking_or_404(db, booking_id)
     _check_booking_access(booking, user_id)
 
-    from datetime import date as date_type, time as time_type
+    from datetime import date as date_type
+    from datetime import time as time_type
     now = datetime.now(UTC)
     booking.scheduled_date = date_type.fromisoformat(data.scheduled_date)
-    booking.scheduled_time_start = time_type.fromisoformat(data.scheduled_time_start) if data.scheduled_time_start else None
-    booking.scheduled_time_end = time_type.fromisoformat(data.scheduled_time_end) if data.scheduled_time_end else None
+    booking.scheduled_time_start = (
+        time_type.fromisoformat(data.scheduled_time_start)
+        if data.scheduled_time_start else None
+    )
+    booking.scheduled_time_end = (
+        time_type.fromisoformat(data.scheduled_time_end)
+        if data.scheduled_time_end else None
+    )
     booking.updated_at = now
     await db.flush()
 
@@ -399,7 +406,11 @@ async def reschedule_booking(
     await _create_event(
         db, booking.id, "reschedule", user_id, actor_role,
         note=data.note,
-        metadata={"scheduled_date": data.scheduled_date, "scheduled_time_start": data.scheduled_time_start, "scheduled_time_end": data.scheduled_time_end},
+        metadata={
+            "scheduled_date": data.scheduled_date,
+            "scheduled_time_start": data.scheduled_time_start,
+            "scheduled_time_end": data.scheduled_time_end,
+        },
     )
 
     return _booking_response(booking)

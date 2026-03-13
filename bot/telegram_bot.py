@@ -32,14 +32,13 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Cont
 from telegram.constants import ParseMode
 
 from config import (
-    TELEGRAM_BOT_TOKEN, TELEGRAM_CHANNEL_ID,
-    TELEGRAM_CHANNEL_HANDLE, CHECK_INTERVAL_MINUTES, ADMIN_USER_IDS,
+    TELEGRAM_BOT_TOKEN, TELEGRAM_CHANNEL_HANDLE, CHECK_INTERVAL_MINUTES, ADMIN_USER_IDS,
 )
 from database import init_db, remove_product, record_referral, log_click, get_deal_by_id
-from notifier import send_admin_message, send_admin_message_async
+from notifier import send_admin_message_async
 from tracker import (
     check_all_prices, add_new_product, scan_deals,
-    scan_all_deals, scan_lifestyle, scan_category, get_status_text,
+    scan_lifestyle, scan_category, get_status_text,
     generate_daily_summary,
 )
 from earnings import format_earnings_report, format_revenue_report
@@ -111,7 +110,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton("🏖️ Holiday Packages", callback_data="menu:holidays"),
         ],
         [
-            InlineKeyboardButton(f"📢 Join Channel", url=f"https://t.me/{TELEGRAM_CHANNEL_HANDLE.lstrip('@')}"),
+            InlineKeyboardButton("📢 Join Channel", url=f"https://t.me/{TELEGRAM_CHANNEL_HANDLE.lstrip('@')}"),
         ],
     ]
 

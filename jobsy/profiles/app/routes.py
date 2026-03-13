@@ -1,7 +1,8 @@
 """Profile service API routes."""
 
 import uuid
-from datetime import UTC, datetime, time as dt_time
+from datetime import UTC, datetime
+from datetime import time as dt_time
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -14,8 +15,6 @@ from shared.events import publish_event
 from shared.geo import encode_geohash, get_parish
 from shared.models.provider import (
     AvailabilityBulkUpdate,
-    AvailabilitySlotResponse,
-    CategoryDetailResponse,
     CategoryResponse,
     OnboardingStepUpdate,
     PortfolioItemCreate,
@@ -33,9 +32,7 @@ from shared.models.provider import (
 )
 from shared.models.verification import (
     VerificationAssetCreate,
-    VerificationAssetResponse,
     VerificationRequestCreate,
-    VerificationRequestResponse,
 )
 
 from .models import (
@@ -611,7 +608,10 @@ async def create_provider_profile(
     profile_result = await db.execute(select(Profile).where(Profile.user_id == user_id))
     profile = profile_result.scalar_one_or_none()
     if not profile:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Base profile not found. Create a profile first.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Base profile not found. Create a profile first.",
+        )
 
     now = datetime.now(UTC)
     pp = ProviderProfile(
@@ -808,9 +808,16 @@ async def deactivate_service(
 # ============================================================
 
 
-@router.post("/services/{service_id}/packages", status_code=status.HTTP_201_CREATED, response_model=ServicePackageResponse)
+@router.post(
+    "/services/{service_id}/packages",
+    status_code=status.HTTP_201_CREATED,
+    response_model=ServicePackageResponse,
+)
 async def create_package(
-    service_id: str, data: ServicePackageCreate, request: Request, db: AsyncSession = Depends(get_db)
+    service_id: str,
+    data: ServicePackageCreate,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
 ):
     """Create package for a service."""
     user_id = _get_user_id(request)
