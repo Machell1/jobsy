@@ -183,8 +183,8 @@ async def _fallback_search_listings(
         where = " AND ".join(conditions)
 
         count_result = await session.execute(
-            text(f"SELECT COUNT(*) FROM listings WHERE {where}"),
-            params,  # noqa: S608
+            text(f"SELECT COUNT(*) FROM listings WHERE {where}"),  # noqa: S608
+            params,
         )
         total = count_result.scalar() or 0
 
@@ -244,8 +244,8 @@ async def _fallback_search_profiles(
         where = " AND ".join(conditions)
 
         count_result = await session.execute(
-            text(f"SELECT COUNT(*) FROM profiles WHERE {where}"),
-            params,  # noqa: S608
+            text(f"SELECT COUNT(*) FROM profiles WHERE {where}"),  # noqa: S608
+            params,
         )
         total = count_result.scalar() or 0
 

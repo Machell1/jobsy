@@ -757,7 +757,9 @@ async def _apply_migrations() -> None:
             await conn.execute(
                 text(
                     "INSERT INTO admin_roles (id, role_name, permissions, description) "
-                    "VALUES ('role_finance', 'finance', '[\"payments\",\"payouts\",\"refunds\"]', 'Financial operations') "
+                    "VALUES ('role_finance', 'finance', "
+                    "'[\"payments\",\"payouts\",\"refunds\"]', "
+                    "'Financial operations') "
                     "ON CONFLICT (role_name) DO NOTHING"
                 )
             )
