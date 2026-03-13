@@ -1,11 +1,17 @@
 """Bookings routes embedded directly in the gateway."""
 
 import uuid
-from datetime import UTC, date as date_type, datetime, time as time_type
+from datetime import UTC, datetime
+from datetime import date as date_type
+from datetime import time as time_type
 from decimal import Decimal
 
 from fastapi import (
-    APIRouter, Depends, HTTPException, Query, status,
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    status,
 )
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select

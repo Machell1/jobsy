@@ -1,7 +1,14 @@
 """SQLAlchemy ORM models for the bookings service (embedded in gateway)."""
 
 from sqlalchemy import (
-    Column, Date, DateTime, Index, Numeric, String, Text, Time,
+    Column,
+    Date,
+    DateTime,
+    Index,
+    Numeric,
+    String,
+    Text,
+    Time,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 

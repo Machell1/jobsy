@@ -1,7 +1,13 @@
 """SQLAlchemy ORM models for the noticeboard service (embedded in gateway)."""
 
 from sqlalchemy import (
-    Boolean, Column, DateTime, Index, Integer, String, Text,
+    Boolean,
+    Column,
+    DateTime,
+    Index,
+    Integer,
+    String,
+    Text,
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB

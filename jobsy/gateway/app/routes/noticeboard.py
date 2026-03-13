@@ -4,7 +4,12 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import (
-    APIRouter, Depends, HTTPException, Query, Response, status,
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    Response,
+    status,
 )
 from pydantic import BaseModel, Field
 from sqlalchemy import select, text
