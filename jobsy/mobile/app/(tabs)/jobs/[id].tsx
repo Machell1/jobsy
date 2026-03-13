@@ -7,7 +7,6 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
-  FlatList,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
@@ -20,8 +19,6 @@ import {
   getJobBids,
   submitBid,
   updateBidStatus,
-  type JobPost,
-  type Bid,
 } from "@/api/bidding";
 import { useAuthStore } from "@/stores/auth";
 
@@ -153,7 +150,7 @@ export default function JobDetailScreen() {
   const isHirer = user?.id === job?.hirer_id;
   const myBid = bids.find((b) => b.provider_id === user?.id);
   const canBid = !isHirer && !myBid && job?.status === "open";
-  const acceptedBid = bids.find((b) => b.status === "accepted" || b.is_winner);
+  const _acceptedBid = bids.find((b) => b.status === "accepted" || b.is_winner);
 
   if (loadingJob) {
     return (

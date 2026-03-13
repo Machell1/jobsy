@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,7 +10,6 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
-  Linking,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
@@ -132,7 +131,6 @@ function formatDate(dateStr?: string) {
 export default function JobBoardScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const [activeTab, setActiveTab] = useState<TabName>("Browse");
@@ -385,7 +383,7 @@ export default function JobBoardScreen() {
   function renderEmptyState(icon: string, title: string, subtitle: string) {
     return (
       <View className="flex-1 items-center justify-center py-20">
-        <Ionicons name={icon as any} size={48} color="#9CA3AF" />
+        <Ionicons name={icon as React.ComponentProps<typeof Ionicons>["name"]} size={48} color="#9CA3AF" />
         <Text className="text-base text-gray-500 mt-3 font-medium">{title}</Text>
         <Text className="text-sm text-gray-400 mt-1">{subtitle}</Text>
       </View>

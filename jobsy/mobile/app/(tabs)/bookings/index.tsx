@@ -126,7 +126,6 @@ export default function BookingsScreen() {
   }
 
   function renderBookingItem({ item }: { item: Booking }) {
-    const mapped = STATUS_MAP[item.status] || { label: item.status, color: "#374151", bg: "#F3F4F6" };
     const date = item.scheduled_date
       ? new Date(item.scheduled_date).toLocaleDateString("en-US", {
           month: "short",
