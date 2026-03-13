@@ -90,6 +90,172 @@ async def _apply_migrations() -> None:
                 "tagged_user_id VARCHAR NOT NULL, entity_type VARCHAR(20) NOT NULL, "
                 "entity_id VARCHAR NOT NULL, created_at TIMESTAMPTZ NOT NULL)"
             ))
+            # Migration 004: bookings service tables
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS bookings ("
+                "id VARCHAR PRIMARY KEY, "
+                "customer_id VARCHAR NOT NULL, "
+                "provider_id VARCHAR NOT NULL, "
+                "listing_id VARCHAR, "
+                "service_id VARCHAR, "
+                "title VARCHAR(200) NOT NULL, "
+                "description TEXT, "
+                "status VARCHAR(30) NOT NULL DEFAULT 'inquiry', "
+                "scheduled_date DATE, "
+                "scheduled_time_start TIME, "
+                "scheduled_time_end TIME, "
+                "location_mode VARCHAR(20) DEFAULT 'onsite', "
+                "location_text VARCHAR(500), "
+                "parish VARCHAR(50), "
+                "latitude NUMERIC, "
+                "longitude NUMERIC, "
+                "total_amount NUMERIC(12,2), "
+                "currency VARCHAR(3) DEFAULT 'JMD', "
+                "payment_status VARCHAR(20) DEFAULT 'unpaid', "
+                "cancellation_reason TEXT, "
+                "cancelled_by VARCHAR, "
+                "completed_at TIMESTAMPTZ, "
+                "created_at TIMESTAMPTZ NOT NULL DEFAULT now(), "
+                "updated_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_booking_customer ON bookings (customer_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_booking_provider ON bookings (provider_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_booking_status ON bookings (status)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_booking_created ON bookings (created_at)"
+            ))
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS booking_events ("
+                "id VARCHAR PRIMARY KEY, "
+                "booking_id VARCHAR NOT NULL, "
+                "event_type VARCHAR(50) NOT NULL, "
+                "from_status VARCHAR(30), "
+                "to_status VARCHAR(30), "
+                "actor_id VARCHAR NOT NULL, "
+                "actor_role VARCHAR(20) NOT NULL, "
+                "note TEXT, "
+                "metadata JSONB, "
+                "created_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_booking_event_booking ON booking_events (booking_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_booking_event_created ON booking_events (created_at)"
+            ))
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS quotes ("
+                "id VARCHAR PRIMARY KEY, "
+                "booking_id VARCHAR NOT NULL, "
+                "provider_id VARCHAR NOT NULL, "
+                "amount NUMERIC(12,2) NOT NULL, "
+                "currency VARCHAR(3) DEFAULT 'JMD', "
+                "description TEXT, "
+                "valid_until TIMESTAMPTZ, "
+                "status VARCHAR(20) DEFAULT 'pending', "
+                "created_at TIMESTAMPTZ NOT NULL DEFAULT now(), "
+                "updated_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_quote_booking ON quotes (booking_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_quote_provider ON quotes (provider_id)"
+            ))
+            # Migration 005: noticeboard service tables
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS notice_boards ("
+                "id VARCHAR PRIMARY KEY, "
+                "provider_id VARCHAR UNIQUE NOT NULL, "
+                "user_id VARCHAR NOT NULL, "
+                "is_enabled BOOLEAN DEFAULT true, "
+                "post_count INTEGER DEFAULT 0, "
+                "follower_count INTEGER DEFAULT 0, "
+                "created_at TIMESTAMPTZ NOT NULL DEFAULT now(), "
+                "updated_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_noticeboard_user ON notice_boards (user_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_noticeboard_provider ON notice_boards (provider_id)"
+            ))
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS posts ("
+                "id VARCHAR PRIMARY KEY, "
+                "notice_board_id VARCHAR NOT NULL, "
+                "author_id VARCHAR NOT NULL, "
+                "content TEXT NOT NULL, "
+                "media_urls JSONB DEFAULT '[]', "
+                "media_type VARCHAR(20), "
+                "external_link VARCHAR(500), "
+                "post_type VARCHAR(20) DEFAULT 'standard', "
+                "profession_tag VARCHAR(100), "
+                "moderation_status VARCHAR(20) DEFAULT 'pending_review', "
+                "moderation_note TEXT, "
+                "moderation_reviewed_by VARCHAR, "
+                "moderation_reviewed_at TIMESTAMPTZ, "
+                "like_count INTEGER DEFAULT 0, "
+                "comment_count INTEGER DEFAULT 0, "
+                "is_pinned BOOLEAN DEFAULT false, "
+                "created_at TIMESTAMPTZ NOT NULL DEFAULT now(), "
+                "updated_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_post_noticeboard ON posts (notice_board_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_post_author ON posts (author_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_post_moderation ON posts (moderation_status)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_post_created ON posts (created_at)"
+            ))
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS comments ("
+                "id VARCHAR PRIMARY KEY, "
+                "post_id VARCHAR NOT NULL, "
+                "author_id VARCHAR NOT NULL, "
+                "content TEXT NOT NULL, "
+                "parent_comment_id VARCHAR, "
+                "moderation_status VARCHAR(20) DEFAULT 'pending_review', "
+                "moderation_note TEXT, "
+                "like_count INTEGER DEFAULT 0, "
+                "created_at TIMESTAMPTZ NOT NULL DEFAULT now(), "
+                "updated_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_comment_post ON comments (post_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_comment_author ON comments (author_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_comment_moderation ON comments (moderation_status)"
+            ))
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS post_likes ("
+                "id VARCHAR PRIMARY KEY, "
+                "user_id VARCHAR NOT NULL, "
+                "target_type VARCHAR(10) NOT NULL, "
+                "target_id VARCHAR NOT NULL, "
+                "created_at TIMESTAMPTZ NOT NULL DEFAULT now(), "
+                "UNIQUE(user_id, target_type, target_id))"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_like_user ON post_likes (user_id)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_like_target ON post_likes (target_id)"
+            ))
         logger.info("Database migrations applied successfully")
     except Exception:
         logger.warning("Could not apply migrations on startup -- will retry on next deploy")

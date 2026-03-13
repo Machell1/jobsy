@@ -197,6 +197,47 @@ async def proxy_reviews_write(path: str, request: Request, user: dict = Depends(
     return await _proxy_request("reviews", f"/{path}", request, user)
 
 
+@router.api_route("/bookings", methods=["GET"])
+async def proxy_bookings_root_read(request: Request, user: dict = Depends(get_current_user)):
+    return await _proxy_request("bookings", "/", request, user)
+
+
+@router.api_route("/bookings", methods=["POST"])
+async def proxy_bookings_root_write(request: Request, user: dict = Depends(get_current_user)):
+    return await _proxy_request("bookings", "/", request, user)
+
+
+@router.api_route("/bookings/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+async def proxy_bookings(path: str, request: Request, user: dict = Depends(get_current_user)):
+    return await _proxy_request("bookings", f"/{path}", request, user)
+
+
+@router.api_route("/noticeboard/posts/feed", methods=["GET"])
+async def proxy_noticeboard_feed(request: Request, user: dict = Depends(get_optional_user)):
+    """Public read access to notice board feed."""
+    return await _proxy_request("noticeboard", "/posts/feed", request, user)
+
+
+@router.api_route("/noticeboard", methods=["GET"])
+async def proxy_noticeboard_root_read(request: Request, user: dict = Depends(get_optional_user)):
+    return await _proxy_request("noticeboard", "/", request, user)
+
+
+@router.api_route("/noticeboard/{path:path}", methods=["GET"])
+async def proxy_noticeboard_read(path: str, request: Request, user: dict = Depends(get_optional_user)):
+    return await _proxy_request("noticeboard", f"/{path}", request, user)
+
+
+@router.api_route("/noticeboard", methods=["POST"])
+async def proxy_noticeboard_root_write(request: Request, user: dict = Depends(get_current_user)):
+    return await _proxy_request("noticeboard", "/", request, user)
+
+
+@router.api_route("/noticeboard/{path:path}", methods=["POST", "PUT", "DELETE"])
+async def proxy_noticeboard_write(path: str, request: Request, user: dict = Depends(get_current_user)):
+    return await _proxy_request("noticeboard", f"/{path}", request, user)
+
+
 @router.api_route("/search/listings", methods=["GET"])
 async def proxy_search_listings(request: Request):
     """Search listings via direct DB query (search microservice not deployed)."""

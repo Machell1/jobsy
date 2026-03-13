@@ -18,6 +18,8 @@ SERVICE_URLS = {
     "reviews": os.getenv("REVIEWS_SERVICE_URL", "http://reviews.railway.internal:8080"),
     "search": os.getenv("SEARCH_SERVICE_URL", "http://search.railway.internal:8080"),
     "admin": os.getenv("ADMIN_SERVICE_URL", "http://admin.railway.internal:8080"),
+    "bookings": os.getenv("BOOKINGS_SERVICE_URL", "http://bookings.railway.internal:8080"),
+    "noticeboard": os.getenv("NOTICEBOARD_SERVICE_URL", "http://noticeboard.railway.internal:8080"),
 }
 
 # Rate limiting
