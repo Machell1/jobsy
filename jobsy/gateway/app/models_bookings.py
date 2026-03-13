@@ -67,7 +67,7 @@ class BookingEvent(Base):
     actor_id = Column(String, nullable=False)
     actor_role = Column(String(20), nullable=False)
     note = Column(Text, nullable=True)
-    metadata = Column(JSONB, nullable=True)
+    event_metadata = Column("metadata", JSONB, nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False)
 
     __table_args__ = (

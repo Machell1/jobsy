@@ -52,6 +52,10 @@ with contextlib.suppress(Exception):
     import reviews.app.models  # noqa: F401
 with contextlib.suppress(Exception):
     import admin.app.models  # noqa: F401
+with contextlib.suppress(Exception):
+    import gateway.app.models_bookings  # noqa: F401
+with contextlib.suppress(Exception):
+    import gateway.app.models_noticeboard  # noqa: F401
 
 
 @pytest.fixture(scope="session")

@@ -121,7 +121,7 @@ def _event_response(e: BookingEvent) -> dict:
         "actor_id": e.actor_id,
         "actor_role": e.actor_role,
         "note": e.note,
-        "metadata": e.metadata,
+        "metadata": e.event_metadata,
         "created_at": e.created_at.isoformat(),
     }
 
