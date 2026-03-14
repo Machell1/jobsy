@@ -120,6 +120,10 @@ export async function updateJobPostStatus(id: string, status: string): Promise<v
   await api.put(`/api/bidding/${id}/status`, { status });
 }
 
+export async function deleteJobPost(id: string): Promise<void> {
+  await api.delete(`/api/bidding/${id}`);
+}
+
 // ========== Bids ==========
 
 export async function submitBid(jobId: string, payload: Record<string, unknown>): Promise<Bid> {

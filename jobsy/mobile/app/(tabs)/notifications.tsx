@@ -1,4 +1,5 @@
 import { FlatList, Pressable, Text, View } from "react-native";
+import { Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -45,15 +46,20 @@ export default function NotificationsScreen() {
 
   return (
     <View className="flex-1 bg-dark-50">
-      {unreadCount > 0 && (
-        <Pressable
-          onPress={() => markAllRead.mutate()}
-          className="mx-4 mt-2 items-end"
-        >
-          <Text className="text-sm font-medium text-primary-900">Mark all read</Text>
-        </Pressable>
-      )}
-
+      <Stack.Screen
+        options={{
+          title: "Notifications",
+          headerRight: () =>
+            unreadCount > 0 ? (
+              <Pressable
+                onPress={() => markAllRead.mutate()}
+                disabled={markAllRead.isPending}
+              >
+                <Text className="text-sm font-medium text-primary-900">Mark all read</Text>
+              </Pressable>
+            ) : null,
+        }}
+      />
       <FlatList
         data={notifications}
         keyExtractor={(item: Notification) => item.id}

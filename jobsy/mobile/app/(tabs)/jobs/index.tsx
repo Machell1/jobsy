@@ -23,6 +23,9 @@ import {
   getMyBids,
   getContracts,
   createJobPost,
+  updateJobPost,
+  deleteJobPost,
+  updateBidStatus,
   getBiddingStats,
   type JobPost,
   type Bid,
@@ -148,6 +151,15 @@ export default function JobBoardScreen() {
   const [postBudgetMax, setPostBudgetMax] = useState("");
   const [postDeadline, setPostDeadline] = useState("");
 
+  // Edit Job form state
+  const [editingJob, setEditingJob] = useState<JobPost | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editBudgetMin, setEditBudgetMin] = useState('');
+  const [editBudgetMax, setEditBudgetMax] = useState('');
+  const [editDeadline, setEditDeadline] = useState('');
+  const [editBidDeadline, setEditBidDeadline] = useState('');
+
   // Queries
   const browseParams: Record<string, string> = { status: "open" };
   if (selectedCategory !== "All") browseParams.category = selectedCategory;
@@ -210,6 +222,36 @@ export default function JobBoardScreen() {
       Alert.alert("Success", "Job posted successfully!");
     },
     onError: () => Alert.alert("Error", "Failed to create job post. Please try again."),
+  });
+
+  const editJobMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) => updateJobPost(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-posts'] });
+      queryClient.invalidateQueries({ queryKey: ['job-posts'] });
+      setEditingJob(null);
+      Alert.alert('Success', 'Job post updated');
+    },
+    onError: () => Alert.alert('Error', 'Failed to update job post'),
+  });
+
+  const deleteJobMutation = useMutation({
+    mutationFn: (id: string) => deleteJobPost(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-posts'] });
+      queryClient.invalidateQueries({ queryKey: ['job-posts'] });
+      Alert.alert('Deleted', 'Job post has been cancelled');
+    },
+    onError: () => Alert.alert('Error', 'Failed to delete job post'),
+  });
+
+  const withdrawBidMutation = useMutation({
+    mutationFn: ({ jobId, bidId }: { jobId: string; bidId: string }) => updateBidStatus(jobId, bidId, { status: 'withdrawn' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-bids'] });
+      Alert.alert('Withdrawn', 'Your bid has been withdrawn');
+    },
+    onError: () => Alert.alert('Error', 'Failed to withdraw bid'),
   });
 
   function resetPostForm() {
@@ -311,6 +353,100 @@ export default function JobBoardScreen() {
     );
   }
 
+  function renderMyPostCard({ item }: { item: JobPost }) {
+    return (
+      <Pressable
+        className="bg-white mx-4 mb-3 rounded-xl p-4"
+        style={{ shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 }}
+        onPress={() => router.push(`/(tabs)/jobs/${item.id}`)}
+      >
+        <View className="flex-row items-center justify-between mb-2">
+          <Text className="text-base font-semibold text-gray-900 flex-1 mr-2" numberOfLines={1}>
+            {item.title}
+          </Text>
+          <StatusBadge status={item.status} />
+        </View>
+
+        <View className="flex-row items-center mb-2 flex-wrap gap-1">
+          <View style={{ backgroundColor: "#EEF2FF", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 }}>
+            <Text style={{ color: "#4338CA", fontSize: 11, fontWeight: "600" }}>{item.category}</Text>
+          </View>
+          {item.parish && (
+            <View className="flex-row items-center ml-2">
+              <Ionicons name="location-outline" size={12} color="#6B7280" />
+              <Text className="text-xs text-gray-500 ml-0.5">{item.parish}</Text>
+            </View>
+          )}
+        </View>
+
+        {item.description ? (
+          <Text className="text-sm text-gray-600 mb-2" numberOfLines={2}>
+            {item.description}
+          </Text>
+        ) : null}
+
+        <View className="flex-row items-center justify-between">
+          <Text className="text-sm font-semibold text-green-700">
+            {formatBudget(item.budget_min, item.budget_max, item.currency)}
+          </Text>
+          <View className="flex-row items-center">
+            {item.bid_count != null && (
+              <View className="flex-row items-center mr-3">
+                <Ionicons name="people-outline" size={14} color="#6B7280" />
+                <Text className="text-xs text-gray-500 ml-1">{item.bid_count} bids</Text>
+              </View>
+            )}
+            {item.deadline && (
+              <View className="flex-row items-center">
+                <Ionicons name="calendar-outline" size={14} color="#6B7280" />
+                <Text className="text-xs text-gray-500 ml-1">{formatDate(item.deadline)}</Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {item.status === 'open' && (
+          <View className="flex-row mt-3 gap-2">
+            <Pressable
+              onPress={() => {
+                setEditingJob(item);
+                setEditTitle(item.title);
+                setEditDescription(item.description || '');
+                setEditBudgetMin(item.budget_min != null ? String(item.budget_min) : '');
+                setEditBudgetMax(item.budget_max != null ? String(item.budget_max) : '');
+                setEditDeadline(item.deadline || '');
+                setEditBidDeadline((item as Record<string, unknown>).bid_deadline as string || '');
+              }}
+              className="flex-1 flex-row items-center justify-center rounded-lg py-2"
+              style={{ backgroundColor: '#EEF2FF', borderWidth: 1, borderColor: '#4338CA' }}
+            >
+              <Ionicons name="create-outline" size={16} color="#4338CA" />
+              <Text style={{ color: '#4338CA', fontWeight: '600', fontSize: 13, marginLeft: 4 }}>Edit</Text>
+            </Pressable>
+            <Pressable
+              onPress={() =>
+                Alert.alert('Delete Job Post', 'Are you sure?', [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: () => deleteJobMutation.mutate(item.id),
+                  },
+                ])
+              }
+              className="flex-1 flex-row items-center justify-center rounded-lg py-2"
+              style={{ backgroundColor: '#FEE2E2', borderWidth: 1, borderColor: '#991B1B' }}
+              disabled={deleteJobMutation.isPending}
+            >
+              <Ionicons name="trash-outline" size={16} color="#991B1B" />
+              <Text style={{ color: '#991B1B', fontWeight: '600', fontSize: 13, marginLeft: 4 }}>Delete</Text>
+            </Pressable>
+          </View>
+        )}
+      </Pressable>
+    );
+  }
+
   function renderBidCard({ item }: { item: Bid }) {
     return (
       <Pressable
@@ -338,6 +474,27 @@ export default function JobBoardScreen() {
           )}
           <Text className="text-xs text-gray-400">{formatDate(item.created_at)}</Text>
         </View>
+
+        {item.status === 'submitted' && (
+          <Pressable
+            onPress={() =>
+              Alert.alert('Withdraw Bid', 'Are you sure?', [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Withdraw',
+                  style: 'destructive',
+                  onPress: () => withdrawBidMutation.mutate({ jobId: item.job_post_id, bidId: item.id }),
+                },
+              ])
+            }
+            className="mt-3 flex-row items-center justify-center rounded-lg py-2"
+            style={{ backgroundColor: '#FEF3C7', borderWidth: 1, borderColor: '#92400E' }}
+            disabled={withdrawBidMutation.isPending}
+          >
+            <Ionicons name="close-circle-outline" size={16} color="#92400E" />
+            <Text style={{ color: '#92400E', fontWeight: '600', fontSize: 13, marginLeft: 4 }}>Withdraw</Text>
+          </Pressable>
+        )}
       </Pressable>
     );
   }
@@ -527,7 +684,7 @@ export default function JobBoardScreen() {
         <FlatList
           data={myPosts}
           keyExtractor={(item) => item.id}
-          renderItem={renderJobCard}
+          renderItem={renderMyPostCard}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#1B5E20" />}
           contentContainerStyle={{ paddingTop: 4, paddingBottom: 80, flexGrow: 1 }}
           ListEmptyComponent={renderEmptyState(
@@ -587,6 +744,108 @@ export default function JobBoardScreen() {
           <Ionicons name="add" size={28} color="#FFFFFF" />
         </Pressable>
       )}
+
+      {/* Edit Job Modal */}
+      <Modal visible={!!editingJob} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setEditingJob(null)}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1">
+          <View className="flex-1 bg-gray-50 p-4">
+            <View className="flex-row justify-between items-center mb-4">
+              <Text className="text-lg font-bold text-gray-900">Edit Job Post</Text>
+              <Pressable onPress={() => setEditingJob(null)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </Pressable>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text className="text-sm font-medium text-gray-700 mb-1">Title</Text>
+              <TextInput
+                className="bg-white rounded-lg px-3 py-2.5 mb-3 text-sm text-gray-900"
+                style={{ borderWidth: 1, borderColor: '#E5E7EB' }}
+                placeholder="Job title"
+                value={editTitle}
+                onChangeText={setEditTitle}
+              />
+
+              <Text className="text-sm font-medium text-gray-700 mb-1">Description</Text>
+              <TextInput
+                className="bg-white rounded-lg px-3 py-2.5 mb-3 text-sm text-gray-900"
+                style={{ borderWidth: 1, borderColor: '#E5E7EB', minHeight: 80 }}
+                placeholder="Describe the job..."
+                value={editDescription}
+                onChangeText={setEditDescription}
+                multiline
+                textAlignVertical="top"
+              />
+
+              <View className="flex-row mb-3">
+                <View className="flex-1 mr-2">
+                  <Text className="text-sm font-medium text-gray-700 mb-1">Budget Min (J$)</Text>
+                  <TextInput
+                    className="bg-white rounded-lg px-3 py-2.5 text-sm text-gray-900"
+                    style={{ borderWidth: 1, borderColor: '#E5E7EB' }}
+                    placeholder="5,000"
+                    value={editBudgetMin}
+                    onChangeText={setEditBudgetMin}
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-sm font-medium text-gray-700 mb-1">Budget Max (J$)</Text>
+                  <TextInput
+                    className="bg-white rounded-lg px-3 py-2.5 text-sm text-gray-900"
+                    style={{ borderWidth: 1, borderColor: '#E5E7EB' }}
+                    placeholder="50,000"
+                    value={editBudgetMax}
+                    onChangeText={setEditBudgetMax}
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
+
+              <Text className="text-sm font-medium text-gray-700 mb-1">Deadline (YYYY-MM-DD)</Text>
+              <TextInput
+                className="bg-white rounded-lg px-3 py-2.5 mb-3 text-sm text-gray-900"
+                style={{ borderWidth: 1, borderColor: '#E5E7EB' }}
+                placeholder="2026-04-01"
+                value={editDeadline}
+                onChangeText={setEditDeadline}
+              />
+
+              <Text className="text-sm font-medium text-gray-700 mb-1">Bid Deadline (YYYY-MM-DD)</Text>
+              <TextInput
+                className="bg-white rounded-lg px-3 py-2.5 mb-4 text-sm text-gray-900"
+                style={{ borderWidth: 1, borderColor: '#E5E7EB' }}
+                placeholder="2026-03-25"
+                value={editBidDeadline}
+                onChangeText={setEditBidDeadline}
+              />
+
+              <Pressable
+                onPress={() => {
+                  if (!editingJob) return;
+                  editJobMutation.mutate({
+                    id: editingJob.id,
+                    data: {
+                      title: editTitle.trim(),
+                      description: editDescription.trim(),
+                      budget_min: editBudgetMin ? Number(editBudgetMin) : undefined,
+                      budget_max: editBudgetMax ? Number(editBudgetMax) : undefined,
+                      deadline: editDeadline || undefined,
+                      bid_deadline: editBidDeadline || undefined,
+                    },
+                  });
+                }}
+                className="rounded-lg py-3 items-center mb-8"
+                style={{ backgroundColor: '#1B5E20' }}
+                disabled={editJobMutation.isPending}
+              >
+                <Text className="text-white font-semibold text-base">
+                  {editJobMutation.isPending ? 'Saving...' : 'Save Changes'}
+                </Text>
+              </Pressable>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       {/* Post Job Modal */}
       <Modal visible={showPostModal} transparent animationType="slide" onRequestClose={() => setShowPostModal(false)}>

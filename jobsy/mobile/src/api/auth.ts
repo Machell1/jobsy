@@ -99,3 +99,14 @@ export async function resetPassword(data: {
   const res = await authClient.post<TokenResponse>("/auth/reset-password", data);
   return res.data;
 }
+
+export async function changePassword(data: {
+  current_password: string;
+  new_password: string;
+}): Promise<void> {
+  await authClient.post("/auth/change-password", data);
+}
+
+export async function deleteAccount(confirmation: string): Promise<void> {
+  await authClient.delete("/auth/me", { data: { confirmation } });
+}

@@ -1,8 +1,22 @@
-import { Image, Linking, Pressable, ScrollView, Text, View } from "react-native";
+import { useState } from "react";
+import {
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Linking,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
+import { changePassword, deleteAccount } from "@/api/auth";
 import { getMyProfile } from "@/api/profiles";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { ReviewStars } from "@/components/ReviewStars";
@@ -24,10 +38,81 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { user, logout } = useAuthStore();
 
+  // Change Password state
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
   const { data: profile, isLoading } = useQuery({
     queryKey: ["my-profile"],
     queryFn: getMyProfile,
   });
+
+  const changePasswordMutation = useMutation({
+    mutationFn: (data: { current_password: string; new_password: string }) => changePassword(data),
+    onSuccess: () => {
+      setShowPasswordModal(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      Alert.alert('Success', 'Password changed successfully');
+    },
+    onError: () => Alert.alert('Error', 'Failed to change password. Check your current password and try again.'),
+  });
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: (confirmation: string) => deleteAccount(confirmation),
+    onSuccess: () => {
+      logout();
+      router.replace('/(auth)/login');
+    },
+    onError: () => Alert.alert('Error', 'Failed to delete account. Please try again.'),
+  });
+
+  function handleChangePassword() {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      Alert.alert('Required', 'Please fill in all password fields.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      Alert.alert('Mismatch', 'New passwords do not match.');
+      return;
+    }
+    if (newPassword.length < 8) {
+      Alert.alert('Too short', 'New password must be at least 8 characters.');
+      return;
+    }
+    changePasswordMutation.mutate({ current_password: currentPassword, new_password: newPassword });
+  }
+
+  function handleDeleteAccount() {
+    Alert.alert(
+      'Delete Account',
+      'This action is permanent and cannot be undone. All your data will be deleted.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Continue',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Confirm Deletion',
+              'Type "DELETE" to confirm account deletion.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete My Account',
+                  style: 'destructive',
+                  onPress: () => deleteAccountMutation.mutate('DELETE'),
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  }
 
   if (isLoading) return <LoadingScreen />;
 
@@ -151,15 +236,94 @@ export default function ProfileScreen() {
           label="Share Profile"
           onPress={() => router.push("/(tabs)/profile/edit")}
         />
+        <MenuItem
+          icon="lock-closed-outline"
+          label="Change Password"
+          onPress={() => setShowPasswordModal(true)}
+        />
       </View>
 
       {/* Logout */}
       <Pressable
         onPress={logout}
-        className="mx-4 mb-10 mt-4 items-center rounded-2xl bg-white py-4"
+        className="mx-4 mt-4 items-center rounded-2xl bg-white py-4"
       >
         <Text className="font-semibold text-red-500">Sign Out</Text>
       </Pressable>
+
+      {/* Danger Zone */}
+      <View className="mx-4 mt-4 mb-10 rounded-2xl bg-white">
+        <View className="px-4 pt-3 pb-1">
+          <Text className="text-xs font-semibold text-red-500 uppercase tracking-wider">Danger Zone</Text>
+        </View>
+        <Pressable
+          onPress={handleDeleteAccount}
+          className="flex-row items-center px-4 py-4"
+          disabled={deleteAccountMutation.isPending}
+        >
+          <Ionicons name="trash-outline" size={22} color="#991B1B" />
+          <Text className="ml-3 flex-1 text-base text-red-700 font-semibold">Delete Account</Text>
+          <Ionicons name="chevron-forward" size={18} color={COLORS.gray[400]} />
+        </Pressable>
+      </View>
+
+      {/* Change Password Modal */}
+      <Modal visible={showPasswordModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowPasswordModal(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1">
+          <View className="flex-1 bg-gray-50 p-4">
+            <View className="flex-row justify-between items-center mb-6">
+              <Text className="text-lg font-bold text-gray-900">Change Password</Text>
+              <Pressable onPress={() => setShowPasswordModal(false)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </Pressable>
+            </View>
+
+            <Text className="text-sm font-medium text-gray-700 mb-1">Current Password</Text>
+            <TextInput
+              className="bg-white rounded-lg px-3 py-2.5 mb-3 text-sm text-gray-900"
+              style={{ borderWidth: 1, borderColor: '#E5E7EB' }}
+              placeholder="Enter current password"
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              secureTextEntry
+              autoCapitalize="none"
+            />
+
+            <Text className="text-sm font-medium text-gray-700 mb-1">New Password</Text>
+            <TextInput
+              className="bg-white rounded-lg px-3 py-2.5 mb-3 text-sm text-gray-900"
+              style={{ borderWidth: 1, borderColor: '#E5E7EB' }}
+              placeholder="Enter new password"
+              value={newPassword}
+              onChangeText={setNewPassword}
+              secureTextEntry
+              autoCapitalize="none"
+            />
+
+            <Text className="text-sm font-medium text-gray-700 mb-1">Confirm New Password</Text>
+            <TextInput
+              className="bg-white rounded-lg px-3 py-2.5 mb-6 text-sm text-gray-900"
+              style={{ borderWidth: 1, borderColor: '#E5E7EB' }}
+              placeholder="Confirm new password"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+              autoCapitalize="none"
+            />
+
+            <Pressable
+              onPress={handleChangePassword}
+              className="rounded-lg py-3 items-center"
+              style={{ backgroundColor: '#1B5E20' }}
+              disabled={changePasswordMutation.isPending}
+            >
+              <Text className="text-white font-semibold text-base">
+                {changePasswordMutation.isPending ? 'Changing...' : 'Change Password'}
+              </Text>
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </ScrollView>
   );
 }

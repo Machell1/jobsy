@@ -8,6 +8,10 @@ import {
   Modal,
   ActivityIndicator,
   RefreshControl,
+  Alert,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,6 +20,7 @@ import {
   getBookings,
   getBookingStats,
   updateBookingStatus,
+  updateBooking,
   type Booking,
 } from "@/api/bookings";
 import { useAuthStore } from "@/stores/auth";
@@ -71,6 +76,10 @@ export default function BookingsScreen() {
 
   const [activeTab, setActiveTab] = useState<TabFilter>("All");
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
+  const [editDescription, setEditDescription] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [editTimeStart, setEditTimeStart] = useState('');
 
   const {
     data: bookings = [],
@@ -95,6 +104,17 @@ export default function BookingsScreen() {
       queryClient.invalidateQueries({ queryKey: ["bookingStats"] });
       setSelectedBooking(null);
     },
+  });
+
+  const editBookingMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { description?: string; scheduled_date?: string; scheduled_time_start?: string } }) =>
+      updateBooking(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      setEditingBooking(null);
+      Alert.alert('Success', 'Booking updated');
+    },
+    onError: () => Alert.alert('Error', 'Failed to update booking'),
   });
 
   const filteredBookings = getFilteredBookings(bookings, activeTab);
@@ -125,6 +145,8 @@ export default function BookingsScreen() {
     return actions;
   }
 
+  const EDITABLE_STATUSES = ['inquiry', 'quote_sent', 'quote_accepted', 'confirmed', 'in_progress'];
+
   function renderBookingItem({ item }: { item: Booking }) {
     const date = item.scheduled_date
       ? new Date(item.scheduled_date).toLocaleDateString("en-US", {
@@ -133,6 +155,8 @@ export default function BookingsScreen() {
           year: "numeric",
         })
       : null;
+
+    const isEditable = EDITABLE_STATUSES.includes(item.status);
 
     return (
       <Pressable
@@ -166,6 +190,21 @@ export default function BookingsScreen() {
             </Text>
           ) : null}
         </View>
+        {isEditable && (
+          <Pressable
+            onPress={() => {
+              setEditingBooking(item);
+              setEditDescription(item.description || '');
+              setEditDate(item.scheduled_date || '');
+              setEditTimeStart(item.scheduled_time_start || '');
+            }}
+            className="mt-3 flex-row items-center justify-center rounded-lg py-2"
+            style={{ backgroundColor: '#EEF2FF', borderWidth: 1, borderColor: '#4338CA' }}
+          >
+            <Ionicons name="create-outline" size={16} color="#4338CA" />
+            <Text style={{ color: '#4338CA', fontWeight: '600', fontSize: 13, marginLeft: 4 }}>Edit</Text>
+          </Pressable>
+        )}
       </Pressable>
     );
   }
@@ -243,6 +282,71 @@ export default function BookingsScreen() {
           </View>
         }
       />
+
+      {/* Edit Booking Modal */}
+      <Modal visible={!!editingBooking} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setEditingBooking(null)}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1">
+          <View className="flex-1 bg-gray-50 p-4">
+            <View className="flex-row justify-between items-center mb-4">
+              <Text className="text-lg font-bold text-gray-900">Edit Booking</Text>
+              <Pressable onPress={() => setEditingBooking(null)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </Pressable>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text className="text-sm font-medium text-gray-700 mb-1">Description</Text>
+              <TextInput
+                className="bg-white rounded-lg px-3 py-2.5 mb-3 text-sm text-gray-900"
+                style={{ borderWidth: 1, borderColor: '#E5E7EB', minHeight: 80 }}
+                placeholder="Describe the booking..."
+                value={editDescription}
+                onChangeText={setEditDescription}
+                multiline
+                textAlignVertical="top"
+              />
+
+              <Text className="text-sm font-medium text-gray-700 mb-1">Scheduled Date (YYYY-MM-DD)</Text>
+              <TextInput
+                className="bg-white rounded-lg px-3 py-2.5 mb-3 text-sm text-gray-900"
+                style={{ borderWidth: 1, borderColor: '#E5E7EB' }}
+                placeholder="2026-04-15"
+                value={editDate}
+                onChangeText={setEditDate}
+              />
+
+              <Text className="text-sm font-medium text-gray-700 mb-1">Start Time (HH:MM)</Text>
+              <TextInput
+                className="bg-white rounded-lg px-3 py-2.5 mb-4 text-sm text-gray-900"
+                style={{ borderWidth: 1, borderColor: '#E5E7EB' }}
+                placeholder="09:00"
+                value={editTimeStart}
+                onChangeText={setEditTimeStart}
+              />
+
+              <Pressable
+                onPress={() => {
+                  if (!editingBooking) return;
+                  editBookingMutation.mutate({
+                    id: editingBooking.id,
+                    data: {
+                      description: editDescription || undefined,
+                      scheduled_date: editDate || undefined,
+                      scheduled_time_start: editTimeStart || undefined,
+                    },
+                  });
+                }}
+                className="rounded-lg py-3 items-center mb-8"
+                style={{ backgroundColor: '#1B5E20' }}
+                disabled={editBookingMutation.isPending}
+              >
+                <Text className="text-white font-semibold text-base">
+                  {editBookingMutation.isPending ? 'Saving...' : 'Save Changes'}
+                </Text>
+              </Pressable>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       {/* Detail Modal */}
       <Modal visible={!!selectedBooking} transparent animationType="slide" onRequestClose={() => setSelectedBooking(null)}>

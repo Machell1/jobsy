@@ -27,6 +27,7 @@ from .routes.health import router as health_router
 from .routes.noticeboard import router as noticeboard_router
 from .routes.proxy import router as proxy_router
 from .routes.stream_chat import router as stream_chat_router
+from .routes.payments import router as payments_router
 from .routes.trust import router as trust_router
 
 setup_json_logging()
@@ -1051,6 +1052,11 @@ app.include_router(
     bidding_router,
     prefix="/api/bidding",
     tags=["bidding"],
+)
+app.include_router(
+    payments_router,
+    prefix="/api/payments",
+    tags=["payments"],
 )
 app.include_router(proxy_router)
 

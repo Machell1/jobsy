@@ -35,6 +35,16 @@ export async function updateBookingStatus(id: string, status: string): Promise<v
   await api.put(`/api/bookings/${id}/status`, { status });
 }
 
+export async function updateBooking(id: string, data: {
+  description?: string;
+  scheduled_date?: string;
+  scheduled_time_start?: string;
+  scheduled_time_end?: string;
+}): Promise<Booking> {
+  const { data: result } = await api.put(`/api/bookings/${id}`, data);
+  return result;
+}
+
 export async function createBooking(payload: {
   provider_id: string;
   listing_id?: string;
