@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   KeyboardAvoidingView,
@@ -14,10 +15,17 @@ import {
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { changePassword, deleteAccount } from "@/api/auth";
 import { getMyProfile } from "@/api/profiles";
+import {
+  reportUser,
+  blockUser,
+  unblockUser,
+  getBlockedUsers,
+  type BlockedUser,
+} from "@/api/trust";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { ReviewStars } from "@/components/ReviewStars";
 import { RoleSwitcher } from "@/components/RoleSwitcher";
@@ -34,8 +42,18 @@ const SOCIAL_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   portfolio_url: "globe-outline",
 };
 
+const REPORT_REASONS = [
+  "harassment",
+  "spam",
+  "fraud",
+  "inappropriate",
+  "other",
+] as const;
+type ReportReason = (typeof REPORT_REASONS)[number];
+
 export default function ProfileScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { user, logout } = useAuthStore();
 
   // Change Password state
@@ -44,9 +62,25 @@ export default function ProfileScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  // Trust & Safety state
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportUserId, setReportUserId] = useState('');
+  const [reportReason, setReportReason] = useState<ReportReason>('harassment');
+  const [reportDescription, setReportDescription] = useState('');
+
+  const [showBlockedModal, setShowBlockedModal] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [blockUserId, setBlockUserId] = useState('');
+
   const { data: profile, isLoading } = useQuery({
     queryKey: ["my-profile"],
     queryFn: getMyProfile,
+  });
+
+  const { data: blockedUsers = [], isLoading: loadingBlocked } = useQuery<BlockedUser[]>({
+    queryKey: ["blocked-users"],
+    queryFn: getBlockedUsers,
+    enabled: showBlockedModal,
   });
 
   const changePasswordMutation = useMutation({
@@ -69,6 +103,58 @@ export default function ProfileScreen() {
     },
     onError: () => Alert.alert('Error', 'Failed to delete account. Please try again.'),
   });
+
+  const reportUserMutation = useMutation({
+    mutationFn: () =>
+      reportUser({
+        reported_user_id: reportUserId.trim(),
+        reason: reportReason,
+        description: reportDescription.trim() || undefined,
+      }),
+    onSuccess: () => {
+      setShowReportModal(false);
+      setReportUserId('');
+      setReportReason('harassment');
+      setReportDescription('');
+      Alert.alert('Reported', 'Your report has been submitted. We will review it shortly.');
+    },
+    onError: () => Alert.alert('Error', 'Failed to submit report. Please try again.'),
+  });
+
+  const blockUserMutation = useMutation({
+    mutationFn: () => blockUser(blockUserId.trim()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['blocked-users'] });
+      setShowBlockModal(false);
+      setBlockUserId('');
+      Alert.alert('Blocked', 'User has been blocked.');
+    },
+    onError: () => Alert.alert('Error', 'Failed to block user. Please try again.'),
+  });
+
+  const unblockUserMutation = useMutation({
+    mutationFn: (userId: string) => unblockUser(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['blocked-users'] });
+    },
+    onError: () => Alert.alert('Error', 'Failed to unblock user.'),
+  });
+
+  function handleReportUser() {
+    if (!reportUserId.trim()) {
+      Alert.alert('Required', 'Please enter a user ID.');
+      return;
+    }
+    reportUserMutation.mutate();
+  }
+
+  function handleBlockUser() {
+    if (!blockUserId.trim()) {
+      Alert.alert('Required', 'Please enter a user ID.');
+      return;
+    }
+    blockUserMutation.mutate();
+  }
 
   function handleChangePassword() {
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -243,6 +329,28 @@ export default function ProfileScreen() {
         />
       </View>
 
+      {/* Trust & Safety */}
+      <View className="mx-4 mt-4 rounded-2xl bg-white">
+        <View className="px-4 pt-3 pb-1">
+          <Text className="text-xs font-semibold text-orange-600 uppercase tracking-wider">Trust &amp; Safety</Text>
+        </View>
+        <MenuItem
+          icon="flag-outline"
+          label="Report a User"
+          onPress={() => setShowReportModal(true)}
+        />
+        <MenuItem
+          icon="ban-outline"
+          label="Block a User"
+          onPress={() => setShowBlockModal(true)}
+        />
+        <MenuItem
+          icon="shield-checkmark-outline"
+          label="Blocked Users"
+          onPress={() => setShowBlockedModal(true)}
+        />
+      </View>
+
       {/* Logout */}
       <Pressable
         onPress={logout}
@@ -266,6 +374,175 @@ export default function ProfileScreen() {
           <Ionicons name="chevron-forward" size={18} color={COLORS.gray[400]} />
         </Pressable>
       </View>
+
+      {/* Report User Modal */}
+      <Modal visible={showReportModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowReportModal(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1">
+          <View className="flex-1 bg-gray-50 p-4">
+            <View className="flex-row justify-between items-center mb-6">
+              <Text className="text-lg font-bold text-gray-900">Report a User</Text>
+              <Pressable onPress={() => setShowReportModal(false)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </Pressable>
+            </View>
+
+            <Text className="text-sm font-medium text-gray-700 mb-1">User ID</Text>
+            <TextInput
+              className="bg-white rounded-lg px-3 py-2.5 mb-4 text-sm text-gray-900"
+              style={{ borderWidth: 1, borderColor: '#E5E7EB' }}
+              placeholder="Enter the user ID to report"
+              value={reportUserId}
+              onChangeText={setReportUserId}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+
+            <Text className="text-sm font-medium text-gray-700 mb-2">Reason</Text>
+            <View className="flex-row flex-wrap gap-2 mb-4">
+              {REPORT_REASONS.map((reason) => (
+                <Pressable
+                  key={reason}
+                  onPress={() => setReportReason(reason)}
+                  className="rounded-full px-3 py-1.5"
+                  style={{
+                    backgroundColor: reportReason === reason ? '#DC2626' : '#F3F4F6',
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: reportReason === reason ? '#FFFFFF' : '#374151',
+                      fontSize: 13,
+                      fontWeight: '500',
+                      textTransform: 'capitalize',
+                    }}
+                  >
+                    {reason}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <Text className="text-sm font-medium text-gray-700 mb-1">Description (optional)</Text>
+            <TextInput
+              className="bg-white rounded-lg px-3 py-2.5 mb-6 text-sm text-gray-900"
+              style={{ borderWidth: 1, borderColor: '#E5E7EB', minHeight: 80 }}
+              placeholder="Provide more details about the issue..."
+              value={reportDescription}
+              onChangeText={setReportDescription}
+              multiline
+              textAlignVertical="top"
+            />
+
+            <Pressable
+              onPress={handleReportUser}
+              className="rounded-lg py-3 items-center"
+              style={{ backgroundColor: '#DC2626' }}
+              disabled={reportUserMutation.isPending}
+            >
+              <Text className="text-white font-semibold text-base">
+                {reportUserMutation.isPending ? 'Submitting...' : 'Submit Report'}
+              </Text>
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Block User Modal */}
+      <Modal visible={showBlockModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowBlockModal(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1">
+          <View className="flex-1 bg-gray-50 p-4">
+            <View className="flex-row justify-between items-center mb-6">
+              <Text className="text-lg font-bold text-gray-900">Block a User</Text>
+              <Pressable onPress={() => setShowBlockModal(false)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </Pressable>
+            </View>
+
+            <Text className="text-sm text-gray-600 mb-4">
+              Blocked users cannot view your profile, contact you, or interact with your listings.
+            </Text>
+
+            <Text className="text-sm font-medium text-gray-700 mb-1">User ID</Text>
+            <TextInput
+              className="bg-white rounded-lg px-3 py-2.5 mb-6 text-sm text-gray-900"
+              style={{ borderWidth: 1, borderColor: '#E5E7EB' }}
+              placeholder="Enter the user ID to block"
+              value={blockUserId}
+              onChangeText={setBlockUserId}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+
+            <Pressable
+              onPress={handleBlockUser}
+              className="rounded-lg py-3 items-center"
+              style={{ backgroundColor: '#92400E' }}
+              disabled={blockUserMutation.isPending}
+            >
+              <Text className="text-white font-semibold text-base">
+                {blockUserMutation.isPending ? 'Blocking...' : 'Block User'}
+              </Text>
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Blocked Users Modal */}
+      <Modal visible={showBlockedModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowBlockedModal(false)}>
+        <View className="flex-1 bg-gray-50 p-4">
+          <View className="flex-row justify-between items-center mb-6">
+            <Text className="text-lg font-bold text-gray-900">Blocked Users</Text>
+            <Pressable onPress={() => setShowBlockedModal(false)}>
+              <Ionicons name="close" size={24} color="#333" />
+            </Pressable>
+          </View>
+
+          {loadingBlocked ? (
+            <ActivityIndicator size="large" color="#1B5E20" />
+          ) : blockedUsers.length === 0 ? (
+            <View className="flex-1 items-center justify-center">
+              <Ionicons name="shield-checkmark-outline" size={48} color="#9CA3AF" />
+              <Text className="mt-3 text-base text-gray-500 font-medium">No blocked users</Text>
+              <Text className="mt-1 text-sm text-gray-400">Users you block will appear here</Text>
+            </View>
+          ) : (
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {blockedUsers.map((bu) => (
+                <View
+                  key={bu.id}
+                  className="flex-row items-center bg-white rounded-xl px-4 py-3 mb-2"
+                  style={{ borderWidth: 1, borderColor: '#E5E7EB' }}
+                >
+                  <View className="h-10 w-10 rounded-full bg-gray-200 items-center justify-center mr-3">
+                    {bu.avatar_url ? (
+                      <Image source={{ uri: bu.avatar_url }} className="h-full w-full rounded-full" />
+                    ) : (
+                      <Ionicons name="person" size={20} color="#9CA3AF" />
+                    )}
+                  </View>
+                  <Text className="flex-1 text-sm font-medium text-gray-900">{bu.display_name || bu.id}</Text>
+                  <Pressable
+                    onPress={() =>
+                      Alert.alert('Unblock User', `Unblock ${bu.display_name || 'this user'}?`, [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Unblock',
+                          onPress: () => unblockUserMutation.mutate(bu.id),
+                        },
+                      ])
+                    }
+                    className="rounded-lg px-3 py-1.5"
+                    style={{ backgroundColor: '#FEF3C7', borderWidth: 1, borderColor: '#92400E' }}
+                    disabled={unblockUserMutation.isPending}
+                  >
+                    <Text style={{ color: '#92400E', fontSize: 12, fontWeight: '600' }}>Unblock</Text>
+                  </Pressable>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+        </View>
+      </Modal>
 
       {/* Change Password Modal */}
       <Modal visible={showPasswordModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowPasswordModal(false)}>

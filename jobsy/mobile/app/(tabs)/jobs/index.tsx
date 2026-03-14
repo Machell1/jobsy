@@ -3,6 +3,7 @@ import {
   View,
   Text,
   FlatList,
+  Image,
   Pressable,
   ScrollView,
   Modal,
@@ -32,6 +33,7 @@ import {
   type Contract,
 } from "@/api/bidding";
 import { useAuthStore } from "@/stores/auth";
+import { PhotoUploader } from "@/components/PhotoUploader";
 
 // ========== Constants ==========
 
@@ -150,6 +152,7 @@ export default function JobBoardScreen() {
   const [postBudgetMin, setPostBudgetMin] = useState("");
   const [postBudgetMax, setPostBudgetMax] = useState("");
   const [postDeadline, setPostDeadline] = useState("");
+  const [postImages, setPostImages] = useState<string[]>([]);
 
   // Edit Job form state
   const [editingJob, setEditingJob] = useState<JobPost | null>(null);
@@ -262,6 +265,7 @@ export default function JobBoardScreen() {
     setPostBudgetMin("");
     setPostBudgetMax("");
     setPostDeadline("");
+    setPostImages([]);
   }
 
   function handlePostJob() {
@@ -278,6 +282,7 @@ export default function JobBoardScreen() {
       budget_max: postBudgetMax ? Number(postBudgetMax) : undefined,
       currency: "JMD",
       deadline: postDeadline || undefined,
+      attachments: postImages.length > 0 ? postImages : undefined,
     });
   }
 
@@ -329,6 +334,18 @@ export default function JobBoardScreen() {
             {item.description}
           </Text>
         ) : null}
+
+        {item.attachments && item.attachments.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2">
+            {item.attachments.map((url, idx) => (
+              <Image
+                key={idx}
+                source={{ uri: url }}
+                style={{ width: 80, height: 60, borderRadius: 8, marginRight: 6 }}
+              />
+            ))}
+          </ScrollView>
+        )}
 
         <View className="flex-row items-center justify-between">
           <Text className="text-sm font-semibold text-green-700">
@@ -384,6 +401,18 @@ export default function JobBoardScreen() {
             {item.description}
           </Text>
         ) : null}
+
+        {item.attachments && item.attachments.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2">
+            {item.attachments.map((url, idx) => (
+              <Image
+                key={idx}
+                source={{ uri: url }}
+                style={{ width: 80, height: 60, borderRadius: 8, marginRight: 6 }}
+              />
+            ))}
+          </ScrollView>
+        )}
 
         <View className="flex-row items-center justify-between">
           <Text className="text-sm font-semibold text-green-700">
@@ -958,16 +987,24 @@ export default function JobBoardScreen() {
 
               <Text className="text-sm font-medium text-gray-700 mb-1">Deadline (YYYY-MM-DD)</Text>
               <TextInput
-                className="bg-gray-50 rounded-lg px-3 py-2.5 mb-4 text-sm text-gray-900"
+                className="bg-gray-50 rounded-lg px-3 py-2.5 mb-3 text-sm text-gray-900"
                 style={{ borderWidth: 1, borderColor: "#E5E7EB" }}
                 placeholder="2026-04-01"
                 value={postDeadline}
                 onChangeText={setPostDeadline}
               />
 
+              <Text className="text-sm font-medium text-gray-700 mb-1">Images (up to 5)</Text>
+              <PhotoUploader
+                photos={postImages}
+                onChange={setPostImages}
+                maxPhotos={5}
+                bucket="jobs"
+              />
+
               <Pressable
                 onPress={handlePostJob}
-                className="rounded-lg py-3 items-center"
+                className="rounded-lg py-3 items-center mt-2"
                 style={{ backgroundColor: "#1B5E20" }}
                 disabled={createMutation.isPending}
               >

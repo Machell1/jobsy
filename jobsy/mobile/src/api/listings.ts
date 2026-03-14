@@ -31,6 +31,7 @@ export interface ListingCreate {
   longitude?: number;
   parish?: string;
   address_text?: string;
+  images?: string[];
 }
 
 export interface ListingUpdate {

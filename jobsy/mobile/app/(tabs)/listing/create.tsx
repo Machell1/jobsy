@@ -46,6 +46,7 @@ export default function CreateListingScreen() {
       parish: parish || undefined,
       latitude: location.latitude || undefined,
       longitude: location.longitude || undefined,
+      images: photos.length > 0 ? photos : undefined,
     });
   };
 
