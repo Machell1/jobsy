@@ -145,7 +145,7 @@ export default function MyListingsScreen() {
           <View className="mb-4 flex-row items-center justify-between">
             <Text className="text-lg font-bold text-dark-900">Edit Listing</Text>
             <Pressable onPress={() => setEditingListing(null)}>
-              <Ionicons name="close" size={24} color={COLORS.text} />
+              <Ionicons name="close" size={24} color={COLORS.black} />
             </Pressable>
           </View>
 
