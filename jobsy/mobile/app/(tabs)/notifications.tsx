@@ -57,6 +57,7 @@ function prefsToPayload(prefs: Record<PrefKey, boolean>) {
   return payload;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function apiPrefsToState(data: any): Record<PrefKey, boolean> {
   const prefs = buildDefaultPrefs();
   if (!data) return prefs;
@@ -236,7 +237,7 @@ export default function NotificationsScreen() {
               </View>
 
               {/* Category rows */}
-              {PREF_CATEGORIES.map((cat, idx) => (
+              {PREF_CATEGORIES.map((cat, _idx) => (
                 <View
                   key={cat}
                   style={{

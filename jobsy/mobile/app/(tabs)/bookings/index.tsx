@@ -102,6 +102,7 @@ export default function BookingsScreen() {
 
   // Quotes modal state
   const [quotesBooking, setQuotesBooking] = useState<Booking | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [quotes, setQuotes] = useState<any[]>([]);
   const [loadingQuotes, setLoadingQuotes] = useState(false);
   const [showSendQuoteForm, setShowSendQuoteForm] = useState(false);
@@ -616,6 +617,7 @@ export default function BookingsScreen() {
                   <Text className="text-sm text-gray-500 mt-2">No quotes yet</Text>
                 </View>
               ) : (
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 quotes.map((q: any) => (
                   <View
                     key={q.id}

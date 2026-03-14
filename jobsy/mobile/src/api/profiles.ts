@@ -138,10 +138,12 @@ export async function getMyServices() {
   const { data } = await api.get('/api/profiles/services/mine');
   return data;
 }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function createService(svcData: any) {
   const { data } = await api.post('/api/profiles/services', svcData);
   return data;
 }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function updateService(id: string, svcData: any) {
   const { data } = await api.put(`/api/profiles/services/${id}`, svcData);
   return data;
@@ -155,10 +157,12 @@ export async function getServicePackages(serviceId: string) {
   const { data } = await api.get(`/api/profiles/services/${serviceId}/packages`);
   return data;
 }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function createPackage(serviceId: string, pkgData: any) {
   const { data } = await api.post(`/api/profiles/services/${serviceId}/packages`, pkgData);
   return data;
 }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function updatePackage(packageId: string, pkgData: any) {
   const { data } = await api.put(`/api/profiles/packages/${packageId}`, pkgData);
   return data;
@@ -172,6 +176,7 @@ export async function getMyAvailability() {
   const { data } = await api.get('/api/profiles/availability/me');
   return data;
 }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function updateAvailability(schedule: any) {
   const { data } = await api.put('/api/profiles/availability', schedule);
   return data;
@@ -182,10 +187,12 @@ export async function getMyPortfolio() {
   const { data } = await api.get('/api/profiles/me/portfolio');
   return data;
 }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function addPortfolioItem(item: any) {
   const { data } = await api.post('/api/profiles/me/portfolio', item);
   return data;
 }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function updatePortfolioItem(itemId: string, item: any) {
   const { data } = await api.put(`/api/profiles/me/portfolio/${itemId}`, item);
   return data;

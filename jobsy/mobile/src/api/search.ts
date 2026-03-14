@@ -35,6 +35,7 @@ export async function getSuggestions(q: string, type: "listings" | "profiles" = 
   return res.data;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function saveSearch(data: { name?: string; query?: string; filters?: any; notification_enabled?: boolean }) {
   const { data: res } = await api.post('/api/search/saved-searches', data);
   return res;

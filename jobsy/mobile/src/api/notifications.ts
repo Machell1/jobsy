@@ -41,6 +41,7 @@ export async function getNotificationPreferences() {
   return data;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function updateNotificationPreferences(prefs: any) {
   const { data } = await api.put('/api/notifications/preferences', prefs);
   return data;

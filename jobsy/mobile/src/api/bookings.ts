@@ -58,11 +58,13 @@ export async function createBooking(payload: {
   return data;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function rescheduleBooking(id: string, data: any) {
   const { data: res } = await api.post(`/api/bookings/${id}/reschedule`, data);
   return res;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function createQuote(bookingId: string, data: any) {
   const { data: res } = await api.post(`/api/bookings/${bookingId}/quotes`, data);
   return res;

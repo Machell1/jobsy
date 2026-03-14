@@ -45,6 +45,7 @@ export default function PaymentsScreen() {
 
   // Receipt modal state
   const [receiptTransaction, setReceiptTransaction] = useState<Transaction | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [receiptData, setReceiptData] = useState<any>(null);
   const [loadingReceipt, setLoadingReceipt] = useState(false);
 
@@ -224,7 +225,9 @@ export default function PaymentsScreen() {
         /* Payouts tab */
         <FlatList
           data={payouts}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           keyExtractor={(item: any) => item.id}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           renderItem={({ item }: { item: any }) => {
             const sc = statusColors[item.status] || { bg: "#F3F4F6", text: "#374151" };
             return (

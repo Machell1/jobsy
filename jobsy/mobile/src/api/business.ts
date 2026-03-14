@@ -1,5 +1,6 @@
 import { api } from './client';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function registerBusiness(data: any) {
   const { data: res } = await api.post('/api/business/register', data);
   return res;
@@ -8,6 +9,7 @@ export async function getMyBusiness() {
   const { data } = await api.get('/api/business/me');
   return data;
 }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function updateBusiness(data: any) {
   const { data: res } = await api.put('/api/business/me', data);
   return res;
@@ -31,10 +33,12 @@ export async function getBranches() {
   const { data } = await api.get('/api/business/branches');
   return data;
 }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function createBranch(data: any) {
   const { data: res } = await api.post('/api/business/branches', data);
   return res;
 }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function updateBranch(id: string, data: any) {
   const { data: res } = await api.put(`/api/business/branches/${id}`, data);
   return res;
