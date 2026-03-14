@@ -12,7 +12,7 @@ import websockets
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from prometheus_fastapi_instrumentator import Instrumentator
 
-from shared.config import REDIS_URL, SENTRY_DSN
+from shared.config import POSTHOG_API_KEY, POSTHOG_HOST, REDIS_URL, SENTRY_DSN
 from shared.database import init_db
 from shared.logging import setup_json_logging
 from shared.middleware import setup_middleware
@@ -26,6 +26,7 @@ from .routes.business import router as business_router
 from .routes.health import router as health_router
 from .routes.noticeboard import router as noticeboard_router
 from .routes.payments import router as payments_router
+from .routes.paypal import router as paypal_router
 from .routes.proxy import router as proxy_router
 from .routes.stream_chat import router as stream_chat_router
 from .routes.trust import router as trust_router
@@ -45,6 +46,15 @@ if SENTRY_DSN:
         )
     except ImportError:
         logging.getLogger(__name__).warning("sentry-sdk not installed, skipping Sentry init")
+
+if POSTHOG_API_KEY:
+    try:
+        import posthog
+
+        posthog.api_key = POSTHOG_API_KEY
+        posthog.host = POSTHOG_HOST
+    except ImportError:
+        logging.getLogger(__name__).warning("posthog package not installed, skipping PostHog init")
 
 
 async def _apply_migrations() -> None:
@@ -1055,6 +1065,11 @@ app.include_router(
 )
 app.include_router(
     payments_router,
+    prefix="/api/payments",
+    tags=["payments"],
+)
+app.include_router(
+    paypal_router,
     prefix="/api/payments",
     tags=["payments"],
 )

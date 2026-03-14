@@ -108,3 +108,27 @@ SMTP_PORT = os.getenv("SMTP_PORT", "587")
 SMTP_USER = os.getenv("SMTP_USER", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 SMTP_FROM_EMAIL = os.getenv("SMTP_FROM_EMAIL", "noreply@jobsyja.com")
+
+# Cloudinary (Image Hosting)
+CLOUDINARY_CLOUD_NAME = os.getenv("CLOUDINARY_CLOUD_NAME", "")
+CLOUDINARY_API_KEY = os.getenv("CLOUDINARY_API_KEY", "")
+CLOUDINARY_API_SECRET = os.getenv("CLOUDINARY_API_SECRET", "")
+
+# Resend (Transactional Email)
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+
+# SendGrid (Email Fallback)
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY", "")
+
+# Mapbox (Location Services)
+MAPBOX_PUBLIC_TOKEN = os.getenv("MAPBOX_PUBLIC_TOKEN", "")
+MAPBOX_SECRET_TOKEN = os.getenv("MAPBOX_SECRET_TOKEN", "")
+
+# PayPal (Alternative Payments)
+PAYPAL_CLIENT_ID = os.getenv("PAYPAL_CLIENT_ID", "")
+PAYPAL_CLIENT_SECRET = os.getenv("PAYPAL_CLIENT_SECRET", "")
+PAYPAL_MODE = os.getenv("PAYPAL_MODE", "sandbox")
+
+# PostHog (Product Analytics)
+POSTHOG_API_KEY = os.getenv("POSTHOG_API_KEY", "")
+POSTHOG_HOST = os.getenv("POSTHOG_HOST", "https://us.i.posthog.com")

@@ -1,17 +1,26 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import * as Sentry from "@sentry/react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Slot, useRouter, useSegments } from "expo-router";
+import { Slot, usePathname, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { PostHogProvider } from "posthog-react-native";
 import { OverlayProvider } from "stream-chat-expo";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { posthog } from "@/lib/posthog";
 import { useAuthStore } from "@/stores/auth";
 import { useChatStore } from "@/stores/chat";
 
 import "../global.css";
+
+Sentry.init({
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN ?? "",
+  tracesSampleRate: 0.2,
+  enabled: !__DEV__,
+});
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,21 +75,49 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-export default function RootLayout() {
+function useScreenTracking() {
+  const pathname = usePathname();
+  const prevPathname = useRef(pathname);
+
+  useEffect(() => {
+    if (pathname !== prevPathname.current) {
+      posthog?.screen(pathname, { previous: prevPathname.current });
+      prevPathname.current = pathname;
+    }
+  }, [pathname]);
+}
+
+function RootLayout() {
   usePushNotifications();
+  useScreenTracking();
 
   return (
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <QueryClientProvider client={queryClient}>
-          <OverlayProvider value={{ style: STREAM_THEME }}>
-            <StatusBar style="dark" />
-            <AuthGuard>
-              <Slot />
-            </AuthGuard>
-          </OverlayProvider>
-        </QueryClientProvider>
+        {posthog ? (
+          <PostHogProvider client={posthog}>
+            <QueryClientProvider client={queryClient}>
+              <OverlayProvider value={{ style: STREAM_THEME }}>
+                <StatusBar style="dark" />
+                <AuthGuard>
+                  <Slot />
+                </AuthGuard>
+              </OverlayProvider>
+            </QueryClientProvider>
+          </PostHogProvider>
+        ) : (
+          <QueryClientProvider client={queryClient}>
+            <OverlayProvider value={{ style: STREAM_THEME }}>
+              <StatusBar style="dark" />
+              <AuthGuard>
+                <Slot />
+              </AuthGuard>
+            </OverlayProvider>
+          </QueryClientProvider>
+        )}
       </GestureHandlerRootView>
     </ErrorBoundary>
   );
 }
+
+export default Sentry.wrap(RootLayout);
