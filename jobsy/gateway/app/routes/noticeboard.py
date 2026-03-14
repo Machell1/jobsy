@@ -240,7 +240,7 @@ async def create_post(
     user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Create a new post (goes to pending_review)."""
+    """Create a new post (auto-approved)."""
     user_id = user["user_id"]
 
     result = await db.execute(
@@ -266,7 +266,7 @@ async def create_post(
         external_link=data.external_link,
         post_type=data.post_type,
         profession_tag=data.profession_tag,
-        moderation_status="pending_review",
+        moderation_status="approved",
         like_count=0,
         comment_count=0,
         is_pinned=False,
@@ -504,7 +504,7 @@ async def create_comment(
         author_id=user_id,
         content=data.content,
         parent_comment_id=data.parent_comment_id,
-        moderation_status="pending_review",
+        moderation_status="approved",
         like_count=0,
         created_at=now,
         updated_at=now,
