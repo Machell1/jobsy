@@ -11,8 +11,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 
 import stripe
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -63,7 +62,10 @@ async def _create_connect(email: str) -> dict | None:
     return {"account_id": acct.id, "onboarding_url": link.url}
 
 
-async def _create_intent(amount: Decimal, customer_id: str | None, connect_id: str | None, desc: str | None, meta: dict | None) -> dict | None:
+async def _create_intent(
+    amount: Decimal, customer_id: str | None, connect_id: str | None,
+    desc: str | None, meta: dict | None,
+) -> dict | None:
     if not _stripe_ok():
         return None
     cents = int(amount * 100)
@@ -199,7 +201,10 @@ async def initiate_payment(
     customer_id = payer_acc.stripe_customer_id if payer_acc else None
     connect_id = payee_acc.stripe_account_id if payee_acc else None
 
-    intent = await _create_intent(amount, customer_id, connect_id, data.description, {"payer_id": payer_id, "payee_id": data.payee_id})
+    meta = {"payer_id": payer_id, "payee_id": data.payee_id}
+    intent = await _create_intent(
+        amount, customer_id, connect_id, data.description, meta,
+    )
 
     now = datetime.now(UTC)
     txn = Transaction(
@@ -390,7 +395,10 @@ async def create_refund(
     txn.status = "refunded"
     txn.updated_at = now
     await db.flush()
-    return {"refund_id": refund.id, "payment_id": data.payment_id, "amount": float(refund_amount), "status": "processing"}
+    return {
+        "refund_id": refund.id, "payment_id": data.payment_id,
+        "amount": float(refund_amount), "status": "processing",
+    }
 
 
 @router.post("/webhooks/stripe")
@@ -405,8 +413,8 @@ async def stripe_webhook(
     body = await request.body()
     try:
         event = stripe.Webhook.construct_event(body, stripe_signature, STRIPE_WEBHOOK_SECRET)
-    except (stripe.error.SignatureVerificationError, ValueError):
-        raise HTTPException(status_code=400, detail="Invalid webhook signature")
+    except (stripe.error.SignatureVerificationError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail="Invalid webhook signature") from exc
 
     etype = event["type"]
     data = event["data"]["object"]
