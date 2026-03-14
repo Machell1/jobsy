@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -151,16 +151,17 @@ export default function ProfileScreen() {
     queryKey: ["my-availability"],
     queryFn: getMyAvailability,
     enabled: showAvailabilityModal,
-    onSuccess: (data: any) => {
-      if (data?.schedule) {
-        const newSched: Record<string, { available: boolean; start: string; end: string }> = {};
-        DAYS.forEach((d) => {
-          newSched[d] = data.schedule[d] || { available: false, start: '09:00', end: '17:00' };
-        });
-        setAvailSchedule(newSched);
-      }
-    },
   });
+
+  useEffect(() => {
+    if (availability?.schedule) {
+      const newSched: Record<string, { available: boolean; start: string; end: string }> = {};
+      DAYS.forEach((d) => {
+        newSched[d] = availability.schedule[d] || { available: false, start: '09:00', end: '17:00' };
+      });
+      setAvailSchedule(newSched);
+    }
+  }, [availability]);
 
   // ——— Mutations ———
   const changePasswordMutation = useMutation({
@@ -284,10 +285,11 @@ export default function ProfileScreen() {
     queryKey: ["share-links"],
     queryFn: getShareLinks,
     enabled: showShareModal,
-    onSuccess: (data: any) => {
-      if (data?.profile_url) setShareUrl(data.profile_url);
-    },
   });
+
+  useEffect(() => {
+    if (shareLinks?.profile_url) setShareUrl(shareLinks.profile_url);
+  }, [shareLinks]);
 
   // ——— Helpers ———
   function resetPortfolioForm() {

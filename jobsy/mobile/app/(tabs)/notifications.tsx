@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FlatList, Modal, Pressable, Switch, Text, View, ScrollView, ActivityIndicator, Alert } from "react-native";
 import { Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -85,10 +85,11 @@ export default function NotificationsScreen() {
     queryKey: ["notification-prefs"],
     queryFn: getNotificationPreferences,
     enabled: showPrefsModal,
-    onSuccess: (data: any) => {
-      setLocalPrefs(apiPrefsToState(data));
-    },
   });
+
+  useEffect(() => {
+    if (prefsData) setLocalPrefs(apiPrefsToState(prefsData));
+  }, [prefsData]);
 
   const markRead = useMutation({
     mutationFn: (id: string) => markNotificationRead(id),
