@@ -35,3 +35,13 @@ export async function registerDevice(token: string, platform: "ios" | "android" 
 export async function unregisterDevice(token: string): Promise<void> {
   await api.delete(`/api/notifications/devices/${token}`);
 }
+
+export async function getNotificationPreferences() {
+  const { data } = await api.get('/api/notifications/preferences');
+  return data;
+}
+
+export async function updateNotificationPreferences(prefs: any) {
+  const { data } = await api.put('/api/notifications/preferences', prefs);
+  return data;
+}

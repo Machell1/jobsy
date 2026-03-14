@@ -61,3 +61,18 @@ export async function requestPayout(amount: number) {
   const res = await api.post("/api/payments/payouts", { amount });
   return res.data;
 }
+
+export async function requestRefund(data: { payment_id: string; amount?: number; reason?: string }) {
+  const { data: res } = await api.post('/api/payments/refunds', data);
+  return res;
+}
+
+export async function getReceipt(paymentId: string) {
+  const { data } = await api.get(`/api/payments/receipts/${paymentId}`);
+  return data;
+}
+
+export async function getPayouts() {
+  const { data } = await api.get('/api/payments/payouts');
+  return data;
+}

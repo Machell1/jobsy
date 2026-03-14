@@ -109,3 +109,105 @@ export async function getShareLinks(): Promise<ShareLinks> {
   const res = await api.get<ShareLinks>("/api/profiles/me/share-links");
   return res.data;
 }
+
+// Tags
+export async function addTag(data: { user_id: string; tag: string }) {
+  const { data: res } = await api.post('/api/profiles/tag', data);
+  return res;
+}
+export async function getUserTags(userId: string) {
+  const { data } = await api.get(`/api/profiles/tags/${userId}`);
+  return data;
+}
+export async function deleteTag(tagId: string) {
+  await api.delete(`/api/profiles/tag/${tagId}`);
+}
+
+// Verification
+export async function submitVerification(documentUrls: string[]) {
+  const { data } = await api.post('/api/profiles/verification/submit', { document_urls: documentUrls });
+  return data;
+}
+export async function getVerificationStatus() {
+  const { data } = await api.get('/api/profiles/verification/status');
+  return data;
+}
+
+// Services
+export async function getMyServices() {
+  const { data } = await api.get('/api/profiles/services/mine');
+  return data;
+}
+export async function createService(svcData: any) {
+  const { data } = await api.post('/api/profiles/services', svcData);
+  return data;
+}
+export async function updateService(id: string, svcData: any) {
+  const { data } = await api.put(`/api/profiles/services/${id}`, svcData);
+  return data;
+}
+export async function deleteService(id: string) {
+  await api.delete(`/api/profiles/services/${id}`);
+}
+
+// Packages
+export async function getServicePackages(serviceId: string) {
+  const { data } = await api.get(`/api/profiles/services/${serviceId}/packages`);
+  return data;
+}
+export async function createPackage(serviceId: string, pkgData: any) {
+  const { data } = await api.post(`/api/profiles/services/${serviceId}/packages`, pkgData);
+  return data;
+}
+export async function updatePackage(packageId: string, pkgData: any) {
+  const { data } = await api.put(`/api/profiles/packages/${packageId}`, pkgData);
+  return data;
+}
+export async function deletePackage(packageId: string) {
+  await api.delete(`/api/profiles/packages/${packageId}`);
+}
+
+// Availability
+export async function getMyAvailability() {
+  const { data } = await api.get('/api/profiles/availability/me');
+  return data;
+}
+export async function updateAvailability(schedule: any) {
+  const { data } = await api.put('/api/profiles/availability', schedule);
+  return data;
+}
+
+// Portfolio
+export async function getMyPortfolio() {
+  const { data } = await api.get('/api/profiles/me/portfolio');
+  return data;
+}
+export async function addPortfolioItem(item: any) {
+  const { data } = await api.post('/api/profiles/me/portfolio', item);
+  return data;
+}
+export async function updatePortfolioItem(itemId: string, item: any) {
+  const { data } = await api.put(`/api/profiles/me/portfolio/${itemId}`, item);
+  return data;
+}
+export async function deletePortfolioItem(itemId: string) {
+  await api.delete(`/api/profiles/me/portfolio/${itemId}`);
+}
+
+// Share link (generate)
+export async function generateShareLink() {
+  const { data } = await api.post('/api/profiles/me/share-link');
+  return data;
+}
+
+// Provider analytics
+export async function getProviderAnalytics() {
+  const { data } = await api.get('/api/profiles/me/analytics');
+  return data;
+}
+
+// Categories
+export async function getCategories() {
+  const { data } = await api.get('/api/profiles/categories');
+  return data;
+}

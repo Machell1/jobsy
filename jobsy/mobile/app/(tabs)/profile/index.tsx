@@ -9,6 +9,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Share,
   Text,
   TextInput,
   View,
@@ -18,7 +19,22 @@ import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { changePassword, deleteAccount } from "@/api/auth";
-import { getMyProfile } from "@/api/profiles";
+import {
+  getMyProfile,
+  getVerificationStatus,
+  getMyPortfolio,
+  addPortfolioItem,
+  updatePortfolioItem,
+  deletePortfolioItem,
+  getMyServices,
+  createService,
+  updateService,
+  deleteService,
+  getMyAvailability,
+  updateAvailability,
+  getShareLinks,
+  generateShareLink,
+} from "@/api/profiles";
 import {
   reportUser,
   blockUser,
@@ -51,6 +67,8 @@ const REPORT_REASONS = [
 ] as const;
 type ReportReason = (typeof REPORT_REASONS)[number];
 
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+
 export default function ProfileScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -67,11 +85,40 @@ export default function ProfileScreen() {
   const [reportUserId, setReportUserId] = useState('');
   const [reportReason, setReportReason] = useState<ReportReason>('harassment');
   const [reportDescription, setReportDescription] = useState('');
-
   const [showBlockedModal, setShowBlockedModal] = useState(false);
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [blockUserId, setBlockUserId] = useState('');
 
+  // Portfolio state
+  const [showPortfolioModal, setShowPortfolioModal] = useState(false);
+  const [editingPortfolioItem, setEditingPortfolioItem] = useState<any | null>(null);
+  const [portfolioTitle, setPortfolioTitle] = useState('');
+  const [portfolioDescription, setPortfolioDescription] = useState('');
+  const [portfolioImageUrl, setPortfolioImageUrl] = useState('');
+
+  // Services state
+  const [showServicesModal, setShowServicesModal] = useState(false);
+  const [editingService, setEditingService] = useState<any | null>(null);
+  const [serviceTitle, setServiceTitle] = useState('');
+  const [serviceDescription, setServiceDescription] = useState('');
+  const [servicePrice, setServicePrice] = useState('');
+
+  // Availability state
+  const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
+  const [availSchedule, setAvailSchedule] = useState<Record<string, { available: boolean; start: string; end: string }>>(() => {
+    const s: Record<string, { available: boolean; start: string; end: string }> = {};
+    DAYS.forEach((d) => { s[d] = { available: false, start: '09:00', end: '17:00' }; });
+    return s;
+  });
+
+  // Share link state
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
+
+  // Verification state
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+
+  // ——— Queries ———
   const { data: profile, isLoading } = useQuery({
     queryKey: ["my-profile"],
     queryFn: getMyProfile,
@@ -83,13 +130,44 @@ export default function ProfileScreen() {
     enabled: showBlockedModal,
   });
 
+  const { data: verificationStatus } = useQuery({
+    queryKey: ["verification-status"],
+    queryFn: getVerificationStatus,
+  });
+
+  const { data: portfolio = [], isLoading: loadingPortfolio } = useQuery({
+    queryKey: ["my-portfolio"],
+    queryFn: getMyPortfolio,
+    enabled: showPortfolioModal,
+  });
+
+  const { data: services = [], isLoading: loadingServices } = useQuery({
+    queryKey: ["my-services"],
+    queryFn: getMyServices,
+    enabled: showServicesModal,
+  });
+
+  const { data: availability } = useQuery({
+    queryKey: ["my-availability"],
+    queryFn: getMyAvailability,
+    enabled: showAvailabilityModal,
+    onSuccess: (data: any) => {
+      if (data?.schedule) {
+        const newSched: Record<string, { available: boolean; start: string; end: string }> = {};
+        DAYS.forEach((d) => {
+          newSched[d] = data.schedule[d] || { available: false, start: '09:00', end: '17:00' };
+        });
+        setAvailSchedule(newSched);
+      }
+    },
+  });
+
+  // ——— Mutations ———
   const changePasswordMutation = useMutation({
     mutationFn: (data: { current_password: string; new_password: string }) => changePassword(data),
     onSuccess: () => {
       setShowPasswordModal(false);
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
+      setCurrentPassword(''); setNewPassword(''); setConfirmPassword('');
       Alert.alert('Success', 'Password changed successfully');
     },
     onError: () => Alert.alert('Error', 'Failed to change password. Check your current password and try again.'),
@@ -97,25 +175,15 @@ export default function ProfileScreen() {
 
   const deleteAccountMutation = useMutation({
     mutationFn: (confirmation: string) => deleteAccount(confirmation),
-    onSuccess: () => {
-      logout();
-      router.replace('/(auth)/login');
-    },
+    onSuccess: () => { logout(); router.replace('/(auth)/login'); },
     onError: () => Alert.alert('Error', 'Failed to delete account. Please try again.'),
   });
 
   const reportUserMutation = useMutation({
-    mutationFn: () =>
-      reportUser({
-        reported_user_id: reportUserId.trim(),
-        reason: reportReason,
-        description: reportDescription.trim() || undefined,
-      }),
+    mutationFn: () => reportUser({ reported_user_id: reportUserId.trim(), reason: reportReason, description: reportDescription.trim() || undefined }),
     onSuccess: () => {
       setShowReportModal(false);
-      setReportUserId('');
-      setReportReason('harassment');
-      setReportDescription('');
+      setReportUserId(''); setReportReason('harassment'); setReportDescription('');
       Alert.alert('Reported', 'Your report has been submitted. We will review it shortly.');
     },
     onError: () => Alert.alert('Error', 'Failed to submit report. Please try again.'),
@@ -125,8 +193,7 @@ export default function ProfileScreen() {
     mutationFn: () => blockUser(blockUserId.trim()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['blocked-users'] });
-      setShowBlockModal(false);
-      setBlockUserId('');
+      setShowBlockModal(false); setBlockUserId('');
       Alert.alert('Blocked', 'User has been blocked.');
     },
     onError: () => Alert.alert('Error', 'Failed to block user. Please try again.'),
@@ -134,71 +201,141 @@ export default function ProfileScreen() {
 
   const unblockUserMutation = useMutation({
     mutationFn: (userId: string) => unblockUser(userId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['blocked-users'] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['blocked-users'] }),
     onError: () => Alert.alert('Error', 'Failed to unblock user.'),
   });
 
+  // Portfolio mutations
+  const addPortfolioMutation = useMutation({
+    mutationFn: () => addPortfolioItem({ title: portfolioTitle.trim(), description: portfolioDescription.trim() || undefined, image_url: portfolioImageUrl.trim() || undefined }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-portfolio'] });
+      resetPortfolioForm();
+      Alert.alert('Added', 'Portfolio item added.');
+    },
+    onError: () => Alert.alert('Error', 'Failed to add portfolio item.'),
+  });
+
+  const updatePortfolioMutation = useMutation({
+    mutationFn: () => updatePortfolioItem(editingPortfolioItem.id, { title: portfolioTitle.trim(), description: portfolioDescription.trim() || undefined, image_url: portfolioImageUrl.trim() || undefined }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-portfolio'] });
+      resetPortfolioForm();
+      Alert.alert('Updated', 'Portfolio item updated.');
+    },
+    onError: () => Alert.alert('Error', 'Failed to update portfolio item.'),
+  });
+
+  const deletePortfolioMutation = useMutation({
+    mutationFn: (itemId: string) => deletePortfolioItem(itemId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-portfolio'] }),
+    onError: () => Alert.alert('Error', 'Failed to delete portfolio item.'),
+  });
+
+  // Services mutations
+  const createServiceMutation = useMutation({
+    mutationFn: () => createService({ title: serviceTitle.trim(), description: serviceDescription.trim() || undefined, base_price: servicePrice ? parseFloat(servicePrice) : undefined }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-services'] });
+      resetServiceForm();
+      Alert.alert('Created', 'Service created.');
+    },
+    onError: () => Alert.alert('Error', 'Failed to create service.'),
+  });
+
+  const updateServiceMutation = useMutation({
+    mutationFn: () => updateService(editingService.id, { title: serviceTitle.trim(), description: serviceDescription.trim() || undefined, base_price: servicePrice ? parseFloat(servicePrice) : undefined }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-services'] });
+      resetServiceForm();
+      Alert.alert('Updated', 'Service updated.');
+    },
+    onError: () => Alert.alert('Error', 'Failed to update service.'),
+  });
+
+  const deleteServiceMutation = useMutation({
+    mutationFn: (id: string) => deleteService(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-services'] }),
+    onError: () => Alert.alert('Error', 'Failed to delete service.'),
+  });
+
+  // Availability mutation
+  const updateAvailabilityMutation = useMutation({
+    mutationFn: () => updateAvailability({ schedule: availSchedule }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-availability'] });
+      setShowAvailabilityModal(false);
+      Alert.alert('Saved', 'Availability updated.');
+    },
+    onError: () => Alert.alert('Error', 'Failed to update availability.'),
+  });
+
+  // Share link
+  const generateShareLinkMutation = useMutation({
+    mutationFn: generateShareLink,
+    onSuccess: (data: any) => {
+      const url = data?.url || data?.share_url || '';
+      setShareUrl(url);
+    },
+    onError: () => Alert.alert('Error', 'Failed to generate share link.'),
+  });
+
+  const { data: shareLinks } = useQuery({
+    queryKey: ["share-links"],
+    queryFn: getShareLinks,
+    enabled: showShareModal,
+    onSuccess: (data: any) => {
+      if (data?.profile_url) setShareUrl(data.profile_url);
+    },
+  });
+
+  // ——— Helpers ———
+  function resetPortfolioForm() {
+    setEditingPortfolioItem(null);
+    setPortfolioTitle(''); setPortfolioDescription(''); setPortfolioImageUrl('');
+  }
+
+  function resetServiceForm() {
+    setEditingService(null);
+    setServiceTitle(''); setServiceDescription(''); setServicePrice('');
+  }
+
   function handleReportUser() {
-    if (!reportUserId.trim()) {
-      Alert.alert('Required', 'Please enter a user ID.');
-      return;
-    }
+    if (!reportUserId.trim()) { Alert.alert('Required', 'Please enter a user ID.'); return; }
     reportUserMutation.mutate();
   }
 
   function handleBlockUser() {
-    if (!blockUserId.trim()) {
-      Alert.alert('Required', 'Please enter a user ID.');
-      return;
-    }
+    if (!blockUserId.trim()) { Alert.alert('Required', 'Please enter a user ID.'); return; }
     blockUserMutation.mutate();
   }
 
   function handleChangePassword() {
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      Alert.alert('Required', 'Please fill in all password fields.');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      Alert.alert('Mismatch', 'New passwords do not match.');
-      return;
-    }
-    if (newPassword.length < 8) {
-      Alert.alert('Too short', 'New password must be at least 8 characters.');
-      return;
-    }
+    if (!currentPassword || !newPassword || !confirmPassword) { Alert.alert('Required', 'Please fill in all password fields.'); return; }
+    if (newPassword !== confirmPassword) { Alert.alert('Mismatch', 'New passwords do not match.'); return; }
+    if (newPassword.length < 8) { Alert.alert('Too short', 'New password must be at least 8 characters.'); return; }
     changePasswordMutation.mutate({ current_password: currentPassword, new_password: newPassword });
   }
 
   function handleDeleteAccount() {
-    Alert.alert(
-      'Delete Account',
-      'This action is permanent and cannot be undone. All your data will be deleted.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Continue',
-          style: 'destructive',
-          onPress: () => {
-            Alert.alert(
-              'Confirm Deletion',
-              'Type "DELETE" to confirm account deletion.',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                  text: 'Delete My Account',
-                  style: 'destructive',
-                  onPress: () => deleteAccountMutation.mutate('DELETE'),
-                },
-              ]
-            );
-          },
-        },
-      ]
-    );
+    Alert.alert('Delete Account', 'This action is permanent and cannot be undone. All your data will be deleted.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Continue', style: 'destructive',
+        onPress: () => Alert.alert('Confirm Deletion', 'Type "DELETE" to confirm account deletion.', [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete My Account', style: 'destructive', onPress: () => deleteAccountMutation.mutate('DELETE') },
+        ]),
+      },
+    ]);
   }
+
+  async function handleShareProfile() {
+    setShowShareModal(true);
+  }
+
+  const isVerified = profile?.is_verified;
+  const verBadge = verificationStatus?.status || (isVerified ? 'verified' : 'unverified');
 
   if (isLoading) return <LoadingScreen />;
 
@@ -225,6 +362,30 @@ export default function ProfileScreen() {
         {profile?.service_category && (
           <Text className="mt-1 text-sm text-primary-700">{profile.service_category}</Text>
         )}
+
+        {/* Verification badge */}
+        <Pressable
+          onPress={() => setShowVerificationModal(true)}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginTop: 6,
+            paddingHorizontal: 10,
+            paddingVertical: 3,
+            borderRadius: 12,
+            backgroundColor: isVerified ? '#DCFCE7' : '#FEF9C3',
+          }}
+        >
+          <Ionicons
+            name={isVerified ? "shield-checkmark" : "shield-outline"}
+            size={13}
+            color={isVerified ? "#166534" : "#92400E"}
+          />
+          <Text style={{ fontSize: 12, fontWeight: '600', marginLeft: 4, color: isVerified ? '#166534' : '#92400E' }}>
+            {isVerified ? 'Verified' : verBadge === 'pending' ? 'Verification Pending' : 'Not Verified'}
+          </Text>
+        </Pressable>
+
         <View className="mt-2 flex-row items-center gap-1">
           <ReviewStars rating={Number(profile?.rating_avg || 0)} size={16} />
           <Text className="text-sm text-dark-400">({profile?.rating_count || 0})</Text>
@@ -290,43 +451,44 @@ export default function ProfileScreen() {
         </View>
       )}
 
+      {/* Portfolio Section */}
+      <SectionCard
+        title="Portfolio"
+        icon="images-outline"
+        onPress={() => setShowPortfolioModal(true)}
+      />
+
+      {/* Services Section (provider only) */}
+      {profile?.is_provider && (
+        <SectionCard
+          title="My Services"
+          icon="briefcase-outline"
+          onPress={() => setShowServicesModal(true)}
+        />
+      )}
+
+      {/* Availability Section (provider only) */}
+      {profile?.is_provider && (
+        <SectionCard
+          title="Availability"
+          icon="calendar-outline"
+          onPress={() => setShowAvailabilityModal(true)}
+        />
+      )}
+
       {/* Menu items */}
       <View className="mx-4 mt-4 rounded-2xl bg-white">
-        <MenuItem
-          icon="create-outline"
-          label="Edit Profile"
-          onPress={() => router.push("/(tabs)/profile/edit")}
-        />
-        <MenuItem
-          icon="list-outline"
-          label="My Listings"
-          onPress={() => router.push("/(tabs)/listing/my-listings")}
-        />
-        <MenuItem
-          icon="star-outline"
-          label="My Reviews"
-          onPress={() => router.push(`/(tabs)/reviews/${user?.id}`)}
-        />
-        <MenuItem
-          icon="card-outline"
-          label="Payments"
-          onPress={() => router.push("/(tabs)/payments/")}
-        />
-        <MenuItem
-          icon="notifications-outline"
-          label="Notifications"
-          onPress={() => router.push("/(tabs)/notifications")}
-        />
+        <MenuItem icon="create-outline" label="Edit Profile" onPress={() => router.push("/(tabs)/profile/edit")} />
+        <MenuItem icon="list-outline" label="My Listings" onPress={() => router.push("/(tabs)/listing/my-listings")} />
+        <MenuItem icon="star-outline" label="My Reviews" onPress={() => router.push(`/(tabs)/reviews/${user?.id}`)} />
+        <MenuItem icon="card-outline" label="Payments" onPress={() => router.push("/(tabs)/payments/")} />
+        <MenuItem icon="notifications-outline" label="Notifications" onPress={() => router.push("/(tabs)/notifications")} />
         <MenuItem
           icon="share-social-outline"
           label="Share Profile"
-          onPress={() => router.push("/(tabs)/profile/edit")}
+          onPress={handleShareProfile}
         />
-        <MenuItem
-          icon="lock-closed-outline"
-          label="Change Password"
-          onPress={() => setShowPasswordModal(true)}
-        />
+        <MenuItem icon="lock-closed-outline" label="Change Password" onPress={() => setShowPasswordModal(true)} />
       </View>
 
       {/* Trust & Safety */}
@@ -334,28 +496,13 @@ export default function ProfileScreen() {
         <View className="px-4 pt-3 pb-1">
           <Text className="text-xs font-semibold text-orange-600 uppercase tracking-wider">Trust &amp; Safety</Text>
         </View>
-        <MenuItem
-          icon="flag-outline"
-          label="Report a User"
-          onPress={() => setShowReportModal(true)}
-        />
-        <MenuItem
-          icon="ban-outline"
-          label="Block a User"
-          onPress={() => setShowBlockModal(true)}
-        />
-        <MenuItem
-          icon="shield-checkmark-outline"
-          label="Blocked Users"
-          onPress={() => setShowBlockedModal(true)}
-        />
+        <MenuItem icon="flag-outline" label="Report a User" onPress={() => setShowReportModal(true)} />
+        <MenuItem icon="ban-outline" label="Block a User" onPress={() => setShowBlockModal(true)} />
+        <MenuItem icon="shield-checkmark-outline" label="Blocked Users" onPress={() => setShowBlockedModal(true)} />
       </View>
 
       {/* Logout */}
-      <Pressable
-        onPress={logout}
-        className="mx-4 mt-4 items-center rounded-2xl bg-white py-4"
-      >
+      <Pressable onPress={logout} className="mx-4 mt-4 items-center rounded-2xl bg-white py-4">
         <Text className="font-semibold text-red-500">Sign Out</Text>
       </Pressable>
 
@@ -374,6 +521,373 @@ export default function ProfileScreen() {
           <Ionicons name="chevron-forward" size={18} color={COLORS.gray[400]} />
         </Pressable>
       </View>
+
+      {/* =============== MODALS =============== */}
+
+      {/* Verification Modal */}
+      <Modal visible={showVerificationModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowVerificationModal(false)}>
+        <View className="flex-1 bg-gray-50 p-4">
+          <View className="flex-row justify-between items-center mb-5">
+            <Text className="text-lg font-bold text-gray-900">Verification Status</Text>
+            <Pressable onPress={() => setShowVerificationModal(false)}>
+              <Ionicons name="close" size={24} color="#333" />
+            </Pressable>
+          </View>
+
+          <View className="items-center py-8">
+            <View style={{ backgroundColor: isVerified ? '#DCFCE7' : '#FEF9C3', borderRadius: 50, padding: 20, marginBottom: 16 }}>
+              <Ionicons
+                name={isVerified ? "shield-checkmark" : "shield-outline"}
+                size={48}
+                color={isVerified ? "#166534" : "#92400E"}
+              />
+            </View>
+            <Text className="text-xl font-bold text-gray-900 mb-2">
+              {isVerified ? 'Account Verified' : verBadge === 'pending' ? 'Verification Pending' : 'Not Verified'}
+            </Text>
+            <Text className="text-sm text-gray-600 text-center px-4">
+              {isVerified
+                ? 'Your account has been verified. You have a trust badge on your profile.'
+                : verBadge === 'pending'
+                ? 'Your verification documents are under review. This usually takes 1–3 business days.'
+                : 'Get verified to build trust with clients. Submit government ID or business documents.'}
+            </Text>
+          </View>
+
+          {!isVerified && verBadge !== 'pending' && (
+            <Pressable
+              onPress={() => {
+                setShowVerificationModal(false);
+                Alert.alert('Verification', 'To verify your account, please contact support or use the verification flow in the web app.');
+              }}
+              className="rounded-lg py-3 items-center mx-4"
+              style={{ backgroundColor: '#1B5E20' }}
+            >
+              <Text className="text-white font-semibold text-base">Start Verification</Text>
+            </Pressable>
+          )}
+        </View>
+      </Modal>
+
+      {/* Share Profile Modal */}
+      <Modal visible={showShareModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowShareModal(false)}>
+        <View className="flex-1 bg-gray-50 p-4">
+          <View className="flex-row justify-between items-center mb-5">
+            <Text className="text-lg font-bold text-gray-900">Share Profile</Text>
+            <Pressable onPress={() => setShowShareModal(false)}>
+              <Ionicons name="close" size={24} color="#333" />
+            </Pressable>
+          </View>
+
+          {shareUrl ? (
+            <>
+              <View style={{ backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#E5E7EB' }}>
+                <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>Your profile link</Text>
+                <Text style={{ fontSize: 13, color: '#1E40AF', fontWeight: '500' }} numberOfLines={2}>{shareUrl}</Text>
+              </View>
+
+              <Pressable
+                onPress={() => Share.share({ url: shareUrl, message: `Check out my profile on Jobsy: ${shareUrl}` })}
+                className="rounded-lg py-3 items-center mb-3 flex-row justify-center"
+                style={{ backgroundColor: '#1B5E20' }}
+              >
+                <Ionicons name="share-social-outline" size={18} color="#fff" />
+                <Text className="text-white font-semibold text-base ml-2">Share Link</Text>
+              </Pressable>
+            </>
+          ) : (
+            <View className="items-center py-10">
+              <Ionicons name="link-outline" size={48} color="#9CA3AF" />
+              <Text className="text-sm text-gray-500 mt-2 mb-6 text-center">Generate a shareable link for your profile</Text>
+              <Pressable
+                onPress={() => generateShareLinkMutation.mutate()}
+                className="rounded-lg py-3 px-8 items-center flex-row"
+                style={{ backgroundColor: '#1B5E20' }}
+                disabled={generateShareLinkMutation.isPending}
+              >
+                {generateShareLinkMutation.isPending && <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />}
+                <Text className="text-white font-semibold text-base">
+                  {generateShareLinkMutation.isPending ? 'Generating...' : 'Generate Link'}
+                </Text>
+              </Pressable>
+            </View>
+          )}
+        </View>
+      </Modal>
+
+      {/* Portfolio Modal */}
+      <Modal visible={showPortfolioModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => { setShowPortfolioModal(false); resetPortfolioForm(); }}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1">
+          <View className="flex-1 bg-gray-50">
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, paddingTop: 20, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', backgroundColor: '#fff' }}>
+              <Text style={{ fontSize: 17, fontWeight: '700', color: '#111827' }}>Portfolio</Text>
+              <Pressable onPress={() => { setShowPortfolioModal(false); resetPortfolioForm(); }}>
+                <Ionicons name="close" size={24} color="#333" />
+              </Pressable>
+            </View>
+
+            <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+              {/* Add / Edit form */}
+              <View style={{ backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#E5E7EB' }}>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: '#374151', marginBottom: 12 }}>
+                  {editingPortfolioItem ? 'Edit Item' : 'Add Item'}
+                </Text>
+
+                <Text style={formLabel}>Title *</Text>
+                <TextInput style={formInput} placeholder="Project title" value={portfolioTitle} onChangeText={setPortfolioTitle} />
+
+                <Text style={formLabel}>Description</Text>
+                <TextInput style={[formInput, { minHeight: 60 }]} placeholder="Describe the project..." value={portfolioDescription} onChangeText={setPortfolioDescription} multiline textAlignVertical="top" />
+
+                <Text style={formLabel}>Image URL</Text>
+                <TextInput style={formInput} placeholder="https://..." value={portfolioImageUrl} onChangeText={setPortfolioImageUrl} autoCapitalize="none" autoCorrect={false} />
+
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+                  {editingPortfolioItem && (
+                    <Pressable onPress={resetPortfolioForm} style={[btnSecondary, { flex: 1 }]}>
+                      <Text style={btnSecondaryText}>Cancel</Text>
+                    </Pressable>
+                  )}
+                  <Pressable
+                    onPress={() => {
+                      if (!portfolioTitle.trim()) { Alert.alert('Required', 'Title is required'); return; }
+                      editingPortfolioItem ? updatePortfolioMutation.mutate() : addPortfolioMutation.mutate();
+                    }}
+                    style={[btnPrimary, { flex: 1 }]}
+                    disabled={addPortfolioMutation.isPending || updatePortfolioMutation.isPending}
+                  >
+                    <Text style={btnPrimaryText}>
+                      {(addPortfolioMutation.isPending || updatePortfolioMutation.isPending) ? 'Saving...' : editingPortfolioItem ? 'Update' : 'Add'}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              {/* Existing portfolio items */}
+              {loadingPortfolio ? (
+                <ActivityIndicator color={COLORS.primary} />
+              ) : (Array.isArray(portfolio) ? portfolio : []).length === 0 ? (
+                <View style={{ alignItems: 'center', paddingVertical: 24 }}>
+                  <Ionicons name="images-outline" size={40} color="#9CA3AF" />
+                  <Text style={{ color: '#9CA3AF', marginTop: 8, fontSize: 13 }}>No portfolio items yet</Text>
+                </View>
+              ) : (
+                (Array.isArray(portfolio) ? portfolio : []).map((item: any) => (
+                  <View key={item.id} style={{ backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: '#E5E7EB' }}>
+                    {item.image_url && (
+                      <Image source={{ uri: item.image_url }} style={{ width: '100%', height: 140, borderRadius: 8, marginBottom: 8 }} resizeMode="cover" />
+                    )}
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>{item.title}</Text>
+                    {item.description && <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 3 }}>{item.description}</Text>}
+                    <View style={{ flexDirection: 'row', marginTop: 10, gap: 8 }}>
+                      <Pressable
+                        onPress={() => {
+                          setEditingPortfolioItem(item);
+                          setPortfolioTitle(item.title || '');
+                          setPortfolioDescription(item.description || '');
+                          setPortfolioImageUrl(item.image_url || '');
+                        }}
+                        style={[btnSecondary, { flex: 1 }]}
+                      >
+                        <Text style={btnSecondaryText}>Edit</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() =>
+                          Alert.alert('Delete', 'Remove this portfolio item?', [
+                            { text: 'Cancel', style: 'cancel' },
+                            { text: 'Delete', style: 'destructive', onPress: () => deletePortfolioMutation.mutate(item.id) },
+                          ])
+                        }
+                        style={[btnDanger, { flex: 1 }]}
+                        disabled={deletePortfolioMutation.isPending}
+                      >
+                        <Text style={btnDangerText}>Delete</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Services Modal */}
+      <Modal visible={showServicesModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => { setShowServicesModal(false); resetServiceForm(); }}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1">
+          <View className="flex-1 bg-gray-50">
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, paddingTop: 20, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', backgroundColor: '#fff' }}>
+              <Text style={{ fontSize: 17, fontWeight: '700', color: '#111827' }}>My Services</Text>
+              <Pressable onPress={() => { setShowServicesModal(false); resetServiceForm(); }}>
+                <Ionicons name="close" size={24} color="#333" />
+              </Pressable>
+            </View>
+
+            <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+              {/* Add / Edit form */}
+              <View style={{ backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#E5E7EB' }}>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: '#374151', marginBottom: 12 }}>
+                  {editingService ? 'Edit Service' : 'New Service'}
+                </Text>
+
+                <Text style={formLabel}>Title *</Text>
+                <TextInput style={formInput} placeholder="e.g. Logo Design" value={serviceTitle} onChangeText={setServiceTitle} />
+
+                <Text style={formLabel}>Description</Text>
+                <TextInput style={[formInput, { minHeight: 60 }]} placeholder="Describe your service..." value={serviceDescription} onChangeText={setServiceDescription} multiline textAlignVertical="top" />
+
+                <Text style={formLabel}>Base Price ($)</Text>
+                <TextInput style={formInput} placeholder="0.00" value={servicePrice} onChangeText={setServicePrice} keyboardType="decimal-pad" />
+
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+                  {editingService && (
+                    <Pressable onPress={resetServiceForm} style={[btnSecondary, { flex: 1 }]}>
+                      <Text style={btnSecondaryText}>Cancel</Text>
+                    </Pressable>
+                  )}
+                  <Pressable
+                    onPress={() => {
+                      if (!serviceTitle.trim()) { Alert.alert('Required', 'Title is required'); return; }
+                      editingService ? updateServiceMutation.mutate() : createServiceMutation.mutate();
+                    }}
+                    style={[btnPrimary, { flex: 1 }]}
+                    disabled={createServiceMutation.isPending || updateServiceMutation.isPending}
+                  >
+                    <Text style={btnPrimaryText}>
+                      {(createServiceMutation.isPending || updateServiceMutation.isPending) ? 'Saving...' : editingService ? 'Update' : 'Create'}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              {/* Existing services */}
+              {loadingServices ? (
+                <ActivityIndicator color={COLORS.primary} />
+              ) : (Array.isArray(services) ? services : []).length === 0 ? (
+                <View style={{ alignItems: 'center', paddingVertical: 24 }}>
+                  <Ionicons name="briefcase-outline" size={40} color="#9CA3AF" />
+                  <Text style={{ color: '#9CA3AF', marginTop: 8, fontSize: 13 }}>No services yet</Text>
+                </View>
+              ) : (
+                (Array.isArray(services) ? services : []).map((svc: any) => (
+                  <View key={svc.id} style={{ backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: '#E5E7EB' }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827', flex: 1 }}>{svc.title}</Text>
+                      {svc.base_price != null && (
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: '#166534' }}>${parseFloat(svc.base_price).toFixed(2)}</Text>
+                      )}
+                    </View>
+                    {svc.description && <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 3 }}>{svc.description}</Text>}
+                    <View style={{ flexDirection: 'row', marginTop: 10, gap: 8 }}>
+                      <Pressable
+                        onPress={() => {
+                          setEditingService(svc);
+                          setServiceTitle(svc.title || '');
+                          setServiceDescription(svc.description || '');
+                          setServicePrice(svc.base_price != null ? String(svc.base_price) : '');
+                        }}
+                        style={[btnSecondary, { flex: 1 }]}
+                      >
+                        <Text style={btnSecondaryText}>Edit</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() =>
+                          Alert.alert('Delete', 'Remove this service?', [
+                            { text: 'Cancel', style: 'cancel' },
+                            { text: 'Delete', style: 'destructive', onPress: () => deleteServiceMutation.mutate(svc.id) },
+                          ])
+                        }
+                        style={[btnDanger, { flex: 1 }]}
+                        disabled={deleteServiceMutation.isPending}
+                      >
+                        <Text style={btnDangerText}>Delete</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Availability Modal */}
+      <Modal visible={showAvailabilityModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAvailabilityModal(false)}>
+        <View className="flex-1 bg-gray-50">
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, paddingTop: 20, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', backgroundColor: '#fff' }}>
+            <Text style={{ fontSize: 17, fontWeight: '700', color: '#111827' }}>Weekly Availability</Text>
+            <Pressable onPress={() => setShowAvailabilityModal(false)}>
+              <Ionicons name="close" size={24} color="#333" />
+            </Pressable>
+          </View>
+
+          <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+            <Text style={{ fontSize: 13, color: '#6B7280', marginBottom: 16 }}>
+              Set your available hours for each day of the week.
+            </Text>
+
+            {DAYS.map((day) => {
+              const s = availSchedule[day];
+              return (
+                <View key={day} style={{ backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: '#E5E7EB' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: s.available ? 10 : 0 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827', width: 44 }}>{day}</Text>
+                    <Pressable
+                      onPress={() => setAvailSchedule((prev) => ({ ...prev, [day]: { ...prev[day], available: !prev[day].available } }))}
+                      style={{
+                        paddingHorizontal: 14,
+                        paddingVertical: 5,
+                        borderRadius: 20,
+                        backgroundColor: s.available ? '#DCFCE7' : '#F3F4F6',
+                        borderWidth: 1,
+                        borderColor: s.available ? '#BBF7D0' : '#E5E7EB',
+                      }}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: '600', color: s.available ? '#166534' : '#6B7280' }}>
+                        {s.available ? 'Available' : 'Off'}
+                      </Text>
+                    </Pressable>
+                  </View>
+
+                  {s.available && (
+                    <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 11, color: '#6B7280', marginBottom: 2 }}>Start</Text>
+                        <TextInput
+                          style={formInput}
+                          value={s.start}
+                          onChangeText={(v) => setAvailSchedule((prev) => ({ ...prev, [day]: { ...prev[day], start: v } }))}
+                          placeholder="09:00"
+                        />
+                      </View>
+                      <Text style={{ color: '#9CA3AF', marginTop: 14 }}>–</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 11, color: '#6B7280', marginBottom: 2 }}>End</Text>
+                        <TextInput
+                          style={formInput}
+                          value={s.end}
+                          onChangeText={(v) => setAvailSchedule((prev) => ({ ...prev, [day]: { ...prev[day], end: v } }))}
+                          placeholder="17:00"
+                        />
+                      </View>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+
+            <Pressable
+              onPress={() => updateAvailabilityMutation.mutate()}
+              style={[btnPrimary, { marginTop: 8 }]}
+              disabled={updateAvailabilityMutation.isPending}
+            >
+              <Text style={btnPrimaryText}>
+                {updateAvailabilityMutation.isPending ? 'Saving...' : 'Save Availability'}
+              </Text>
+            </Pressable>
+          </ScrollView>
+        </View>
+      </Modal>
 
       {/* Report User Modal */}
       <Modal visible={showReportModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowReportModal(false)}>
@@ -404,18 +918,9 @@ export default function ProfileScreen() {
                   key={reason}
                   onPress={() => setReportReason(reason)}
                   className="rounded-full px-3 py-1.5"
-                  style={{
-                    backgroundColor: reportReason === reason ? '#DC2626' : '#F3F4F6',
-                  }}
+                  style={{ backgroundColor: reportReason === reason ? '#DC2626' : '#F3F4F6' }}
                 >
-                  <Text
-                    style={{
-                      color: reportReason === reason ? '#FFFFFF' : '#374151',
-                      fontSize: 13,
-                      fontWeight: '500',
-                      textTransform: 'capitalize',
-                    }}
-                  >
+                  <Text style={{ color: reportReason === reason ? '#FFFFFF' : '#374151', fontSize: 13, fontWeight: '500', textTransform: 'capitalize' }}>
                     {reason}
                   </Text>
                 </Pressable>
@@ -525,10 +1030,7 @@ export default function ProfileScreen() {
                     onPress={() =>
                       Alert.alert('Unblock User', `Unblock ${bu.display_name || 'this user'}?`, [
                         { text: 'Cancel', style: 'cancel' },
-                        {
-                          text: 'Unblock',
-                          onPress: () => unblockUserMutation.mutate(bu.id),
-                        },
+                        { text: 'Unblock', onPress: () => unblockUserMutation.mutate(bu.id) },
                       ])
                     }
                     className="rounded-lg px-3 py-1.5"
@@ -605,6 +1107,24 @@ export default function ProfileScreen() {
   );
 }
 
+// ——— Sub-components ———
+
+function SectionCard({ title, icon, onPress }: { title: string; icon: keyof typeof Ionicons.glyphMap; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className="mx-4 mt-3 rounded-2xl bg-white p-4 flex-row items-center"
+      style={{ shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 }}
+    >
+      <View style={{ backgroundColor: '#F0FDF4', borderRadius: 10, padding: 8, marginRight: 12 }}>
+        <Ionicons name={icon} size={20} color={COLORS.primary} />
+      </View>
+      <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: '#111827' }}>{title}</Text>
+      <Ionicons name="chevron-forward" size={18} color={COLORS.gray[400]} />
+    </Pressable>
+  );
+}
+
 function MenuItem({
   icon,
   label,
@@ -625,3 +1145,13 @@ function MenuItem({
     </Pressable>
   );
 }
+
+// Shared style tokens
+const formLabel: any = { fontSize: 13, fontWeight: '500', color: '#374151', marginBottom: 4 };
+const formInput: any = { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, fontSize: 13, color: '#111827', marginBottom: 10 };
+const btnPrimary: any = { backgroundColor: '#1B5E20', borderRadius: 10, paddingVertical: 12, alignItems: 'center' };
+const btnPrimaryText: any = { color: '#fff', fontWeight: '700', fontSize: 14 };
+const btnSecondary: any = { backgroundColor: '#F3F4F6', borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB' };
+const btnSecondaryText: any = { color: '#374151', fontWeight: '600', fontSize: 13 };
+const btnDanger: any = { backgroundColor: '#FEE2E2', borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: '#FECACA' };
+const btnDangerText: any = { color: '#991B1B', fontWeight: '600', fontSize: 13 };

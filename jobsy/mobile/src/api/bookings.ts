@@ -57,3 +57,23 @@ export async function createBooking(payload: {
   const { data } = await api.post("/api/bookings/", payload);
   return data;
 }
+
+export async function rescheduleBooking(id: string, data: any) {
+  const { data: res } = await api.post(`/api/bookings/${id}/reschedule`, data);
+  return res;
+}
+
+export async function createQuote(bookingId: string, data: any) {
+  const { data: res } = await api.post(`/api/bookings/${bookingId}/quotes`, data);
+  return res;
+}
+
+export async function getQuotes(bookingId: string) {
+  const { data } = await api.get(`/api/bookings/${bookingId}/quotes`);
+  return data;
+}
+
+export async function respondToQuote(bookingId: string, quoteId: string, action: 'accept' | 'reject') {
+  const { data } = await api.put(`/api/bookings/${bookingId}/quotes/${quoteId}/respond`, { action });
+  return data;
+}
