@@ -101,7 +101,7 @@ function StatusBadge({ status }: { status: string }) {
   const label = status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   return (
     <View style={{ backgroundColor: colors.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12 }}>
-      <Text style={{ color: colors.text, fontSize: 12, fontWeight: "600" }}>{label}</Text>
+      <Text style={{ color: colors.black, fontSize: 12, fontWeight: "600" }}>{label}</Text>
     </View>
   );
 }
@@ -444,7 +444,7 @@ export default function JobBoardScreen() {
                 setEditBudgetMin(item.budget_min != null ? String(item.budget_min) : '');
                 setEditBudgetMax(item.budget_max != null ? String(item.budget_max) : '');
                 setEditDeadline(item.deadline || '');
-                setEditBidDeadline((item as Record<string, unknown>).bid_deadline as string || '');
+                setEditBidDeadline((item as unknown as Record<string, unknown>).bid_deadline as string || '');
               }}
               className="flex-1 flex-row items-center justify-center rounded-lg py-2"
               style={{ backgroundColor: '#EEF2FF', borderWidth: 1, borderColor: '#4338CA' }}

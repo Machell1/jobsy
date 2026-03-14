@@ -39,7 +39,7 @@ function StatusBadge({ status }: { status: string }) {
   const label = status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   return (
     <View style={{ backgroundColor: colors.bg, paddingHorizontal: 10, paddingVertical: 3, borderRadius: 12 }}>
-      <Text style={{ color: colors.text, fontSize: 12, fontWeight: "600" }}>{label}</Text>
+      <Text style={{ color: colors.black, fontSize: 12, fontWeight: "600" }}>{label}</Text>
     </View>
   );
 }
