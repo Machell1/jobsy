@@ -18,3 +18,4 @@ COPY gateway/migrate.py ./migrate.py
 USER appuser
 
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Deploy trigger - Sun Mar 15 12:20:36 UTC 2026
