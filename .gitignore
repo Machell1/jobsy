@@ -53,3 +53,7 @@ jobsy/**/.env
 jobsy/**/alembic/versions/*.pyc
 jobsy/**/*.egg-info/
 bot/.env
+
+# Web frontend #
+################
+jobsy-web/node_modules/
