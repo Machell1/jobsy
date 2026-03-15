@@ -273,6 +273,50 @@ async def get_me(request: Request, db: AsyncSession = Depends(get_db)):
     return user
 
 
+# --- Change Password ---
+
+
+class _ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+@router.post("/change-password")
+async def change_password(
+    data: _ChangePasswordRequest, request: Request, db: AsyncSession = Depends(get_db)
+):
+    """Change the current user's password. Requires valid current password."""
+    user_id = _get_user_id_from_header(request)
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if not user.password_hash:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot change password for OAuth-only accounts",
+        )
+
+    if not verify_password(data.current_password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Current password is incorrect",
+        )
+
+    if len(data.new_password) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password must be at least 8 characters",
+        )
+
+    user.password_hash = hash_password(data.new_password)
+    user.updated_at = datetime.now(UTC)
+    await db.flush()
+
+    return {"message": "Password changed successfully"}
+
+
 # --- OAuth ---
 
 
