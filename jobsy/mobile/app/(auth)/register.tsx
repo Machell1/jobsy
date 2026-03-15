@@ -25,6 +25,7 @@ const ROLE_OPTIONS: { value: UserRole; label: string; icon: keyof typeof Ionicon
 ];
 
 export default function RegisterScreen() {
+  const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("+1876");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -50,6 +51,7 @@ export default function RegisterScreen() {
         password,
         email: email || undefined,
         role,
+        display_name: displayName.trim() || undefined,
       });
     } catch (err: unknown) {
       const message =
@@ -102,6 +104,19 @@ export default function RegisterScreen() {
                 <Text className="text-xs text-dark-400">{opt.desc}</Text>
               </Pressable>
             ))}
+          </View>
+
+          {/* Full Name */}
+          <Text className="mb-1.5 text-sm font-medium text-dark-700">Full Name</Text>
+          <View className="mb-4 flex-row items-center rounded-xl border border-dark-200 bg-dark-50 px-4 py-3">
+            <Ionicons name="person-outline" size={20} color={COLORS.gray[500]} />
+            <TextInput
+              value={displayName}
+              onChangeText={setDisplayName}
+              placeholder="Your full name"
+              autoCapitalize="words"
+              className="ml-3 flex-1 text-base text-dark-800"
+            />
           </View>
 
           {/* Phone */}

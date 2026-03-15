@@ -18,6 +18,7 @@ export interface RegisterData {
   email?: string;
   role: UserRole;
   roles?: UserRole[];
+  display_name?: string;
 }
 
 export interface LoginData {

@@ -14,6 +14,7 @@ import {
   Platform,
 } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import {
@@ -76,6 +77,7 @@ function StatCard({ title, value, color }: { title: string; value: number; color
 
 export default function BookingsScreen() {
   const queryClient = useQueryClient();
+  const { provider_id: paramProviderId } = useLocalSearchParams<{ provider_id?: string }>();
   const activeRole = useAuthStore((s) => s.user?.activeRole);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
@@ -87,10 +89,10 @@ export default function BookingsScreen() {
   const [editTimeStart, setEditTimeStart] = useState('');
 
   // Create Booking modal state
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(!!paramProviderId);
   const [createTitle, setCreateTitle] = useState('');
   const [createDescription, setCreateDescription] = useState('');
-  const [createProviderId, setCreateProviderId] = useState('');
+  const [createProviderId, setCreateProviderId] = useState(paramProviderId || '');
   const [createDate, setCreateDate] = useState('');
   const [createTime, setCreateTime] = useState('');
 

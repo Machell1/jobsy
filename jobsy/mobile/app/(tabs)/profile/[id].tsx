@@ -183,6 +183,14 @@ export default function ViewProfileScreen() {
 
       {/* Action buttons */}
       <View className="mx-4 mt-4 mb-10 gap-3">
+        {currentUser && currentUser.id !== id && (
+          <Pressable
+            onPress={() => router.push({ pathname: "/(tabs)/bookings", params: { provider_id: id } })}
+            className="items-center rounded-xl bg-primary-900 py-3"
+          >
+            <Text className="font-bold text-white">Book Now</Text>
+          </Pressable>
+        )}
         <Pressable
           onPress={() => router.push(`/(tabs)/reviews/${id}`)}
           className="items-center rounded-xl border-2 border-primary-900 py-3"

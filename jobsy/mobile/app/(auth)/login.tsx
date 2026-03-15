@@ -37,9 +37,12 @@ export default function LoginScreen() {
     try {
       await login(phone, password);
     } catch (err: unknown) {
+      const raw =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "";
       const message =
-        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-        "Login failed. Check your credentials.";
+        raw.toLowerCase().includes("invalid") || raw.toLowerCase().includes("credentials")
+          ? "Invalid phone number or password. Please try again."
+          : raw || "Login failed. Check your credentials.";
       Alert.alert("Login Failed", message);
     } finally {
       setLoading(false);
