@@ -25,7 +25,12 @@
         "NSCameraUsageDescription": "Jobsy needs camera access to take profile photos and upload service images",
         "NSPhotoLibraryUsageDescription": "Jobsy needs photo library access to select profile photos and service images",
         "NSLocationWhenInUseUsageDescription": "Jobsy uses your location to find service providers near you",
-        "NSLocationAlwaysUsageDescription": "Jobsy uses your location to find nearby service providers"
+        "NSLocationAlwaysUsageDescription": "Jobsy uses your location to find nearby service providers",
+        "NSPhotoLibraryAddUsageDescription": "Jobsy needs permission to save images to your photo library",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "config": {
+        "usesNonExemptEncryption": false
       }
     },
     "android": {
@@ -36,41 +41,23 @@
       "package": "com.jobsyja.app",
       "versionCode": 1,
       "permissions": [
-        "INTERNET",
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
-        "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE"
-      ],
-      "googleServicesFile": "./google-services.json"
+        "READ_MEDIA_IMAGES",
+        "INTERNET",
+        "RECEIVE_BOOT_COMPLETED"
+      ]
     },
     "plugins": [
       "expo-router",
       "expo-apple-authentication",
       "expo-secure-store",
-      [
-        "expo-location",
-        {
-          "locationAlwaysAndWhenInUsePermission": "Jobsy uses your location to find nearby service providers."
-        }
-      ],
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "Jobsy needs photo library access to select profile photos and service images.",
-          "cameraPermission": "Jobsy needs camera access to take profile photos and upload service images."
-        }
-      ],
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/icon.png",
-          "color": "#01696F"
-        }
-      ],
+      "expo-location",
+      "expo-image-picker",
+      "expo-notifications",
       [
         "expo-splash-screen",
         {
@@ -78,6 +65,11 @@
         }
       ],
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
+    }
   }
 }
