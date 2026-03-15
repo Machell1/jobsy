@@ -65,19 +65,11 @@
         }
       ],
       "expo-font",
-      "@rnmapbox/maps",
       [
         "@stripe/stripe-react-native",
         {
           "merchantIdentifier": "merchant.com.jobsyja.app",
           "enableGooglePay": true
-        }
-      ],
-      [
-        "@sentry/react-native",
-        {
-          "organization": "jobsy",
-          "project": "jobsy-mobile"
         }
       ]
     ],
