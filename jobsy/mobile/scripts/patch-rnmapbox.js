@@ -28,7 +28,7 @@ const specFile = path.join(mapboxRoot,
 
 if (fs.existsSync(specFile)) {
   let content = fs.readFileSync(specFile, 'utf8');
-  if (!content.includes('private Callback mEventEmitterCallback')) {
+  if (!content.includes('Callback mEventEmitterCallback')) {
     // Add Callback import
     if (!content.includes('import com.facebook.react.bridge.Callback;')) {
       content = content.replace(
@@ -36,10 +36,10 @@ if (fs.existsSync(specFile)) {
         'import com.facebook.proguard.annotations.DoNotStrip;\nimport com.facebook.react.bridge.Callback;'
       );
     }
-    // Add mEventEmitterCallback field
+    // Add mEventEmitterCallback field (protected so subclasses can access it)
     content = content.replace(
       'public static final String NAME = "RNMBXLocationModule";',
-      'public static final String NAME = "RNMBXLocationModule";\n\n  private Callback mEventEmitterCallback;'
+      'public static final String NAME = "RNMBXLocationModule";\n\n  protected Callback mEventEmitterCallback;'
     );
     // Fix emitOnLocationUpdate to null-check
     content = content.replace(
