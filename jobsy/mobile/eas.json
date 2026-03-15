@@ -1,5 +1,7 @@
 {
-  "cli": { "version": ">= 5.0.0" },
+  "cli": {
+    "version": ">= 12.0.0"
+  },
   "build": {
     "development": {
       "developmentClient": true,
@@ -20,7 +22,7 @@
       }
     },
     "production": {
-      "distribution": "store",
+      "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.jobsyja.com",
         "EXPO_PUBLIC_WS_URL": "wss://api.jobsyja.com"
@@ -28,6 +30,16 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./play-store-key.json",
+        "track": "production"
+      },
+      "ios": {
+        "appleId": "williamsmachell@gmail.com",
+        "ascAppId": "",
+        "appleTeamId": ""
+      }
+    }
   }
 }

@@ -3,7 +3,7 @@ import * as SecureStore from "expo-secure-store";
 
 const WS_URL =
   process.env.EXPO_PUBLIC_WS_URL ||
-  (__DEV__ ? "ws://localhost:8000" : (() => { throw new Error("EXPO_PUBLIC_WS_URL must be set in production"); })());
+  (__DEV__ ? "ws://localhost:8000" : "wss://api.jobsyja.com");
 
 interface ChatMessage {
   id: string;
