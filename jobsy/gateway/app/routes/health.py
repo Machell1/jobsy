@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Request
 
-BUILD_VERSION = "phase4-qa-fixes"
+BUILD_VERSION = "qa-fixes-v2-20260315"
 
 router = APIRouter(tags=["health"])
 
