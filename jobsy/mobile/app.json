@@ -65,6 +65,7 @@
         }
       ],
       "expo-font",
+      "@rnmapbox/maps",
       [
         "@stripe/stripe-react-native",
         {
