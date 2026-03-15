@@ -9,6 +9,7 @@ COPY shared/ /build/shared/
 RUN pip install --no-cache-dir /build
 
 COPY gateway/requirements.txt .
+# bust cache: add stripe + slack_sdk 2026-03-15
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY gateway/app/ ./app/
