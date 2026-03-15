@@ -41,3 +41,4 @@ resend>=0.7.0
 sendgrid>=6.11.0
 paypalrestsdk>=1.13.0
 posthog>=3.0.0
+slack_sdk>=3.27.0
