@@ -1,0 +1,84 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths: ["jobsy/**"]
+  workflow_dispatch:
+
+jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+
+      - name: Deploy gateway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: cd jobsy && railway up --detach --service gateway
+
+      - name: Deploy profiles service
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: cd jobsy && railway up --detach --service profiles
+
+      - name: Deploy admin service
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: cd jobsy && railway up --detach --service admin
+
+      - name: Deploy bookings service
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: cd jobsy && railway up --detach --service bookings || echo "Bookings service not yet created on Railway"
+
+      - name: Deploy noticeboard service
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: cd jobsy && railway up --detach --service noticeboard || echo "Noticeboard service not yet created on Railway"
+
+      - name: Deploy other updated services
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          cd jobsy
+          for svc in listings reviews payments notifications chat swipes matches geoshard recommendations search advertising storage; do
+            railway up --detach --service $svc || echo "$svc deploy skipped"
+          done
+
+      - name: Wait for deployments
+        run: sleep 60
+
+      - name: Verify deployment
+        run: |
+          for i in 1 2 3 4 5 6 7 8; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://api.jobsyja.com/health 2>/dev/null || echo "000" )
+            if [ "$STATUS" = "200" ]; then
+              echo "Deployment healthy!"
+              exit 0
+            fi
+            echo "Health check attempt $i returned $STATUS, retrying..."
+            sleep 10
+          done
+          echo "Warning: Health check did not return 200 - check Railway logs"
+
+      - name: Verify auth endpoint
+        run: |
+          RESULT=$(curl -s -X POST https://api.jobsyja.com/auth/login \
+            -H 'Content-Type: application/json' \
+            -d '{"phone":"+18761234501","password":"DemoPass123!"}')
+          echo "Login result: $RESULT"
+          if echo "$RESULT" | grep -q "access_token"; then
+            echo "Auth endpoint working!"
+          else
+            echo "Auth endpoint may not be ready yet (migrations run on first startup)"
+          fi

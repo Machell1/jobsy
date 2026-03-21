@@ -1,0 +1,60 @@
+{
+  "cli": {
+    "version": ">= 12.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://localhost:8000",
+        "EXPO_PUBLIC_WS_URL": "ws://localhost:8000"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": false
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.jobsyja.com",
+        "EXPO_PUBLIC_WS_URL": "wss://api.jobsyja.com"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "distribution": "store",
+      "ios": {
+        "image": "latest",
+        "resourceClass": "m-medium"
+      },
+      "android": {
+        "image": "latest",
+        "buildType": "app-bundle",
+        "resourceClass": "medium"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.jobsyja.com",
+        "EXPO_PUBLIC_WS_URL": "wss://api.jobsyja.com"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "williamsmachell@gmail.com",
+        "ascAppId": "6760623768",
+        "appleTeamId": "K6TZR6QQGS",
+        "ascApiKeyPath": "./AuthKey_TAS2CZ7QCC.p8",
+        "ascApiKeyIssuerId": "942e1253-2c7a-4216-a3cb-29364038d1e9",
+        "ascApiKeyId": "TAS2CZ7QCC"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./play-store-key.json",
+        "track": "production",
+        "releaseStatus": "draft"
+      }
+    }
+  }
+}

@@ -1,0 +1,315 @@
+services:
+  postgres:
+    image: postgis/postgis:15-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: jobsy
+      POSTGRES_USER: jobsy
+      POSTGRES_PASSWORD: localdev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobsy"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  profiles:
+    build:
+      context: .
+      dockerfile: profiles/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  listings:
+    build:
+      context: .
+      dockerfile: listings/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8002:8000"
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  swipes:
+    build:
+      context: .
+      dockerfile: swipes/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8003:8000"
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  matches:
+    build:
+      context: .
+      dockerfile: matches/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8004:8000"
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  geoshard:
+    build:
+      context: .
+      dockerfile: geoshard/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8005:8000"
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  recommendations:
+    build:
+      context: .
+      dockerfile: recommendations/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8006:8000"
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  chat:
+    build:
+      context: .
+      dockerfile: chat/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8007:8000"
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  notifications:
+    build:
+      context: .
+      dockerfile: notifications/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8008:8000"
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  storage:
+    build:
+      context: .
+      dockerfile: storage/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8009:8000"
+    env_file: .env
+    depends_on:
+      minio:
+        condition: service_healthy
+
+  advertising:
+    build:
+      context: .
+      dockerfile: advertising/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8010:8000"
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.3
+    restart: unless-stopped
+    ports:
+      - "9200:9200"
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms256m -Xmx256m"
+    volumes:
+      - esdata:/var/lib/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  payments:
+    build:
+      context: .
+      dockerfile: payments/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8011:8000"
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  reviews:
+    build:
+      context: .
+      dockerfile: reviews/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8012:8000"
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  search:
+    build:
+      context: .
+      dockerfile: search/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8013:8000"
+    env_file: .env
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  admin:
+    build:
+      context: .
+      dockerfile: admin/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8014:8000"
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  prometheus:
+    image: prom/prometheus:v2.48.1
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheusdata:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=7d'
+
+  grafana:
+    image: grafana/grafana:10.2.3
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: jobsyadmin
+    volumes:
+      - grafanadata:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+volumes:
+  pgdata:
+  miniodata:
+  esdata:
+  prometheusdata:
+  grafanadata:
