@@ -4,8 +4,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { OverlayProvider } from "stream-chat-expo";
-import type { DeepPartial, Theme } from "stream-chat-expo";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LoadingScreen } from "@/components/LoadingScreen";
@@ -23,13 +21,6 @@ const queryClient = new QueryClient({
     },
   },
 });
-
-const STREAM_THEME: DeepPartial<Theme> = {
-  colors: {
-    accent_blue: "#1B5E20",
-    accent_green: "#1B5E20",
-  },
-};
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, initialize } = useAuthStore();
@@ -78,12 +69,10 @@ function RootLayout() {
       <SafeAreaProvider>
         <GestureHandlerRootView style={{ flex: 1 }}>
           <QueryClientProvider client={queryClient}>
-            <OverlayProvider style={STREAM_THEME}>
-              <StatusBar style="dark" />
-              <AuthGuard>
-                <Slot />
-              </AuthGuard>
-            </OverlayProvider>
+            <StatusBar style="dark" />
+            <AuthGuard>
+              <Slot />
+            </AuthGuard>
           </QueryClientProvider>
         </GestureHandlerRootView>
       </SafeAreaProvider>

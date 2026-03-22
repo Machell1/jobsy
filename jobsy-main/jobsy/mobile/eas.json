@@ -37,7 +37,7 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.jobsyja.com",
         "EXPO_PUBLIC_WS_URL": "wss://api.jobsyja.com",
-        "MAPBOX_DOWNLOADS_TOKEN": "MAPBOX_DOWNLOADS_TOKEN"
+        "EXPO_PUBLIC_MAPBOX_TOKEN": "pk.eyJ1Ijoiam9ic3kxIiwiYSI6ImNtbXFqMnM2bzEzZG0yc3E2bzF3cXNmZW4ifQ.LIrFJrjRqGyZuTMtVXq57Q"
       }
     }
   },
