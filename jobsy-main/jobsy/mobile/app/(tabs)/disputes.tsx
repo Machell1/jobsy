@@ -23,9 +23,13 @@ import { formatDate } from "@/utils/format";
 
 type DisputeStatus = "open" | "under_review" | "resolved" | "closed";
 
+type DisputeType = "booking" | "contract";
+
 interface Dispute {
   id: string;
-  booking_id: string;
+  booking_id?: string;
+  contract_id?: string;
+  dispute_type?: DisputeType;
   job_reference: string;
   reason: string;
   description: string;
@@ -109,10 +113,12 @@ export default function DisputesScreen() {
 
   // File new dispute modal
   const [showNewModal, setShowNewModal] = useState(false);
+  const [newDisputeType, setNewDisputeType] = useState<DisputeType>("booking");
   const [newReason, setNewReason] = useState("");
   const [showReasonPicker, setShowReasonPicker] = useState(false);
   const [newDescription, setNewDescription] = useState("");
   const [newBookingId, setNewBookingId] = useState("");
+  const [newContractId, setNewContractId] = useState("");
   const [evidenceUris, setEvidenceUris] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
@@ -190,11 +196,17 @@ export default function DisputesScreen() {
     setSubmitting(true);
     try {
       // Create dispute
-      const { data: dispute } = await api.post<Dispute>("/api/disputes", {
-        booking_id: newBookingId || undefined,
+      const payload: Record<string, unknown> = {
         reason: newReason,
         description: newDescription.trim(),
-      });
+        dispute_type: newDisputeType,
+      };
+      if (newDisputeType === "booking" && newBookingId) {
+        payload.booking_id = newBookingId;
+      } else if (newDisputeType === "contract" && newContractId) {
+        payload.contract_id = newContractId;
+      }
+      const { data: dispute } = await api.post<Dispute>("/api/disputes", payload);
 
       // Upload evidence if any
       for (const uri of evidenceUris) {
@@ -210,9 +222,11 @@ export default function DisputesScreen() {
 
       // Reset form
       setShowNewModal(false);
+      setNewDisputeType("booking");
       setNewReason("");
       setNewDescription("");
       setNewBookingId("");
+      setNewContractId("");
       setEvidenceUris([]);
       fetchDisputes();
       Alert.alert("Dispute Filed", "Your dispute has been submitted and is now under review.");
@@ -225,9 +239,11 @@ export default function DisputesScreen() {
 
   const resetAndCloseModal = () => {
     setShowNewModal(false);
+    setNewDisputeType("booking");
     setNewReason("");
     setNewDescription("");
     setNewBookingId("");
+    setNewContractId("");
     setEvidenceUris([]);
   };
 
@@ -319,7 +335,12 @@ export default function DisputesScreen() {
             <View className="flex-row items-start justify-between">
               <View className="flex-1">
                 <Text className="text-base font-semibold text-gray-900">
-                  {item.job_reference || `Booking #${item.booking_id?.slice(0, 8)}`}
+                  {item.job_reference ||
+                    (item.contract_id
+                      ? `Contract #${item.contract_id.slice(0, 8)}`
+                      : item.booking_id
+                        ? `Booking #${item.booking_id.slice(0, 8)}`
+                        : "Dispute")}
                 </Text>
                 <Text className="text-sm text-gray-500 mt-1" numberOfLines={2}>
                   {REASON_OPTIONS.find((r) => r.value === item.reason)?.label || item.reason}
@@ -397,7 +418,11 @@ export default function DisputesScreen() {
               <View className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
                 <Text className="text-base font-semibold text-gray-900">
                   {selectedDispute.job_reference ||
-                    `Booking #${selectedDispute.booking_id?.slice(0, 8)}`}
+                    (selectedDispute.contract_id
+                      ? `Contract #${selectedDispute.contract_id.slice(0, 8)}`
+                      : selectedDispute.booking_id
+                        ? `Booking #${selectedDispute.booking_id.slice(0, 8)}`
+                        : "Dispute")}
                 </Text>
                 <View className="flex-row items-center mt-2 gap-2">
                   <View
@@ -497,17 +522,83 @@ export default function DisputesScreen() {
             contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
             keyboardShouldPersistTaps="handled"
           >
-            {/* Booking ID (optional) */}
+            {/* Dispute Type Selector */}
             <Text className="text-sm font-semibold text-gray-700 mb-1.5">
-              Booking Reference (optional)
+              Dispute Type
             </Text>
-            <TextInput
-              value={newBookingId}
-              onChangeText={setNewBookingId}
-              placeholder="Enter booking ID or leave blank"
-              className="bg-white border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 mb-4"
-              placeholderTextColor={COLORS.gray[400]}
-            />
+            <View className="flex-row mb-4 gap-2">
+              <Pressable
+                onPress={() => setNewDisputeType("booking")}
+                className={`flex-1 py-3 rounded-xl items-center border-2 ${
+                  newDisputeType === "booking"
+                    ? "border-green-700 bg-green-50"
+                    : "border-gray-200 bg-white"
+                }`}
+              >
+                <Ionicons
+                  name="calendar-outline"
+                  size={18}
+                  color={newDisputeType === "booking" ? COLORS.primary : COLORS.gray[500]}
+                />
+                <Text
+                  className={`text-sm font-semibold mt-1 ${
+                    newDisputeType === "booking" ? "text-green-700" : "text-gray-500"
+                  }`}
+                >
+                  Booking Dispute
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setNewDisputeType("contract")}
+                className={`flex-1 py-3 rounded-xl items-center border-2 ${
+                  newDisputeType === "contract"
+                    ? "border-green-700 bg-green-50"
+                    : "border-gray-200 bg-white"
+                }`}
+              >
+                <Ionicons
+                  name="document-text-outline"
+                  size={18}
+                  color={newDisputeType === "contract" ? COLORS.primary : COLORS.gray[500]}
+                />
+                <Text
+                  className={`text-sm font-semibold mt-1 ${
+                    newDisputeType === "contract" ? "text-green-700" : "text-gray-500"
+                  }`}
+                >
+                  Contract Dispute
+                </Text>
+              </Pressable>
+            </View>
+
+            {/* Reference ID based on type */}
+            {newDisputeType === "booking" ? (
+              <>
+                <Text className="text-sm font-semibold text-gray-700 mb-1.5">
+                  Booking Reference (optional)
+                </Text>
+                <TextInput
+                  value={newBookingId}
+                  onChangeText={setNewBookingId}
+                  placeholder="Enter booking ID or leave blank"
+                  className="bg-white border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 mb-4"
+                  placeholderTextColor={COLORS.gray[400]}
+                />
+              </>
+            ) : (
+              <>
+                <Text className="text-sm font-semibold text-gray-700 mb-1.5">
+                  Contract Reference (optional)
+                </Text>
+                <TextInput
+                  value={newContractId}
+                  onChangeText={setNewContractId}
+                  placeholder="Enter contract ID or leave blank"
+                  className="bg-white border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 mb-4"
+                  placeholderTextColor={COLORS.gray[400]}
+                />
+              </>
+            )}
 
             {/* Reason dropdown */}
             <Text className="text-sm font-semibold text-gray-700 mb-1.5">

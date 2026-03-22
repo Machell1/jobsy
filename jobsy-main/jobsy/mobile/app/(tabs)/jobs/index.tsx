@@ -55,6 +55,39 @@ const CATEGORIES = [
   "Other",
 ];
 
+const SUBCATEGORY_MAP: Record<string, string[]> = {
+  "Home Services": ["Plumbing", "Electrical", "Cleaning", "Carpentry", "Painting", "Landscaping", "Home Improvement"],
+  "Beauty & Wellness": ["Hair", "Nails", "Makeup", "Spa"],
+  "Auto": ["Engine", "Body Work", "AC", "Electrical"],
+  "Events": ["Catering", "DJ", "Photography", "Decoration"],
+  "Creative": ["Interior Design", "Exterior Design", "Commercial", "Decorative"],
+  "Technology": ["Web Development", "App Development", "IT Support", "Networking"],
+  "Education": ["Tutoring", "Test Prep", "Music Lessons", "Language"],
+  "Health": ["Personal Training", "Nutrition", "Massage", "Physiotherapy"],
+  "Legal": ["Consultation", "Document Review", "Contracts", "Litigation"],
+  "Financial": ["Bookkeeping", "Tax Prep", "Consulting", "Auditing"],
+  "Other": ["General"],
+};
+
+// Further subcategories for service-specific categories
+const SERVICE_SUBCATEGORIES: Record<string, string[]> = {
+  Plumbing: ["Pipe Repair", "Drain Cleaning", "Water Heater", "Bathroom Fitting"],
+  Electrical: ["Wiring", "Panel Upgrade", "Lighting", "Generator"],
+  Cleaning: ["House", "Office", "Deep Clean", "Post-Construction"],
+  Carpentry: ["Furniture", "Cabinets", "Doors", "Framing"],
+  Painting: ["Interior", "Exterior", "Commercial", "Decorative"],
+  Landscaping: ["Lawn Care", "Tree Service", "Garden Design", "Irrigation"],
+  "Home Improvement": ["Tiling", "Roofing", "Windows", "Flooring"],
+};
+
+type UrgencyLevel = "standard" | "urgent" | "emergency";
+
+const URGENCY_OPTIONS: { key: UrgencyLevel; label: string; color: string; bgColor: string }[] = [
+  { key: "standard", label: "Standard", color: "#166534", bgColor: "#DCFCE7" },
+  { key: "urgent", label: "Urgent", color: "#92400E", bgColor: "#FEF3C7" },
+  { key: "emergency", label: "Emergency", color: "#991B1B", bgColor: "#FEE2E2" },
+];
+
 const PARISHES = [
   "All",
   "Kingston",
@@ -148,6 +181,9 @@ export default function JobBoardScreen() {
   const [postTitle, setPostTitle] = useState("");
   const [postDescription, setPostDescription] = useState("");
   const [postCategory, setPostCategory] = useState("Home Services");
+  const [postSubcategory, setPostSubcategory] = useState("");
+  const [postServiceSubcategory, setPostServiceSubcategory] = useState("");
+  const [postUrgency, setPostUrgency] = useState<UrgencyLevel>("standard");
   const [postParish, setPostParish] = useState("");
   const [postBudgetMin, setPostBudgetMin] = useState("");
   const [postBudgetMax, setPostBudgetMax] = useState("");
@@ -261,6 +297,9 @@ export default function JobBoardScreen() {
     setPostTitle("");
     setPostDescription("");
     setPostCategory("Home Services");
+    setPostSubcategory("");
+    setPostServiceSubcategory("");
+    setPostUrgency("standard");
     setPostParish("");
     setPostBudgetMin("");
     setPostBudgetMax("");
@@ -273,10 +312,13 @@ export default function JobBoardScreen() {
       Alert.alert("Required", "Please fill in title and description.");
       return;
     }
+    const subcatValue = postServiceSubcategory || postSubcategory || undefined;
     createMutation.mutate({
       title: postTitle.trim(),
       description: postDescription.trim(),
       category: postCategory,
+      subcategory: subcatValue,
+      urgency: postUrgency,
       parish: postParish || undefined,
       budget_min: postBudgetMin ? Number(postBudgetMin) : undefined,
       budget_max: postBudgetMax ? Number(postBudgetMax) : undefined,
@@ -877,16 +919,25 @@ export default function JobBoardScreen() {
       </Modal>
 
       {/* Post Job Modal */}
-      <Modal visible={showPostModal} transparent animationType="slide" onRequestClose={() => setShowPostModal(false)}>
-        <Pressable className="flex-1 bg-black/40 justify-end" onPress={() => setShowPostModal(false)}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
-            <Pressable className="bg-white rounded-t-2xl p-5 pb-10" onPress={(e) => e.stopPropagation()}>
-              <View className="w-10 h-1 bg-gray-300 rounded-full self-center mb-4" />
-              <Text className="text-lg font-bold text-gray-900 mb-4">Post a Job</Text>
+      <Modal visible={showPostModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => { setShowPostModal(false); resetPostForm(); }}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1">
+          <View className="flex-1 bg-gray-50">
+            <View className="bg-white px-5 pt-6 pb-4 border-b border-gray-200 flex-row items-center justify-between">
+              <Text className="text-lg font-bold text-gray-900">Post a Job</Text>
+              <Pressable onPress={() => { setShowPostModal(false); resetPostForm(); }}>
+                <Ionicons name="close" size={24} color="#333" />
+              </Pressable>
+            </View>
 
+            <ScrollView
+              className="flex-1"
+              contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
               <Text className="text-sm font-medium text-gray-700 mb-1">Title *</Text>
               <TextInput
-                className="bg-gray-50 rounded-lg px-3 py-2.5 mb-3 text-sm text-gray-900"
+                className="bg-white rounded-lg px-3 py-2.5 mb-3 text-sm text-gray-900"
                 style={{ borderWidth: 1, borderColor: "#E5E7EB" }}
                 placeholder="e.g. Need a plumber for kitchen repair"
                 value={postTitle}
@@ -895,7 +946,7 @@ export default function JobBoardScreen() {
 
               <Text className="text-sm font-medium text-gray-700 mb-1">Description *</Text>
               <TextInput
-                className="bg-gray-50 rounded-lg px-3 py-2.5 mb-3 text-sm text-gray-900"
+                className="bg-white rounded-lg px-3 py-2.5 mb-3 text-sm text-gray-900"
                 style={{ borderWidth: 1, borderColor: "#E5E7EB", minHeight: 80 }}
                 placeholder="Describe the job in detail..."
                 value={postDescription}
@@ -904,6 +955,7 @@ export default function JobBoardScreen() {
                 textAlignVertical="top"
               />
 
+              {/* Category */}
               <Text className="text-sm font-medium text-gray-700 mb-1">Category</Text>
               <ScrollView
                 horizontal
@@ -913,7 +965,11 @@ export default function JobBoardScreen() {
                 {CATEGORIES.filter((c) => c !== "All").map((cat) => (
                   <Pressable
                     key={cat}
-                    onPress={() => setPostCategory(cat)}
+                    onPress={() => {
+                      setPostCategory(cat);
+                      setPostSubcategory("");
+                      setPostServiceSubcategory("");
+                    }}
                     className="mr-2 rounded-full px-3 py-1.5"
                     style={{
                       backgroundColor: postCategory === cat ? "#1B5E20" : "#F3F4F6",
@@ -932,6 +988,122 @@ export default function JobBoardScreen() {
                 ))}
               </ScrollView>
 
+              {/* Subcategory */}
+              {SUBCATEGORY_MAP[postCategory] && SUBCATEGORY_MAP[postCategory].length > 0 && (
+                <>
+                  <Text className="text-sm font-medium text-gray-700 mb-1">Subcategory</Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ paddingBottom: 8 }}
+                  >
+                    {SUBCATEGORY_MAP[postCategory].map((sub) => (
+                      <Pressable
+                        key={sub}
+                        onPress={() => {
+                          setPostSubcategory(sub);
+                          setPostServiceSubcategory("");
+                        }}
+                        className="mr-2 rounded-full px-3 py-1.5"
+                        style={{
+                          backgroundColor: postSubcategory === sub ? "#EEF2FF" : "#F3F4F6",
+                          borderWidth: 1,
+                          borderColor: postSubcategory === sub ? "#4338CA" : "#E5E7EB",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: postSubcategory === sub ? "#4338CA" : "#374151",
+                            fontSize: 12,
+                            fontWeight: "500",
+                          }}
+                        >
+                          {sub}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                </>
+              )}
+
+              {/* Service-specific subcategory (e.g. Plumbing -> Pipe Repair) */}
+              {postSubcategory && SERVICE_SUBCATEGORIES[postSubcategory] && (
+                <>
+                  <Text className="text-sm font-medium text-gray-700 mb-1">
+                    {postSubcategory} Type
+                  </Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ paddingBottom: 8 }}
+                  >
+                    {SERVICE_SUBCATEGORIES[postSubcategory].map((svc) => (
+                      <Pressable
+                        key={svc}
+                        onPress={() => setPostServiceSubcategory(svc)}
+                        className="mr-2 rounded-full px-3 py-1.5"
+                        style={{
+                          backgroundColor: postServiceSubcategory === svc ? "#F0FDF4" : "#F3F4F6",
+                          borderWidth: 1,
+                          borderColor: postServiceSubcategory === svc ? "#166534" : "#E5E7EB",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: postServiceSubcategory === svc ? "#166534" : "#374151",
+                            fontSize: 12,
+                            fontWeight: "500",
+                          }}
+                        >
+                          {svc}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                </>
+              )}
+
+              {/* Urgency Level */}
+              <Text className="text-sm font-medium text-gray-700 mb-1">Urgency Level</Text>
+              <View className="flex-row mb-3 gap-2">
+                {URGENCY_OPTIONS.map((opt) => (
+                  <Pressable
+                    key={opt.key}
+                    onPress={() => setPostUrgency(opt.key)}
+                    className="flex-1 rounded-lg py-2.5 items-center"
+                    style={{
+                      backgroundColor: postUrgency === opt.key ? opt.bgColor : "#F3F4F6",
+                      borderWidth: 2,
+                      borderColor: postUrgency === opt.key ? opt.color : "#E5E7EB",
+                    }}
+                  >
+                    <View className="flex-row items-center gap-1">
+                      <Ionicons
+                        name={
+                          opt.key === "standard"
+                            ? "time-outline"
+                            : opt.key === "urgent"
+                              ? "alert-circle-outline"
+                              : "flash-outline"
+                        }
+                        size={14}
+                        color={postUrgency === opt.key ? opt.color : "#6B7280"}
+                      />
+                      <Text
+                        style={{
+                          color: postUrgency === opt.key ? opt.color : "#6B7280",
+                          fontSize: 12,
+                          fontWeight: "600",
+                        }}
+                      >
+                        {opt.label}
+                      </Text>
+                    </View>
+                  </Pressable>
+                ))}
+              </View>
+
+              {/* Parish */}
               <Text className="text-sm font-medium text-gray-700 mb-1">Parish</Text>
               <ScrollView
                 horizontal
@@ -960,11 +1132,13 @@ export default function JobBoardScreen() {
                 ))}
               </ScrollView>
 
+              {/* Budget Range */}
+              <Text className="text-sm font-medium text-gray-700 mb-1">Budget Range (J$)</Text>
               <View className="flex-row mb-3">
                 <View className="flex-1 mr-2">
-                  <Text className="text-sm font-medium text-gray-700 mb-1">Budget Min (J$)</Text>
+                  <Text className="text-xs text-gray-500 mb-0.5">Minimum</Text>
                   <TextInput
-                    className="bg-gray-50 rounded-lg px-3 py-2.5 text-sm text-gray-900"
+                    className="bg-white rounded-lg px-3 py-2.5 text-sm text-gray-900"
                     style={{ borderWidth: 1, borderColor: "#E5E7EB" }}
                     placeholder="5,000"
                     value={postBudgetMin}
@@ -973,9 +1147,9 @@ export default function JobBoardScreen() {
                   />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-sm font-medium text-gray-700 mb-1">Budget Max (J$)</Text>
+                  <Text className="text-xs text-gray-500 mb-0.5">Maximum</Text>
                   <TextInput
-                    className="bg-gray-50 rounded-lg px-3 py-2.5 text-sm text-gray-900"
+                    className="bg-white rounded-lg px-3 py-2.5 text-sm text-gray-900"
                     style={{ borderWidth: 1, borderColor: "#E5E7EB" }}
                     placeholder="50,000"
                     value={postBudgetMax}
@@ -985,16 +1159,20 @@ export default function JobBoardScreen() {
                 </View>
               </View>
 
-              <Text className="text-sm font-medium text-gray-700 mb-1">Deadline (YYYY-MM-DD)</Text>
+              {/* Deadline / Timeline */}
+              <Text className="text-sm font-medium text-gray-700 mb-1">Timeline / Deadline</Text>
               <TextInput
-                className="bg-gray-50 rounded-lg px-3 py-2.5 mb-3 text-sm text-gray-900"
+                className="bg-white rounded-lg px-3 py-2.5 mb-3 text-sm text-gray-900"
                 style={{ borderWidth: 1, borderColor: "#E5E7EB" }}
-                placeholder="2026-04-01"
+                placeholder="YYYY-MM-DD (e.g. 2026-04-01)"
                 value={postDeadline}
                 onChangeText={setPostDeadline}
               />
 
-              <Text className="text-sm font-medium text-gray-700 mb-1">Images (up to 5)</Text>
+              {/* Media Attachments */}
+              <Text className="text-sm font-medium text-gray-700 mb-1">
+                Media Attachments (up to 5 images/videos)
+              </Text>
               <PhotoUploader
                 photos={postImages}
                 onChange={setPostImages}
@@ -1004,7 +1182,7 @@ export default function JobBoardScreen() {
 
               <Pressable
                 onPress={handlePostJob}
-                className="rounded-lg py-3 items-center mt-2"
+                className="rounded-lg py-3 items-center mt-4"
                 style={{ backgroundColor: "#1B5E20" }}
                 disabled={createMutation.isPending}
               >
@@ -1012,9 +1190,9 @@ export default function JobBoardScreen() {
                   {createMutation.isPending ? "Posting..." : "Post Job"}
                 </Text>
               </Pressable>
-            </Pressable>
-          </KeyboardAvoidingView>
-        </Pressable>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );

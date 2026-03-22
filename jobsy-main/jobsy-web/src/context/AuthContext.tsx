@@ -22,6 +22,7 @@ interface AuthContextValue {
   isAuthenticated: boolean
   isLoading: boolean
   login: (data: { phone: string; password: string }) => Promise<void>
+  loginWithOAuth: (provider: 'google' | 'apple', idToken: string, role?: string) => Promise<void>
   register: (data: Record<string, unknown>) => Promise<void>
   logout: () => void
   setActiveRole: (role: string) => void
@@ -89,6 +90,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await apiPost('/auth/login', data)
       saveTokens(res.access_token, res.refresh_token, res.active_role, res.roles || [])
       await fetchProfile(res.access_token, res, data.phone)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [saveTokens, fetchProfile])
+
+  const loginWithOAuth = useCallback(async (provider: 'google' | 'apple', idToken: string, role = 'customer') => {
+    setIsLoading(true)
+    try {
+      const res = await apiPost('/auth/oauth', { provider, id_token: idToken, role })
+      saveTokens(res.access_token, res.refresh_token, res.active_role, res.roles || [])
+      await fetchProfile(res.access_token, res)
     } finally {
       setIsLoading(false)
     }
@@ -183,6 +195,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: !!token && !!user,
         isLoading,
         login,
+        loginWithOAuth,
         register,
         logout,
         setActiveRole,

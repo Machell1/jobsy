@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FlatList,
+  Image,
   Modal,
   Pressable,
   Text,
@@ -17,6 +18,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getListings, Listing } from "@/api/listings";
 import {
   searchListings,
+  searchProfiles,
   saveSearch,
   getSavedSearches,
   deleteSavedSearch,
@@ -28,12 +30,29 @@ import { ListingCard } from "@/components/ListingCard";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { COLORS } from "@/constants/theme";
 
+type SearchTab = "services" | "providers";
+
+interface ProviderResult {
+  id: string;
+  user_id: string;
+  display_name: string;
+  avatar_url: string | null;
+  parish: string | null;
+  service_category: string | null;
+  rating_avg: number;
+  rating_count: number;
+  is_verified: boolean;
+  bio: string | null;
+  skills: string[];
+}
+
 export default function SearchScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [searchTab, setSearchTab] = useState<SearchTab>("services");
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>();
 
   const [showSavedModal, setShowSavedModal] = useState(false);
@@ -59,6 +78,20 @@ export default function SearchScreen() {
         limit: 30,
       });
     },
+    staleTime: 1000 * 30,
+  });
+
+  const { data: providers = [], isLoading: loadingProviders } = useQuery({
+    queryKey: ["search-providers", debouncedQuery, selectedCategory],
+    queryFn: async () => {
+      const result = await searchProfiles({
+        q: debouncedQuery || undefined,
+        skills: selectedCategory || undefined,
+        limit: 30,
+      });
+      return (result.hits || result || []) as ProviderResult[];
+    },
+    enabled: searchTab === "providers",
     staleTime: 1000 * 30,
   });
 
@@ -176,6 +209,81 @@ export default function SearchScreen() {
         </View>
       </View>
 
+      {/* Search Tab Toggle: Services | Providers */}
+      <View className="bg-white px-4 pb-2">
+        <View
+          style={{
+            flexDirection: "row",
+            backgroundColor: "#F3F4F6",
+            borderRadius: 10,
+            padding: 3,
+          }}
+        >
+          <Pressable
+            onPress={() => setSearchTab("services")}
+            style={{
+              flex: 1,
+              paddingVertical: 8,
+              borderRadius: 8,
+              alignItems: "center",
+              backgroundColor: searchTab === "services" ? "#FFFFFF" : "transparent",
+              shadowColor: searchTab === "services" ? "#000" : "transparent",
+              shadowOpacity: searchTab === "services" ? 0.08 : 0,
+              shadowRadius: 2,
+              elevation: searchTab === "services" ? 2 : 0,
+            }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <Ionicons
+                name="briefcase-outline"
+                size={14}
+                color={searchTab === "services" ? "#1B5E20" : "#6B7280"}
+              />
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: "600",
+                  color: searchTab === "services" ? "#1B5E20" : "#6B7280",
+                }}
+              >
+                Services
+              </Text>
+            </View>
+          </Pressable>
+          <Pressable
+            onPress={() => setSearchTab("providers")}
+            style={{
+              flex: 1,
+              paddingVertical: 8,
+              borderRadius: 8,
+              alignItems: "center",
+              backgroundColor: searchTab === "providers" ? "#FFFFFF" : "transparent",
+              shadowColor: searchTab === "providers" ? "#000" : "transparent",
+              shadowOpacity: searchTab === "providers" ? 0.08 : 0,
+              shadowRadius: 2,
+              elevation: searchTab === "providers" ? 2 : 0,
+            }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <Ionicons
+                name="people-outline"
+                size={14}
+                color={searchTab === "providers" ? "#1B5E20" : "#6B7280"}
+              />
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: "600",
+                  color: searchTab === "providers" ? "#1B5E20" : "#6B7280",
+                }}
+              >
+                Providers
+              </Text>
+            </View>
+          </Pressable>
+        </View>
+      </View>
+
       {/* Category chips */}
       <CategoryPicker
         selected={selectedCategory}
@@ -184,65 +292,237 @@ export default function SearchScreen() {
       />
 
       {/* Results */}
-      {isLoading ? (
-        <LoadingScreen />
+      {searchTab === "services" ? (
+        isLoading ? (
+          <LoadingScreen />
+        ) : (
+          <FlatList
+            data={listings}
+            keyExtractor={(item: Listing) => item.id}
+            renderItem={({ item }) => (
+              <ListingCard
+                listing={item}
+                onPress={() => router.push(`/(tabs)/listing/${item.id}`)}
+              />
+            )}
+            ListEmptyComponent={
+              <EmptyState
+                icon="search-outline"
+                title="No results found"
+                subtitle="Try different keywords or browse categories"
+              />
+            }
+            ListFooterComponent={
+              hasTrending ? (
+                <View style={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 32 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#374151', marginBottom: 10 }}>
+                    Trending
+                  </Text>
+                  {loadingTrending ? (
+                    <ActivityIndicator size="small" color={COLORS.primary} />
+                  ) : (
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                      {(Array.isArray(trending) ? trending : []).map((item: any, idx: number) => {
+                        const label = typeof item === 'string' ? item : (item.query || item.term || item.name || String(item));
+                        return (
+                          <Pressable
+                            key={idx}
+                            onPress={() => setQuery(label)}
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              backgroundColor: '#FFF7ED',
+                              borderWidth: 1,
+                              borderColor: '#FED7AA',
+                              paddingHorizontal: 12,
+                              paddingVertical: 6,
+                              borderRadius: 20,
+                            }}
+                          >
+                            <Ionicons name="trending-up" size={13} color="#C2410C" />
+                            <Text style={{ color: '#C2410C', fontSize: 13, fontWeight: '500', marginLeft: 4 }}>{label}</Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  )}
+                </View>
+              ) : null
+            }
+            contentContainerStyle={{ paddingTop: 8, paddingBottom: 20 }}
+          />
+        )
       ) : (
-        <FlatList
-          data={listings}
-          keyExtractor={(item: Listing) => item.id}
-          renderItem={({ item }) => (
-            <ListingCard
-              listing={item}
-              onPress={() => router.push(`/(tabs)/listing/${item.id}`)}
-            />
-          )}
-          ListEmptyComponent={
-            <EmptyState
-              icon="search-outline"
-              title="No results found"
-              subtitle="Try different keywords or browse categories"
-            />
-          }
-          ListFooterComponent={
-            hasTrending ? (
-              <View style={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 32 }}>
-                <Text style={{ fontSize: 14, fontWeight: '700', color: '#374151', marginBottom: 10 }}>
-                  Trending
-                </Text>
-                {loadingTrending ? (
-                  <ActivityIndicator size="small" color={COLORS.primary} />
+        /* Provider Results */
+        loadingProviders ? (
+          <LoadingScreen />
+        ) : (
+          <FlatList
+            data={providers}
+            keyExtractor={(item: ProviderResult) => item.id || item.user_id}
+            renderItem={({ item }) => (
+              <Pressable
+                onPress={() =>
+                  router.push({
+                    pathname: "/(tabs)/profile/[id]",
+                    params: { id: item.user_id || item.id },
+                  })
+                }
+                style={{
+                  flexDirection: "row",
+                  backgroundColor: "#FFFFFF",
+                  marginHorizontal: 16,
+                  marginBottom: 10,
+                  borderRadius: 12,
+                  padding: 14,
+                  borderWidth: 1,
+                  borderColor: "#E5E7EB",
+                  shadowColor: "#000",
+                  shadowOpacity: 0.04,
+                  shadowRadius: 4,
+                  elevation: 1,
+                }}
+              >
+                {/* Avatar */}
+                {item.avatar_url ? (
+                  <Image
+                    source={{ uri: item.avatar_url }}
+                    style={{
+                      width: 50,
+                      height: 50,
+                      borderRadius: 25,
+                      marginRight: 12,
+                      backgroundColor: "#F3F4F6",
+                    }}
+                  />
                 ) : (
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {(Array.isArray(trending) ? trending : []).map((item: any, idx: number) => {
-                      const label = typeof item === 'string' ? item : (item.query || item.term || item.name || String(item));
-                      return (
-                        <Pressable
-                          key={idx}
-                          onPress={() => setQuery(label)}
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            backgroundColor: '#FFF7ED',
-                            borderWidth: 1,
-                            borderColor: '#FED7AA',
-                            paddingHorizontal: 12,
-                            paddingVertical: 6,
-                            borderRadius: 20,
-                          }}
-                        >
-                          <Ionicons name="trending-up" size={13} color="#C2410C" />
-                          <Text style={{ color: '#C2410C', fontSize: 13, fontWeight: '500', marginLeft: 4 }}>{label}</Text>
-                        </Pressable>
-                      );
-                    })}
+                  <View
+                    style={{
+                      width: 50,
+                      height: 50,
+                      borderRadius: 25,
+                      marginRight: 12,
+                      backgroundColor: "#EEF2FF",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Ionicons name="person" size={22} color="#4338CA" />
                   </View>
                 )}
-              </View>
-            ) : null
-          }
-          contentContainerStyle={{ paddingTop: 8, paddingBottom: 20 }}
-        />
+
+                {/* Info */}
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                    <Text
+                      style={{
+                        fontSize: 15,
+                        fontWeight: "600",
+                        color: "#111827",
+                      }}
+                      numberOfLines={1}
+                    >
+                      {item.display_name}
+                    </Text>
+                    {item.is_verified && (
+                      <Ionicons name="checkmark-circle" size={14} color="#1B5E20" />
+                    )}
+                  </View>
+
+                  {/* Rating */}
+                  {item.rating_count > 0 && (
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        marginTop: 2,
+                        gap: 2,
+                      }}
+                    >
+                      <Ionicons name="star" size={12} color="#FFC107" />
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontWeight: "600",
+                          color: "#374151",
+                        }}
+                      >
+                        {item.rating_avg.toFixed(1)}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: "#9CA3AF" }}>
+                        ({item.rating_count})
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Category & Parish */}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      marginTop: 4,
+                      flexWrap: "wrap",
+                      gap: 6,
+                    }}
+                  >
+                    {item.service_category && (
+                      <View
+                        style={{
+                          backgroundColor: "#EEF2FF",
+                          paddingHorizontal: 8,
+                          paddingVertical: 2,
+                          borderRadius: 8,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: "#4338CA",
+                            fontSize: 11,
+                            fontWeight: "600",
+                          }}
+                        >
+                          {item.service_category}
+                        </Text>
+                      </View>
+                    )}
+                    {item.parish && (
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 2,
+                        }}
+                      >
+                        <Ionicons
+                          name="location-outline"
+                          size={12}
+                          color="#6B7280"
+                        />
+                        <Text style={{ fontSize: 11, color: "#6B7280" }}>
+                          {item.parish}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+
+                {/* Chevron */}
+                <View style={{ justifyContent: "center" }}>
+                  <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+                </View>
+              </Pressable>
+            )}
+            ListEmptyComponent={
+              <EmptyState
+                icon="people-outline"
+                title="No providers found"
+                subtitle="Try different keywords or browse categories"
+              />
+            }
+            contentContainerStyle={{ paddingTop: 8, paddingBottom: 20, flexGrow: 1 }}
+          />
+        )
       )}
 
       {/* Saved Searches Modal */}
