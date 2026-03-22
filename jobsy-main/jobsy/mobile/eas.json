@@ -36,7 +36,8 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.jobsyja.com",
-        "EXPO_PUBLIC_WS_URL": "wss://api.jobsyja.com"
+        "EXPO_PUBLIC_WS_URL": "wss://api.jobsyja.com",
+        "MAPBOX_DOWNLOADS_TOKEN": "MAPBOX_DOWNLOADS_TOKEN"
       }
     }
   },
@@ -46,9 +47,9 @@
         "appleId": "williamsmachell@gmail.com",
         "ascAppId": "6760623768",
         "appleTeamId": "K6TZR6QQGS",
-        "ascApiKeyPath": "./AuthKey_TAS2CZ7QCC.p8",
+        "ascApiKeyPath": "./AuthKey_7M4M4MG3CH.p8",
         "ascApiKeyIssuerId": "942e1253-2c7a-4216-a3cb-29364038d1e9",
-        "ascApiKeyId": "TAS2CZ7QCC"
+        "ascApiKeyId": "7M4M4MG3CH"
       },
       "android": {
         "serviceAccountKeyPath": "./play-store-key.json",

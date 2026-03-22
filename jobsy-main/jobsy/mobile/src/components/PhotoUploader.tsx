@@ -2,8 +2,6 @@ import { Alert, Image, Pressable, ScrollView, Text, View } from "react-native";
 import { useState } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
-import { Video, ResizeMode } from "expo-av";
-
 import { uploadFile, type UploadResult } from "@/api/storage";
 import { COLORS } from "@/constants/theme";
 
@@ -152,12 +150,10 @@ export function MediaUploader({
               {item.thumbnailUri ? (
                 <Image source={{ uri: item.thumbnailUri }} className="h-24 w-24" />
               ) : (
-                <Video
+                <Image
                   source={{ uri: item.uri }}
+                  className="h-24 w-24"
                   style={{ width: 96, height: 96 }}
-                  resizeMode={ResizeMode.COVER}
-                  shouldPlay={false}
-                  isMuted
                 />
               )}
               {/* Play icon overlay */}
