@@ -281,32 +281,15 @@ async def proxy_profiles_fallback(path: str, request: Request, user: dict = Depe
         raise
 
 
-@router.api_route("/listings", methods=["GET"])
-async def proxy_listings_root_read(request: Request, user: dict = Depends(get_optional_user)):
-    """Public read access to listings root."""
-    return await _proxy_request("listings", "/", request, user)
-
-
-@router.api_route("/listings/{path:path}", methods=["GET"])
-async def proxy_listings_read(path: str, request: Request, user: dict = Depends(get_optional_user)):
-    """Public read access to listings (browse, search, view)."""
-    return await _proxy_request("listings", f"/{path}", request, user)
-
-
-@router.api_route("/listings", methods=["POST"])
-async def proxy_listings_root_write(request: Request, user: dict = Depends(get_current_user)):
-    """Authenticated create access to listings root."""
-    return await _proxy_request("listings", "/", request, user)
-
-
-@router.api_route("/listings/{path:path}", methods=["POST", "PUT", "PATCH", "DELETE"])
-async def proxy_listings_write(path: str, request: Request, user: dict = Depends(get_current_user)):
-    """Authenticated write access to listings."""
-    return await _proxy_request("listings", f"/{path}", request, user)
+# ============================================================
+# Listings — merged into gateway (see routes/listings.py)
+# ============================================================
 
 
 # ============================================================
-# Swipes — feed endpoint implemented directly in gateway
+# Swipes — merged into gateway (see routes/swipes.py)
+# The swipe feed endpoint below remains as it queries profiles
+# directly (not the swipes ORM model).
 # ============================================================
 
 
@@ -334,19 +317,12 @@ async def get_swipes_feed(
     return [_serialize_profile(row) for row in rows]
 
 
-@router.api_route("/swipes/{path:path}", methods=["GET", "POST"])
-async def proxy_swipes(path: str, request: Request, user: dict = Depends(get_current_user)):
-    return await _proxy_request("swipes", f"/{path}", request, user)
-
-
 @router.api_route("/matches/{path:path}", methods=["GET", "PUT"])
 async def proxy_matches(path: str, request: Request, user: dict = Depends(get_current_user)):
     return await _proxy_request("matches", f"/{path}", request, user)
 
 
-@router.api_route("/geo/{path:path}", methods=["GET"])
-async def proxy_geo(path: str, request: Request, user: dict = Depends(get_current_user)):
-    return await _proxy_request("geo", f"/{path}", request, user)
+# Geo — merged into gateway (see routes/geoshard.py)
 
 
 @router.api_route("/recommendations/{path:path}", methods=["GET", "POST", "PUT"])
@@ -371,9 +347,7 @@ async def proxy_notifications(path: str, request: Request, user: dict = Depends(
     return await _proxy_request("notifications", f"/{path}", request, user)
 
 
-@router.api_route("/storage/{path:path}", methods=["GET", "POST", "DELETE"])
-async def proxy_storage(path: str, request: Request, user: dict = Depends(get_current_user)):
-    return await _proxy_request("storage", f"/{path}", request, user)
+# Storage — merged into gateway (see routes/storage.py)
 
 
 @router.api_route("/ads/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
@@ -387,124 +361,13 @@ async def proxy_payments(path: str, request: Request, user: dict = Depends(get_c
 
 
 # ============================================================
-# Reviews — received endpoint implemented directly in gateway
+# Reviews — merged into gateway (see routes/reviews_routes.py)
 # ============================================================
 
 
-@router.get("/reviews/received")
-async def get_reviews_received(
-    user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Get reviews received by the current user."""
-    user_id = user["user_id"]
-    result = await db.execute(
-        text(
-            "SELECT id, reviewer_id, reviewee_id, listing_id, booking_id, "
-            "rating, title, body, quality_rating, punctuality_rating, "
-            "communication_rating, value_rating, is_verified, is_visible, created_at "
-            "FROM reviews WHERE reviewee_id = :uid AND is_visible = true "
-            "ORDER BY created_at DESC LIMIT 50"
-        ),
-        {"uid": user_id},
-    )
-    rows = result.all()
-    items = []
-    for row in rows:
-        d = dict(row._mapping)
-        for k, v in d.items():
-            if isinstance(v, (datetime, date)):
-                d[k] = v.isoformat()
-            elif isinstance(v, UUID):
-                d[k] = str(v)
-            elif isinstance(v, Decimal):
-                d[k] = float(v)
-        items.append(d)
-    return items
-
-
-@router.api_route("/reviews/{path:path}", methods=["GET"])
-async def proxy_reviews_read(path: str, request: Request, user: dict = Depends(get_optional_user)):
-    """Public read access to reviews."""
-    return await _proxy_request("reviews", f"/{path}", request, user)
-
-
-@router.api_route("/reviews/{path:path}", methods=["POST", "PUT"])
-async def proxy_reviews_write(path: str, request: Request, user: dict = Depends(get_current_user)):
-    """Authenticated write access to reviews."""
-    return await _proxy_request("reviews", f"/{path}", request, user)
-
-
-@router.api_route("/search/listings", methods=["GET"])
-async def proxy_search_listings(request: Request, db: AsyncSession = Depends(get_db)):
-    """Search listings via direct DB query (search microservice not deployed)."""
-    q = request.query_params.get("q", "").strip()
-
-    def _serialize(val):
-        if isinstance(val, UUID):
-            return str(val)
-        if isinstance(val, Decimal):
-            return float(val)
-        if isinstance(val, (datetime, date)):
-            return val.isoformat()
-        if isinstance(val, (list, dict)):
-            return val
-        if val is None or isinstance(val, (str, int, float, bool)):
-            return val
-        return str(val)
-
-    try:
-        if not q:
-            result = await db.execute(
-                text(
-                    "SELECT id, poster_id, title, description, category, subcategory, "
-                    "budget_min, budget_max, currency, parish, status, created_at "
-                    "FROM listings WHERE status = 'active' ORDER BY created_at DESC LIMIT 50"
-                )
-            )
-        else:
-            pattern = f"%{q}%"
-            result = await db.execute(
-                text(
-                    "SELECT id, poster_id, title, description, category, subcategory, "
-                    "budget_min, budget_max, currency, parish, status, created_at "
-                    "FROM listings "
-                    "WHERE status = 'active' AND ("
-                    "  title ILIKE :pattern OR description ILIKE :pattern "
-                    "  OR category ILIKE :pattern OR parish ILIKE :pattern"
-                    ") ORDER BY created_at DESC LIMIT 50"
-                ),
-                {"pattern": pattern},
-            )
-        rows = result.mappings().all()
-        items = [{k: _serialize(v) for k, v in row.items()} for row in rows]
-    except Exception:
-        logger.exception("Search fallback query failed")
-        return Response(
-            content=json.dumps({"detail": "Search is temporarily unavailable"}),
-            status_code=503,
-            media_type="application/json",
-        )
-
-    return Response(content=json.dumps(items), media_type="application/json")
-
-
-@router.api_route("/search/{path:path}", methods=["GET"])
-async def proxy_search(path: str, request: Request, user: dict = Depends(get_optional_user)):
-    """Public search access (browse without login)."""
-    try:
-        return await _proxy_request("search", f"/{path}", request, user)
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Search service is temporarily unavailable",
-        ) from None
-
-
-@router.api_route("/search/{path:path}", methods=["POST", "DELETE"])
-async def proxy_search_write(path: str, request: Request, user: dict = Depends(get_current_user)):
-    """Authenticated write access to search (saved searches)."""
-    return await _proxy_request("search", f"/{path}", request, user)
+# ============================================================
+# Search — merged into gateway (see routes/search_routes.py)
+# ============================================================
 
 
 @router.api_route("/advertising/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])

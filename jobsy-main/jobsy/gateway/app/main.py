@@ -41,6 +41,14 @@ from .routes.levels import router as levels_router
 from .routes.referrals import router as referrals_router
 from .routes.contact import router as contact_router
 
+# --- Merged microservice routers (formerly separate services) ---
+from .routes.listings import router as listings_router
+from .routes.search_routes import router as search_router
+from .routes.storage import router as storage_router
+from .routes.geoshard import router as geoshard_router
+from .routes.swipes import router as swipes_router
+from .routes.reviews_routes import router as reviews_router
+
 setup_json_logging()
 logger = logging.getLogger(__name__)
 
@@ -1385,6 +1393,38 @@ app.include_router(
     prefix="/api/referrals",
     tags=["referrals"],
 )
+# --- Merged microservice routers (direct DB access, no proxy) ---
+app.include_router(
+    listings_router,
+    prefix="/api/listings",
+    tags=["listings"],
+)
+app.include_router(
+    search_router,
+    prefix="/api/search",
+    tags=["search"],
+)
+app.include_router(
+    storage_router,
+    prefix="/api/storage",
+    tags=["storage"],
+)
+app.include_router(
+    geoshard_router,
+    prefix="/api/geo",
+    tags=["geo"],
+)
+app.include_router(
+    swipes_router,
+    prefix="/api/swipes",
+    tags=["swipes"],
+)
+app.include_router(
+    reviews_router,
+    prefix="/api/reviews",
+    tags=["reviews"],
+)
+
 app.include_router(proxy_router)
 app.include_router(
     contact_router,
