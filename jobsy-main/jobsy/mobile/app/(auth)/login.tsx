@@ -13,9 +13,10 @@ import { Link } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import { OAuthButtons } from "@/components/OAuthButtons";
+import { PhoneInput } from "@/components/PhoneInput";
 import { COLORS } from "@/constants/theme";
 import { useAuthStore } from "@/stores/auth";
-import { isValidJamaicanPhone } from "@/utils/validators";
+import { isValidPhone } from "@/utils/validators";
 
 export default function LoginScreen() {
   const [phone, setPhone] = useState("+1876");
@@ -24,8 +25,8 @@ export default function LoginScreen() {
   const login = useAuthStore((s) => s.login);
 
   const handleLogin = async () => {
-    if (!isValidJamaicanPhone(phone)) {
-      Alert.alert("Invalid Phone", "Enter a valid Jamaican phone number (+1876XXXXXXX)");
+    if (!isValidPhone(phone)) {
+      Alert.alert("Invalid Phone", "Enter a valid phone number with country code.");
       return;
     }
     if (password.length < 8) {
@@ -70,16 +71,11 @@ export default function LoginScreen() {
 
           {/* Phone input */}
           <Text className="mb-1.5 text-sm font-medium text-dark-700">Phone Number</Text>
-          <View className="mb-4 flex-row items-center rounded-xl border border-dark-200 bg-dark-50 px-4 py-3">
-            <Ionicons name="call-outline" size={20} color={COLORS.gray[500]} />
-            <TextInput
+          <View className="mb-4">
+            <PhoneInput
               value={phone}
-              onChangeText={setPhone}
-              placeholder="+18761234567"
-              keyboardType="phone-pad"
-              autoComplete="tel"
-              className="ml-3 flex-1 text-base text-dark-800"
-              maxLength={12}
+              onChange={setPhone}
+              placeholder="Enter phone number"
             />
           </View>
 
