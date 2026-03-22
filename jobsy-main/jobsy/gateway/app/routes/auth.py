@@ -683,18 +683,18 @@ async def forgot_password(request: Request, data: ForgotPasswordRequest, db: Asy
     await db.flush()
 
     sent = False
-    if data.email:
-        # Email-first flow: send OTP via email
-        sent = _send_otp_email(to=data.email, otp=otp)
-    elif data.phone:
-        # SMS-first flow: try SMS, fall back to email
+    # Always prefer email delivery — it's more reliable and doesn't
+    # depend on Twilio SMS permissions being configured per-region.
+    email_addr = data.email or user.email
+    if email_addr:
+        sent = _send_otp_email(to=email_addr, otp=otp)
+
+    # Only attempt SMS as a secondary channel if email wasn't available
+    if not sent and data.phone:
         sent = send_sms(
             to=data.phone,
             body=f"Your Jobsy password reset code is: {otp}. Expires in {_OTP_EXPIRY_MINUTES} minutes.",
         )
-        if not sent and user.email:
-            logger.info("SMS failed for %s, falling back to email %s", data.phone, user.email)
-            sent = _send_otp_email(to=user.email, otp=otp)
 
     if not sent:
         logger.warning("Could not deliver OTP for user %s via any channel", user.id)
