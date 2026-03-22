@@ -483,17 +483,25 @@ export default function ProfileScreen() {
 
       {/* Menu items */}
       <View className="mx-4 mt-4 rounded-2xl bg-white">
+        <MenuItem icon="home-outline" label="Dashboard" onPress={() => router.push("/(tabs)/home")} />
         <MenuItem icon="create-outline" label="Edit Profile" onPress={() => router.push("/(tabs)/profile/edit")} />
+        <MenuItem icon="shield-checkmark-outline" label="Verify Account" onPress={() => router.push("/(tabs)/verify")} />
         <MenuItem icon="list-outline" label="My Listings" onPress={() => router.push("/(tabs)/listing/my-listings")} />
         <MenuItem icon="star-outline" label="My Reviews" onPress={() => router.push(`/(tabs)/reviews/${user?.id}`)} />
         <MenuItem icon="card-outline" label="Payments" onPress={() => router.push("/(tabs)/payments/")} />
         <MenuItem icon="notifications-outline" label="Notifications" onPress={() => router.push("/(tabs)/notifications")} />
+        <MenuItem icon="newspaper-outline" label="Noticeboard" onPress={() => router.push("/(tabs)/noticeboard")} />
+        <MenuItem icon="megaphone-outline" label="Advertiser" onPress={() => router.push("/(tabs)/advertiser")} />
+        <MenuItem icon="gift-outline" label="Referrals" onPress={() => router.push("/(tabs)/referrals")} />
+        <MenuItem icon="alert-circle-outline" label="Disputes" onPress={() => router.push("/(tabs)/disputes")} />
+        <MenuItem icon="business-outline" label="Business Profile" onPress={() => router.push("/(tabs)/business")} />
         <MenuItem
           icon="share-social-outline"
           label="Share Profile"
           onPress={handleShareProfile}
         />
-        <MenuItem icon="lock-closed-outline" label="Change Password" onPress={() => setShowPasswordModal(true)} />
+        <MenuItem icon="settings-outline" label="Settings" onPress={() => router.push("/(tabs)/settings")} />
+        <MenuItem icon="document-text-outline" label="Legal & Info" onPress={() => router.push("/(tabs)/legal")} />
       </View>
 
       {/* Trust & Safety */}
