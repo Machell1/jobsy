@@ -1,6 +1,9 @@
-"""RabbitMQ event publishing and consuming helpers using aio-pika.
+"""Event publishing and consuming helpers using Redis pub/sub.
 
-When RabbitMQ is unavailable the helpers log warnings instead of crashing,
+Replaces the previous RabbitMQ-based implementation. Uses the existing
+Redis connection that is already available across all services.
+
+When Redis is unavailable the helpers log warnings instead of crashing,
 allowing services to start and serve healthchecks even without a broker.
 """
 
@@ -11,171 +14,133 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
-import aio_pika
+import redis.asyncio as aioredis
 
-from shared.config import RABBITMQ_URL
+from shared.config import REDIS_URL
 
 logger = logging.getLogger(__name__)
 
-EXCHANGE_NAME = "jobsy.events"
-DLX_NAME = "jobsy.events.dlx"
+CHANNEL_PREFIX = "jobsy.events."
 MAX_RETRIES = 3
-CONNECTION_RETRIES = 5  # attempts before giving up on initial connection
 RECONNECT_DELAY = 10  # seconds between reconnection attempts
 
 # Module-level connection for reuse across publishes
-_publish_connection: aio_pika.abc.AbstractRobustConnection | None = None
+_redis_client: aioredis.Redis | None = None
 
 
-async def get_connection():
-    """Get or create a reusable RabbitMQ connection for publishing.
-
-    Retries with exponential backoff if the broker is temporarily
-    unreachable (e.g. DNS not yet propagated on Railway).
-    """
-    global _publish_connection
-    if not RABBITMQ_URL:
+async def get_redis() -> aioredis.Redis | None:
+    """Get or create a reusable Redis connection for event publishing."""
+    global _redis_client
+    if not REDIS_URL:
         return None
-    if _publish_connection is not None and not _publish_connection.is_closed:
-        return _publish_connection
-
-    delay = 2
-    for attempt in range(1, CONNECTION_RETRIES + 1):
+    if _redis_client is not None:
         try:
-            _publish_connection = await aio_pika.connect_robust(RABBITMQ_URL)
-            return _publish_connection
+            await _redis_client.ping()
+            return _redis_client
         except Exception:
-            if attempt == CONNECTION_RETRIES:
-                logger.warning(
-                    "RabbitMQ connection failed after %d attempts, giving up",
-                    CONNECTION_RETRIES,
-                )
-                return None
-            logger.warning(
-                "RabbitMQ connection attempt %d/%d failed, retrying in %ds",
-                attempt,
-                CONNECTION_RETRIES,
-                delay,
-            )
-            await asyncio.sleep(delay)
-            delay = min(delay * 2, 30)
-    return None
+            _redis_client = None
+
+    try:
+        _redis_client = aioredis.from_url(
+            REDIS_URL,
+            decode_responses=True,
+            socket_connect_timeout=5,
+        )
+        await _redis_client.ping()
+        return _redis_client
+    except Exception:
+        logger.warning("Redis connection failed for events")
+        _redis_client = None
+        return None
 
 
 async def close_connection():
-    """Close the shared publish connection (call on shutdown)."""
-    global _publish_connection
-    if _publish_connection and not _publish_connection.is_closed:
-        await _publish_connection.close()
-        _publish_connection = None
+    """Close the shared Redis connection (call on shutdown)."""
+    global _redis_client
+    if _redis_client:
+        await _redis_client.aclose()
+        _redis_client = None
 
 
 async def publish_event(routing_key: str, data: dict[str, Any]) -> None:
-    """Publish a JSON event to the jobsy.events exchange.
+    """Publish a JSON event to a Redis pub/sub channel.
 
-    Silently drops the event if RabbitMQ is unreachable so that the
+    Silently drops the event if Redis is unreachable so that the
     calling HTTP handler does not fail.
     """
     try:
-        connection = await get_connection()
-        if connection is None:
-            logger.info("RabbitMQ not configured, event %s skipped", routing_key)
+        client = await get_redis()
+        if client is None:
+            logger.info("Redis not available, event %s skipped", routing_key)
             return
-        channel = await connection.channel()
-        exchange = await channel.declare_exchange(EXCHANGE_NAME, aio_pika.ExchangeType.TOPIC, durable=True)
-        message = aio_pika.Message(
-            body=json.dumps(
-                {
-                    "event_type": routing_key,
-                    "timestamp": datetime.now(UTC).isoformat(),
-                    "data": data,
-                }
-            ).encode(),
-            content_type="application/json",
-            delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+
+        message = json.dumps(
+            {
+                "event_type": routing_key,
+                "timestamp": datetime.now(UTC).isoformat(),
+                "data": data,
+            }
         )
-        await exchange.publish(message, routing_key=routing_key)
+        channel = f"{CHANNEL_PREFIX}{routing_key}"
+        await client.publish(channel, message)
         logger.info("Published event %s", routing_key)
     except Exception:
-        logger.warning("RabbitMQ unavailable, event %s dropped", routing_key)
+        logger.warning("Redis unavailable, event %s dropped", routing_key)
 
 
 async def consume_events(queue_name: str, routing_key: str, callback: Callable) -> None:
-    """Start consuming events from a queue bound to the given routing key.
+    """Start consuming events from a Redis pub/sub channel.
 
-    If RabbitMQ is unavailable the function retries the connection every
+    If Redis is unavailable the function retries the connection every
     ``RECONNECT_DELAY`` seconds instead of crashing the service.
 
-    Messages that fail after MAX_RETRIES are routed to a dead-letter queue.
     The callback receives the parsed JSON data dict.
     """
-    if not RABBITMQ_URL:
-        logger.warning("RABBITMQ_URL not configured, consumer %s will not start", queue_name)
+    if not REDIS_URL:
+        logger.warning("REDIS_URL not configured, consumer %s will not start", queue_name)
         return
 
     while True:
         try:
-            connection = await aio_pika.connect_robust(RABBITMQ_URL)
-            channel = await connection.channel()
-            await channel.set_qos(prefetch_count=10)
-
-            exchange = await channel.declare_exchange(EXCHANGE_NAME, aio_pika.ExchangeType.TOPIC, durable=True)
-
-            # Dead-letter exchange and queue for failed messages
-            dlx = await channel.declare_exchange(DLX_NAME, aio_pika.ExchangeType.TOPIC, durable=True)
-            dlq = await channel.declare_queue(f"{queue_name}.dlq", durable=True)
-            await dlq.bind(dlx, routing_key="#")
-
-            queue = await channel.declare_queue(
-                queue_name,
-                durable=True,
-                arguments={
-                    "x-dead-letter-exchange": DLX_NAME,
-                },
+            client = aioredis.from_url(
+                REDIS_URL,
+                decode_responses=True,
+                socket_connect_timeout=5,
             )
-            await queue.bind(exchange, routing_key=routing_key)
+            pubsub = client.pubsub()
 
-            logger.info("Consuming %s from queue %s", routing_key, queue_name)
+            # Subscribe to the specific channel pattern
+            channel = f"{CHANNEL_PREFIX}{routing_key}"
+            if "*" in routing_key or "#" in routing_key:
+                # Pattern subscription for wildcards
+                pattern = channel.replace("#", "*")
+                await pubsub.psubscribe(pattern)
+                logger.info("Pattern-consuming %s on channel %s", routing_key, pattern)
+            else:
+                await pubsub.subscribe(channel)
+                logger.info("Consuming %s from channel %s", routing_key, channel)
 
-            async with queue.iterator() as queue_iter:
-                async for message in queue_iter:
-                    try:
-                        payload = json.loads(message.body.decode())
-                        await callback(payload)
-                        await message.ack()
-                    except asyncio.CancelledError:
-                        await message.nack(requeue=True)
-                        raise
-                    except Exception:
-                        retry_count = int((message.headers or {}).get("x-retry-count", 0))
-                        if retry_count < MAX_RETRIES:
-                            logger.warning(
-                                "Retrying event from %s (attempt %d/%d)",
-                                routing_key,
-                                retry_count + 1,
-                                MAX_RETRIES,
-                            )
-                            await message.ack()
-                            retry_msg = aio_pika.Message(
-                                body=message.body,
-                                content_type=message.content_type,
-                                delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
-                                headers={"x-retry-count": retry_count + 1},
-                            )
-                            await exchange.publish(retry_msg, routing_key=routing_key)
-                        else:
-                            logger.exception(
-                                "Event from %s failed after %d retries, sending to DLQ",
-                                routing_key,
-                                MAX_RETRIES,
-                            )
-                            await message.reject(requeue=False)
+            async for message in pubsub.listen():
+                if message["type"] not in ("message", "pmessage"):
+                    continue
+                try:
+                    payload = json.loads(message["data"])
+                    await callback(payload)
+                except asyncio.CancelledError:
+                    raise
+                except Exception:
+                    logger.exception(
+                        "Error processing event from %s in consumer %s",
+                        routing_key,
+                        queue_name,
+                    )
+
         except asyncio.CancelledError:
             logger.info("Consumer for %s cancelled, shutting down", queue_name)
             return
         except Exception:
             logger.warning(
-                "RabbitMQ unavailable for consumer %s, retrying in %ds",
+                "Redis unavailable for consumer %s, retrying in %ds",
                 queue_name,
                 RECONNECT_DELAY,
             )

@@ -68,38 +68,21 @@ async def _check_redis(request: Request) -> tuple[bool, str]:
         return False, str(exc)
 
 
-async def _check_rabbitmq() -> tuple[bool, str]:
-    """Return (ok, detail) for the RabbitMQ connection."""
-    try:
-        import aio_pika
-        from shared.config import RABBITMQ_URL
-
-        if not RABBITMQ_URL:
-            return False, "not configured"
-        connection = await aio_pika.connect_robust(RABBITMQ_URL, timeout=5)
-        await connection.close()
-        return True, "connected"
-    except Exception as exc:
-        return False, str(exc)
-
-
 @router.get("/health/ready", summary="Readiness probe")
 async def readiness(request: Request):
-    """Check core dependencies: DB, Redis, RabbitMQ.
+    """Check core dependencies: DB, Redis.
 
     Returns 200 if all are connected, 503 if any fail.
     """
     db_ok, db_detail = await _check_db()
     redis_ok, redis_detail = await _check_redis(request)
-    rmq_ok, rmq_detail = await _check_rabbitmq()
 
     services = {
         "database": {"status": "up" if db_ok else "down", "detail": db_detail},
         "redis": {"status": "up" if redis_ok else "down", "detail": redis_detail},
-        "rabbitmq": {"status": "up" if rmq_ok else "down", "detail": rmq_detail},
     }
 
-    all_ok = db_ok and redis_ok and rmq_ok
+    all_ok = db_ok and redis_ok
     payload = {
         "status": "ready" if all_ok else "not_ready",
         "services": services,
@@ -215,7 +198,6 @@ async def deep_health(request: Request):
 
     db_ok, db_detail = await _check_db()
     redis_ok, redis_detail = await _check_redis(request)
-    rmq_ok, rmq_detail = await _check_rabbitmq()
     stripe_ok, stripe_detail = await _check_stripe()
     cloudinary_ok, cloudinary_detail = await _check_cloudinary()
     stream_ok, stream_detail = await _check_stream_chat()
@@ -224,7 +206,6 @@ async def deep_health(request: Request):
     services = {
         "database": {"status": "up" if db_ok else "down", "detail": db_detail},
         "redis": {"status": "up" if redis_ok else "down", "detail": redis_detail},
-        "rabbitmq": {"status": "up" if rmq_ok else "down", "detail": rmq_detail},
         "stripe": {"status": "up" if stripe_ok else "down", "detail": stripe_detail},
         "cloudinary": {"status": "up" if cloudinary_ok else "down", "detail": cloudinary_detail},
         "stream_chat": {"status": "up" if stream_ok else "down", "detail": stream_detail},

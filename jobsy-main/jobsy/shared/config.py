@@ -42,24 +42,8 @@ if not REDIS_URL:
     else:
         REDIS_URL = "redis://localhost:6379/0"
 
-RABBITMQ_URL = os.getenv("RABBITMQ_URL") or os.getenv("CLOUDAMQP_URL", "")
-if not RABBITMQ_URL:
-    if _is_production():
-        _rmq_host = os.getenv("RABBITMQ_HOST", "")
-        _rmq_port = os.getenv("RABBITMQ_PORT", "5672")
-        _rmq_user = os.getenv("RABBITMQ_USER", os.getenv("RABBITMQ_DEFAULT_USER", "guest"))
-        _rmq_pass = os.getenv("RABBITMQ_PASS", os.getenv("RABBITMQ_DEFAULT_PASS", "guest"))
-        _rmq_vhost = os.getenv("RABBITMQ_VHOST", "/")
-        if _rmq_host:
-            RABBITMQ_URL = f"amqp://{_rmq_user}:{_rmq_pass}@{_rmq_host}:{_rmq_port}/{_rmq_vhost}"
-            logging.info("RABBITMQ_URL built from RABBITMQ_HOST=%s", _rmq_host)
-        else:
-            logging.warning(
-                "RABBITMQ_URL not set in production. Set RABBITMQ_URL, CLOUDAMQP_URL, "
-                "or RABBITMQ_HOST. Event publishing will retry until available."
-            )
-    else:
-        RABBITMQ_URL = "amqp://guest:guest@localhost:5672/"
+# RabbitMQ removed — events now use Redis pub/sub (see shared/events.py)
+RABBITMQ_URL = ""  # kept for backward compat, unused
 
 _jwt_secret = os.getenv("JWT_SECRET", "")
 if not _jwt_secret:
