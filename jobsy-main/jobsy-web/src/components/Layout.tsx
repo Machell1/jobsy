@@ -221,6 +221,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   </div>
                 )}
 
+                {!user?.is_verified && (
+                  <Link
+                    to="/verify"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400/20 hover:bg-amber-400/30 transition text-amber-200 hover:text-amber-100"
+                    title="Verify Your Account"
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    <span className="text-xs font-semibold hidden lg:inline">Verify</span>
+                  </Link>
+                )}
+
                 {user?.roles?.includes('admin') && (
                   <Link to="/admin" className="p-2 rounded-lg hover:bg-white/10 transition" title="Admin Dashboard">
                     <ShieldCheck className="h-5 w-5" />
@@ -325,6 +336,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     )}
                   </Link>
                 ))}
+                {!user?.is_verified && (
+                  <Link
+                    to="/verify"
+                    onClick={() => setMobileMenu(false)}
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm bg-amber-400/20 text-amber-200 hover:bg-amber-400/30"
+                  >
+                    <ShieldCheck className="h-4 w-4" /> Verify Account
+                  </Link>
+                )}
                 <hr className="border-white/20 my-2" />
                 <Link to="/notifications" onClick={() => setMobileMenu(false)} className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-white/10">
                   <Bell className="h-4 w-4" /> Notifications

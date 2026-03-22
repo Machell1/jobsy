@@ -112,6 +112,14 @@ export default function TabLayout() {
       <Tabs.Screen name="payments" options={{ href: null, headerShown: false }} />
       <Tabs.Screen name="reviews" options={{ href: null, headerShown: false }} />
       <Tabs.Screen name="notifications" options={{ href: null }} />
+      <Tabs.Screen
+        name="verify"
+        options={{
+          href: null,
+          headerTitle: "Verify Account",
+          headerTitleStyle: { fontWeight: "bold", color: COLORS.black },
+        }}
+      />
     </Tabs>
   );
 }

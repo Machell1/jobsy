@@ -45,6 +45,7 @@ const AdvertiserDashboardPage = React.lazy(() => import('./pages/AdvertiserDashb
 const ContractPage = React.lazy(() => import('./pages/ContractPage'))
 const ReferralPage = React.lazy(() => import('./pages/ReferralPage'))
 const DisputesPage = React.lazy(() => import('./pages/DisputesPage'))
+const VerifyAccountPage = React.lazy(() => import('./pages/VerifyAccountPage'))
 const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage'))
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -78,6 +79,7 @@ const ROUTE_TITLES: Record<string, string> = {
   '/contact': 'Contact',
   '/events': 'Pan di Ends',
   '/events/create': 'Create Event',
+  '/verify': 'Verify Your Account',
   '/referrals': 'Refer & Earn',
   '/advertiser': 'Advertiser Dashboard',
   '/disputes': 'Disputes',
@@ -138,6 +140,7 @@ export default function App() {
           <Route path="/events/create" element={<ProtectedRoute><CreateEventPage /></ProtectedRoute>} />
           <Route path="/events/:id/dashboard" element={<ProtectedRoute><EventDashboardPage /></ProtectedRoute>} />
           <Route path="/events/:id" element={<EventDetailPage />} />
+          <Route path="/verify" element={<ProtectedRoute><VerifyAccountPage /></ProtectedRoute>} />
           <Route path="/contracts/:id" element={<ProtectedRoute><ContractPage /></ProtectedRoute>} />
           <Route path="/referrals" element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
           <Route path="/advertiser" element={<ProtectedRoute><AdvertiserDashboardPage /></ProtectedRoute>} />
