@@ -120,6 +120,54 @@ export default function TabLayout() {
           headerTitleStyle: { fontWeight: "bold", color: COLORS.black },
         }}
       />
+      <Tabs.Screen
+        name="home"
+        options={{ href: null, headerShown: false }}
+      />
+      <Tabs.Screen
+        name="disputes"
+        options={{ href: null, headerShown: false }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{ href: null, headerShown: false }}
+      />
+      <Tabs.Screen
+        name="advertiser"
+        options={{ href: null, headerShown: false }}
+      />
+      <Tabs.Screen
+        name="noticeboard"
+        options={{
+          href: null,
+          headerTitle: "Noticeboard",
+          headerTitleStyle: { fontWeight: "bold", color: COLORS.black },
+        }}
+      />
+      <Tabs.Screen
+        name="business"
+        options={{
+          href: null,
+          headerTitle: "Business Profile",
+          headerTitleStyle: { fontWeight: "bold", color: COLORS.black },
+        }}
+      />
+      <Tabs.Screen
+        name="referrals"
+        options={{
+          href: null,
+          headerTitle: "Referrals",
+          headerTitleStyle: { fontWeight: "bold", color: COLORS.black },
+        }}
+      />
+      <Tabs.Screen
+        name="legal"
+        options={{
+          href: null,
+          headerTitle: "Legal & Info",
+          headerTitleStyle: { fontWeight: "bold", color: COLORS.black },
+        }}
+      />
     </Tabs>
   );
 }

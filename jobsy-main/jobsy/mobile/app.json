@@ -96,7 +96,9 @@
         {
           "enableGooglePay": true
         }
-      ]
+      ],
+      "expo-sharing",
+      "expo-web-browser"
     ],
     "web": {
       "bundler": "metro",
