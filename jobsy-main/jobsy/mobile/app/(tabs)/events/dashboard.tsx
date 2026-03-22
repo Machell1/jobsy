@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -147,9 +147,9 @@ export default function EventDashboardScreen() {
   }, [fetchDashboard]);
 
   // Fetch on mount
-  useState(() => {
+  useEffect(() => {
     fetchDashboard();
-  });
+  }, []);
 
   // ── Actions ──────────────────────────────────────────────────────────
 

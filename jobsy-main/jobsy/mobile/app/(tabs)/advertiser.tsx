@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -182,9 +182,9 @@ export default function AdvertiserScreen() {
     }
   }, []);
 
-  useState(() => {
+  useEffect(() => {
     fetchCampaigns();
-  });
+  }, []);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);

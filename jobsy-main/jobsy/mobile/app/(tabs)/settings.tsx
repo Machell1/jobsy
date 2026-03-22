@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -165,9 +165,9 @@ export default function SettingsScreen() {
     }
   }, []);
 
-  useState(() => {
+  useEffect(() => {
     fetchSettings();
-  });
+  }, []);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);

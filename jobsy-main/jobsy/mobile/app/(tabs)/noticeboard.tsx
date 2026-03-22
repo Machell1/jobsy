@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -117,10 +117,10 @@ export default function NoticeboardScreen() {
     setRefreshing(false);
   }, [fetchPosts]);
 
-  // Fetch on mount and filter change
-  useState(() => {
+  // Fetch on mount
+  useEffect(() => {
     fetchPosts();
-  });
+  }, []);
 
   // Re-fetch when filter changes
   React.useEffect(() => {

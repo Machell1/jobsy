@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -157,9 +157,9 @@ export default function BusinessProfileScreen() {
   }, [fetchProfile]);
 
   // Fetch on mount
-  useState(() => {
+  useEffect(() => {
     fetchProfile();
-  });
+  }, []);
 
   // ── Save ─────────────────────────────────────────────────────────────
 

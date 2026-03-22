@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -109,9 +109,9 @@ export default function ReferralsScreen() {
   }, [fetchData]);
 
   // Fetch on mount
-  useState(() => {
+  useEffect(() => {
     fetchData();
-  });
+  }, []);
 
   // ── Actions ──────────────────────────────────────────────────────────
 

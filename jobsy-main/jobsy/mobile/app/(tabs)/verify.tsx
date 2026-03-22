@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -350,9 +350,9 @@ export default function VerifyScreen() {
   }, []);
 
   // Fetch on mount
-  useState(() => {
+  useEffect(() => {
     fetchStatus();
-  });
+  }, []);
 
   // ── OTP flow ──────────────────────────────────────────────────────────
 
