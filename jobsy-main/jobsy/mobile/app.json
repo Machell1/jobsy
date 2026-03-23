@@ -51,6 +51,15 @@
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.INTERNET",
         "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.INTERNET",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.RECORD_AUDIO"
       ]
     },
@@ -112,6 +121,12 @@
       "router": {
         "origin": false
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/cb14f1f0-7c15-415d-933d-c1568904ce27"
     }
   }
 }
