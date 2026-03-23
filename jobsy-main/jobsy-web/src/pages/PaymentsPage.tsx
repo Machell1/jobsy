@@ -515,6 +515,7 @@ function PaymentsContent() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
+                                  if (!window.confirm('Are you sure you want to request a refund?')) return
                                   refundMutation.mutate(tx.id)
                                 }}
                                 disabled={refundMutation.isPending}

@@ -187,6 +187,10 @@ export default function ReviewsPage() {
 
   const handleSubmitReview = (e: React.FormEvent) => {
     e.preventDefault()
+    if (!writeForm.booking_id) {
+      toast({ title: 'Please select a booking', variant: 'destructive' })
+      return
+    }
     if (writeForm.rating === 0) {
       toast({ title: 'Please select a rating', variant: 'destructive' })
       return

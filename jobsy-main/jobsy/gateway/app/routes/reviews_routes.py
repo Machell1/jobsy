@@ -87,6 +87,17 @@ async def create_review(
     if reviewer_id == data.reviewee_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot review yourself")
 
+    if data.booking_id:
+        from ..models_bookings import Booking
+        booking_r = await db.execute(select(Booking).where(Booking.id == data.booking_id))
+        booking = booking_r.scalar_one_or_none()
+        if not booking:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
+        if booking.customer_id != reviewer_id and booking.provider_id != reviewer_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not a party to this booking")
+        if booking.status != "completed":
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Booking is not completed")
+
     if data.transaction_id:
         existing = await db.execute(
             select(Review).where(
@@ -352,6 +363,8 @@ async def moderation_queue(
     db: AsyncSession = Depends(get_db),
 ):
     """Get reviews pending moderation (flagged or pending status)."""
+    if user.get("active_role") != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
     query = (
         select(Review)
         .where((Review.is_flagged.is_(True)) | (Review.moderation_status == "pending"))
@@ -392,6 +405,8 @@ async def moderate_review(
     db: AsyncSession = Depends(get_db),
 ):
     """Update moderation status of a review."""
+    if user.get("active_role") != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
     result = await db.execute(select(Review).where(Review.id == review_id))
     review = result.scalar_one_or_none()
     if not review:

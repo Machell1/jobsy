@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { WebView } from "react-native-webview";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { WebView, type WebViewNavigation } from "react-native-webview";
 
 import { getMyPaymentAccount, setupPaymentAccount } from "@/api/payments";
 import { LoadingScreen } from "@/components/LoadingScreen";
@@ -14,6 +14,8 @@ export default function PaymentSetupScreen() {
   const [name, setName] = useState("");
   const [accountType, setAccountType] = useState<"customer" | "provider">("customer");
   const [onboardingUrl, setOnboardingUrl] = useState<string | null>(null);
+
+  const queryClient = useQueryClient();
 
   const { data: account, isLoading } = useQuery({
     queryKey: ["payment-account"],
@@ -35,12 +37,37 @@ export default function PaymentSetupScreen() {
 
   if (isLoading) return <LoadingScreen />;
 
+  const handleWebViewNavigation = useCallback(
+    (navState: WebViewNavigation) => {
+      const { url } = navState;
+      if (url.includes("return") || url.includes("refresh")) {
+        setOnboardingUrl(null);
+        queryClient.invalidateQueries({ queryKey: ["payment-account"] });
+      }
+    },
+    [queryClient],
+  );
+
   // Show Stripe onboarding WebView
   if (onboardingUrl) {
     return (
       <View className="flex-1">
         <Stack.Screen options={{ title: "Stripe Setup" }} />
-        <WebView source={{ uri: onboardingUrl }} className="flex-1" />
+        <Pressable
+          onPress={() => {
+            setOnboardingUrl(null);
+            queryClient.invalidateQueries({ queryKey: ["payment-account"] });
+          }}
+          className="flex-row items-center bg-white px-4 py-3"
+        >
+          <Ionicons name="close" size={24} color={COLORS.gray[700]} />
+          <Text className="ml-2 text-base font-medium text-dark-700">Close</Text>
+        </Pressable>
+        <WebView
+          source={{ uri: onboardingUrl }}
+          className="flex-1"
+          onNavigationStateChange={handleWebViewNavigation}
+        />
       </View>
     );
   }

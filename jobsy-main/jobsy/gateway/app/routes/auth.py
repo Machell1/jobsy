@@ -326,8 +326,8 @@ async def refresh_token(body: _RefreshRequest, db: AsyncSession = Depends(get_db
 
 
 def _get_user_id_from_header(request: Request) -> str:
-    """Extract user ID from gateway-forwarded header."""
-    user_id = request.headers.get("X-User-ID")
+    """Extract user ID from JWT-validated request state."""
+    user_id = getattr(request.state, "user_id", None)
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing user context")
     return user_id
@@ -393,7 +393,12 @@ async def bootstrap_admin(
 ):
     """Bootstrap the first admin user using an environment secret. One-time setup."""
     import os
-    bootstrap_secret = os.getenv("ADMIN_BOOTSTRAP_SECRET", "jobsy-bootstrap-admin-2026")
+    bootstrap_secret = os.getenv("ADMIN_BOOTSTRAP_SECRET", "")
+    if not bootstrap_secret:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin bootstrap secret not configured",
+        )
     if data.secret != bootstrap_secret:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -424,7 +429,7 @@ async def promote_to_admin(
     data: _PromoteToAdminRequest, request: Request, db: AsyncSession = Depends(get_db)
 ):
     """Promote a user to admin. Only existing admins can use this endpoint."""
-    caller_role = request.headers.get("X-User-Role", "")
+    caller_role = getattr(request.state, "active_role", "")
     if caller_role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

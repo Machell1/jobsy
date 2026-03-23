@@ -41,6 +41,14 @@ export default function PayScreen() {
     onError: () => Alert.alert("Error", "Payment failed. Please try again."),
   });
 
+  if (!payeeId) {
+    return (
+      <View className="flex-1 items-center justify-center bg-dark-50">
+        <Text className="text-base text-dark-500">Invalid payment link</Text>
+      </View>
+    );
+  }
+
   const handlePay = () => {
     const numAmount = parseFloat(amount);
     if (!numAmount || numAmount <= 0) {

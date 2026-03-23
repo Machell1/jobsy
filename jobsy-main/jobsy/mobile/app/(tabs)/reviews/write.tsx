@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -43,6 +43,17 @@ export default function WriteReviewScreen() {
     },
     onError: () => Alert.alert("Error", "Failed to submit review"),
   });
+
+  useEffect(() => {
+    if (!revieweeId) {
+      Alert.alert("Error", "Missing reviewee information");
+      router.back();
+    }
+  }, [revieweeId, router]);
+
+  if (!revieweeId) {
+    return null;
+  }
 
   const handleSubmit = () => {
     if (rating === 0) return Alert.alert("Required", "Please select an overall rating");

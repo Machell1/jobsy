@@ -126,21 +126,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     sessionStorage.removeItem('jobsy_token')
     sessionStorage.removeItem('jobsy_refresh')
     sessionStorage.removeItem('jobsy_role')
+    window.location.href = '/login'
   }, [])
-
-  // Auto-refresh token
-  useEffect(() => {
-    if (!token || !refreshToken) return
-    const interval = setInterval(async () => {
-      try {
-        const res = await apiPost('/auth/refresh', { refresh_token: refreshToken })
-        saveTokens(res.access_token, res.refresh_token)
-      } catch {
-        logout()
-      }
-    }, 840_000) // 14 minutes
-    return () => clearInterval(interval)
-  }, [token, refreshToken, saveTokens, logout])
 
   // Restore session on mount — preview mode if no backend
   useEffect(() => {

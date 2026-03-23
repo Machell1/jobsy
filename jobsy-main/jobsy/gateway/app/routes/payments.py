@@ -625,6 +625,9 @@ async def escrow_refund(
     if not txn:
         raise HTTPException(status_code=404, detail="No held escrow found for this contract")
 
+    if txn.payer_id != user["user_id"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
     # Cancel on Stripe
     if _stripe_ok() and txn.escrow_payment_intent_id:
         try:
@@ -650,8 +653,11 @@ async def escrow_refund(
 
 @router.post("/payments/cleanup-stale")
 async def cleanup_stale_payments(
+    current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    if current_user.get("active_role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
     """Mark pending transactions older than 30 minutes as expired.
 
     Intended to be called by a cron job or scheduled task.

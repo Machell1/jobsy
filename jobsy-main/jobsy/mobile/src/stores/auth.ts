@@ -43,12 +43,33 @@ interface AuthState {
   logout: () => Promise<void>;
 }
 
+function base64Decode(str: string): string {
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+  let output = "";
+  let i = 0;
+  const input = str.replace(/[^A-Za-z0-9+/=]/g, "");
+  while (i < input.length) {
+    const enc1 = chars.indexOf(input.charAt(i++));
+    const enc2 = chars.indexOf(input.charAt(i++));
+    const enc3 = chars.indexOf(input.charAt(i++));
+    const enc4 = chars.indexOf(input.charAt(i++));
+    const chr1 = (enc1 << 2) | (enc2 >> 4);
+    const chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+    const chr3 = ((enc3 & 3) << 6) | enc4;
+    output += String.fromCharCode(chr1);
+    if (enc3 !== 64) output += String.fromCharCode(chr2);
+    if (enc4 !== 64) output += String.fromCharCode(chr3);
+  }
+  return decodeURIComponent(escape(output));
+}
+
 function parseJwt(token: string): Record<string, unknown> | null {
   try {
     const parts = token.split(".");
     if (parts.length !== 3) return null;
     const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const jsonPayload = atob(base64);
+    const jsonPayload = base64Decode(base64);
     return JSON.parse(jsonPayload);
   } catch {
     return null;
@@ -142,8 +163,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             // Profile may not exist yet
           }
         } else {
-          await SecureStore.deleteItemAsync("access_token");
-          await SecureStore.deleteItemAsync("refresh_token");
+          // Access token expired – attempt refresh before giving up
+          const refreshToken = await SecureStore.getItemAsync("refresh_token");
+          if (refreshToken) {
+            try {
+              const tokens = await authApi.refreshTokens(refreshToken);
+              await SecureStore.setItemAsync("access_token", tokens.access_token);
+              await SecureStore.setItemAsync("refresh_token", tokens.refresh_token);
+              setAuthFromTokens(tokens, set);
+            } catch {
+              await SecureStore.deleteItemAsync("access_token");
+              await SecureStore.deleteItemAsync("refresh_token");
+            }
+          } else {
+            await SecureStore.deleteItemAsync("access_token");
+            await SecureStore.deleteItemAsync("refresh_token");
+          }
         }
       }
     } catch {

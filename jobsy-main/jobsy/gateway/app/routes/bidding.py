@@ -497,7 +497,7 @@ async def create_job_post(
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new job post (hirers only)."""
-    if user.get("active_role") != "user":
+    if user.get("active_role") not in ("user", "hirer"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only hirers can create job posts",
@@ -696,6 +696,7 @@ async def download_contract_pdf(
         "hirer_name": hirer_name,
         "provider_name": provider_name,
         "generated_at": contract.generated_at,
+        "security_number": contract.security_number,
     }
 
     pdf_bytes = generate_contract_pdf(pdf_data)

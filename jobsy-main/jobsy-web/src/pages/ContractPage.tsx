@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
-import { apiGet, apiPost, ApiError } from '../lib/api'
+import { apiGet, apiPost, ApiError, API_BASE } from '../lib/api'
 import {
   FileText,
   Download,
@@ -156,7 +156,7 @@ export default function ContractPage() {
 
   const handleDownloadPdf = async () => {
     try {
-      const response = await fetch(`https://api.jobsyja.com/api/bidding/contracts/${id}/pdf`, {
+      const response = await fetch(`${API_BASE}/api/bidding/contracts/${id}/pdf`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

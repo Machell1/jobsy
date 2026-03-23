@@ -293,17 +293,20 @@ export default function DashboardPage() {
 
   const currentStatCards = isHirer ? hirerStatCards : isProvider ? providerStatCards : advertiserStatCards
 
+  const gridColsMap: Record<number, string> = { 1: 'lg:grid-cols-1', 2: 'lg:grid-cols-2', 3: 'lg:grid-cols-3', 4: 'lg:grid-cols-4', 5: 'lg:grid-cols-5', 6: 'lg:grid-cols-6' }
+  const gridClass = gridColsMap[Math.min(currentStatCards.length, 6)] || 'lg:grid-cols-4'
+
   // ---------- Quick actions per role ----------
   const hirerActions = [
-    { to: '/jobs/new', icon: Plus, label: 'Post a Job', description: 'Create a new job listing', color: 'bg-blue-100 text-blue-700' },
+    { to: '/job-board', icon: Plus, label: 'Post a Job', description: 'Create a new job listing', color: 'bg-blue-100 text-blue-700' },
     { to: '/search', icon: Search, label: 'Browse Providers', description: 'Find service providers', color: 'bg-green-100 text-green-700' },
     { to: '/bookings', icon: FileText, label: 'View Contracts', description: 'Manage your contracts', color: 'bg-purple-100 text-purple-700' },
     { to: '/messages', icon: MessageSquare, label: 'Messages', description: 'Check messages', color: 'bg-orange-100 text-orange-700' },
-    { to: '/jobs', icon: Briefcase, label: 'Job Board', description: 'View all job listings', color: 'bg-amber-100 text-amber-700' },
+    { to: '/job-board', icon: Briefcase, label: 'Job Board', description: 'View all job listings', color: 'bg-amber-100 text-amber-700' },
   ]
 
   const providerActions = [
-    { to: '/jobs', icon: Search, label: 'Browse Jobs', description: 'Find available work', color: 'bg-blue-100 text-blue-700' },
+    { to: '/job-board', icon: Search, label: 'Browse Jobs', description: 'Find available work', color: 'bg-blue-100 text-blue-700' },
     { to: '/listings', icon: Briefcase, label: 'My Listings', description: 'Manage your services', color: 'bg-green-100 text-green-700' },
     { to: '/bookings', icon: DollarSign, label: 'View Earnings', description: 'Track your income', color: 'bg-emerald-100 text-emerald-700' },
     { to: '/reviews', icon: Star, label: 'My Reviews', description: 'See client feedback', color: 'bg-yellow-100 text-yellow-700' },
@@ -496,7 +499,7 @@ export default function DashboardPage() {
             </div>
           </div>
         ) : (
-          <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-${Math.min(currentStatCards.length, 6)} gap-4`}>
+          <div className={`grid grid-cols-2 sm:grid-cols-3 ${gridClass} gap-4`}>
             {currentStatCards.map(stat => (
               <div key={stat.label} className="bg-white rounded-xl border border-gray-200 p-4">
                 <div className="flex items-center gap-2 mb-2">

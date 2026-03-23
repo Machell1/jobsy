@@ -1,4 +1,4 @@
-const API_BASE = 'https://api.jobsyja.com'
+export const API_BASE = 'https://api.jobsyja.com'
 
 export class ApiError extends Error {
   status: number

@@ -39,6 +39,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       initChat();
     } else {
       disconnectChat();
+      queryClient.clear();
     }
   }, [isAuthenticated, isLoading, initChat, disconnectChat]);
 

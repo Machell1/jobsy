@@ -25,6 +25,10 @@ export default function ChatThreadScreen() {
         setChatError(true);
         Alert.alert("Error", "Could not load chat");
       });
+
+    return () => {
+      ch?.stopWatching().catch(() => {});
+    };
   }, [client, channelId]);
 
   if (chatError) {
