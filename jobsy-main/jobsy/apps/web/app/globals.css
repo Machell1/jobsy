@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+/* ─── Jobsy Design System Tokens ──────────────────────────── */
+
+@theme {
+  --color-brand-primary: #1A56DB;
+  --color-brand-secondary: #16A34A;
+  --color-brand-accent: #F59E0B;
+
+  --color-neutral-50: #F9FAFB;
+  --color-neutral-100: #F3F4F6;
+  --color-neutral-200: #E5E7EB;
+  --color-neutral-300: #D1D5DB;
+  --color-neutral-400: #9CA3AF;
+  --color-neutral-500: #6B7280;
+  --color-neutral-600: #4B5563;
+  --color-neutral-700: #374151;
+  --color-neutral-800: #1F2937;
+  --color-neutral-900: #111827;
+  --color-neutral-950: #030712;
+
+  --color-success: #16A34A;
+  --color-warning: #F59E0B;
+  --color-error: #DC2626;
+  --color-info: #1A56DB;
+}
+
+/* ─── Base Styles ─────────────────────────────────────────── */
+
+body {
+  font-family:
+    "Inter",
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    sans-serif;
+  color: var(--color-neutral-900);
+  background-color: var(--color-neutral-50);
+}
+
+/* ─── Focus Styles ────────────────────────────────────────── */
+
+@layer base {
+  *:focus-visible {
+    outline: 2px solid var(--color-brand-primary);
+    outline-offset: 2px;
+  }
+}

@@ -58,11 +58,22 @@ bot/.env
 ################
 jobsy-web/node_modules/
 
+# Turborepo #
+#############
+node_modules/
+.next/
+dist/
+.turbo/
+
 # Additional
 .env
 .env.local
+.env.*.local
 *.p8
 *.p12
 play-store-key.json
 credentials.json
 .claude/
+
+# Build outputs
+*.tsbuildinfo
