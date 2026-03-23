@@ -35,8 +35,6 @@ export default function PaymentSetupScreen() {
     onError: () => Alert.alert("Error", "Failed to set up payment account"),
   });
 
-  if (isLoading) return <LoadingScreen />;
-
   const handleWebViewNavigation = useCallback(
     (navState: WebViewNavigation) => {
       const { url } = navState;
@@ -47,6 +45,8 @@ export default function PaymentSetupScreen() {
     },
     [queryClient],
   );
+
+  if (isLoading) return <LoadingScreen />;
 
   // Show Stripe onboarding WebView
   if (onboardingUrl) {
