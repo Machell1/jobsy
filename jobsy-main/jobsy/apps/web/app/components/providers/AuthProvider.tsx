@@ -51,7 +51,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     // TODO: Implement sign out with Supabase
-    console.log("sign out");
   };
 
   return (

@@ -12,14 +12,33 @@ import { blockUser } from "@/api/trust";
 import { COLORS } from "@/constants/theme";
 import { formatCurrency } from "@/utils/format";
 
+interface BookingContext {
+  id?: string;
+  title?: string;
+  status?: string;
+  total_amount?: number;
+  scheduled_date?: string;
+}
+
+interface ChannelData {
+  booking?: BookingContext;
+  booking_id?: string;
+  booking_title?: string;
+  booking_status?: string;
+  [key: string]: unknown;
+}
+
+interface ChannelMember {
+  user_id?: string;
+  user?: { id?: string };
+}
+
 export default function ChatThreadScreen() {
   const { id: channelId } = useLocalSearchParams<{ id: string }>();
   const { client, isReady } = useChatStore();
   const router = useRouter();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [channel, setChannel] = useState<ChannelType<any> | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [bookingData, setBookingData] = useState<any>(null);
+  const [channel, setChannel] = useState<ChannelType | null>(null);
+  const [bookingData, setBookingData] = useState<BookingContext | null>(null);
   const [otherUserId, setOtherUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -30,8 +49,7 @@ export default function ChatThreadScreen() {
       setChannel(ch);
 
       // Extract booking context from channel data if available
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const chData = ch.data as any;
+      const chData = ch.data as ChannelData | undefined;
       if (chData?.booking) {
         setBookingData(chData.booking);
       } else if (chData?.booking_id) {
@@ -39,13 +57,11 @@ export default function ChatThreadScreen() {
       }
 
       // Get the other user's ID from channel members
-      const members = Object.values(ch.state.members || {});
+      const members = Object.values(ch.state.members || {}) as ChannelMember[];
       const currentUserId = client.userID;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const other = members.find((m: any) => m.user_id !== currentUserId);
+      const other = members.find((m: ChannelMember) => m.user_id !== currentUserId);
       if (other) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setOtherUserId((other as any).user_id || (other as any).user?.id || null);
+        setOtherUserId(other.user_id || other.user?.id || null);
       }
     });
   }, [client, channelId]);

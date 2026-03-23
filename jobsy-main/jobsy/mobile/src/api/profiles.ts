@@ -134,17 +134,25 @@ export async function getVerificationStatus() {
 }
 
 // Services
+export interface ServiceData {
+  name: string;
+  description?: string;
+  category?: string;
+  price?: number;
+  pricing_mode?: "fixed" | "hourly";
+  duration_minutes?: number;
+  is_active?: boolean;
+}
+
 export async function getMyServices() {
   const { data } = await api.get('/api/profiles/services/mine');
   return data;
 }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function createService(svcData: any) {
+export async function createService(svcData: ServiceData) {
   const { data } = await api.post('/api/profiles/services', svcData);
   return data;
 }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function updateService(id: string, svcData: any) {
+export async function updateService(id: string, svcData: Partial<ServiceData>) {
   const { data } = await api.put(`/api/profiles/services/${id}`, svcData);
   return data;
 }
@@ -153,17 +161,24 @@ export async function deleteService(id: string) {
 }
 
 // Packages
+export interface PackageData {
+  name: string;
+  description?: string;
+  price: number;
+  features?: string[];
+  duration_minutes?: number;
+  is_active?: boolean;
+}
+
 export async function getServicePackages(serviceId: string) {
   const { data } = await api.get(`/api/profiles/services/${serviceId}/packages`);
   return data;
 }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function createPackage(serviceId: string, pkgData: any) {
+export async function createPackage(serviceId: string, pkgData: PackageData) {
   const { data } = await api.post(`/api/profiles/services/${serviceId}/packages`, pkgData);
   return data;
 }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function updatePackage(packageId: string, pkgData: any) {
+export async function updatePackage(packageId: string, pkgData: Partial<PackageData>) {
   const { data } = await api.put(`/api/profiles/packages/${packageId}`, pkgData);
   return data;
 }
@@ -172,28 +187,43 @@ export async function deletePackage(packageId: string) {
 }
 
 // Availability
+export interface AvailabilitySchedule {
+  timezone?: string;
+  slots: {
+    day: string;
+    start_time: string;
+    end_time: string;
+    is_available: boolean;
+  }[];
+}
+
 export async function getMyAvailability() {
   const { data } = await api.get('/api/profiles/availability/me');
   return data;
 }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function updateAvailability(schedule: any) {
+export async function updateAvailability(schedule: AvailabilitySchedule) {
   const { data } = await api.put('/api/profiles/availability', schedule);
   return data;
 }
 
 // Portfolio
+export interface PortfolioItemData {
+  title: string;
+  description?: string;
+  image_url?: string;
+  project_url?: string;
+  tags?: string[];
+}
+
 export async function getMyPortfolio() {
   const { data } = await api.get('/api/profiles/me/portfolio');
   return data;
 }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function addPortfolioItem(item: any) {
+export async function addPortfolioItem(item: PortfolioItemData) {
   const { data } = await api.post('/api/profiles/me/portfolio', item);
   return data;
 }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function updatePortfolioItem(itemId: string, item: any) {
+export async function updatePortfolioItem(itemId: string, item: Partial<PortfolioItemData>) {
   const { data } = await api.put(`/api/profiles/me/portfolio/${itemId}`, item);
   return data;
 }

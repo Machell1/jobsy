@@ -47,6 +47,20 @@ interface ProviderResult {
   skills: string[];
 }
 
+interface SavedSearch {
+  id: string;
+  name?: string;
+  query?: string;
+  filters?: { category?: string; parish?: string; [key: string]: unknown };
+  notification_enabled?: boolean;
+}
+
+interface TrendingItem {
+  query?: string;
+  term?: string;
+  name?: string;
+}
+
 export default function SearchScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -136,8 +150,7 @@ export default function SearchScreen() {
     setSelectedCategory((prev) => (prev === cat ? null : cat));
   }, []);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function loadSavedSearch(s: any) {
+  function loadSavedSearch(s: SavedSearch) {
     if (s.query) setQuery(s.query);
     if (s.filters?.category) setSelectedCategory(s.filters.category);
     setShowSavedModal(false);
@@ -367,8 +380,7 @@ export default function SearchScreen() {
                     <ActivityIndicator size="small" color={COLORS.primary} />
                   ) : (
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {(Array.isArray(trending) ? trending : []).map((item: any, idx: number) => {
+                      {(Array.isArray(trending) ? trending : []).map((item: string | TrendingItem, idx: number) => {
                         const label = typeof item === 'string' ? item : (item.query || item.term || item.name || String(item));
                         return (
                           <Pressable

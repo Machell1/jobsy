@@ -58,14 +58,25 @@ export async function createBooking(payload: {
   return data;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function rescheduleBooking(id: string, data: any) {
+export interface RescheduleData {
+  scheduled_date: string;
+  scheduled_time_start?: string;
+  scheduled_time_end?: string;
+  note?: string;
+}
+
+export interface QuoteData {
+  amount: number;
+  note?: string;
+  valid_until?: string;
+}
+
+export async function rescheduleBooking(id: string, data: RescheduleData) {
   const { data: res } = await api.post(`/api/bookings/${id}/reschedule`, data);
   return res;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function createQuote(bookingId: string, data: any) {
+export async function createQuote(bookingId: string, data: QuoteData) {
   const { data: res } = await api.post(`/api/bookings/${bookingId}/quotes`, data);
   return res;
 }

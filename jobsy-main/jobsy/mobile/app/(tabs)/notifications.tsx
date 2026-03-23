@@ -57,8 +57,7 @@ function prefsToPayload(prefs: Record<PrefKey, boolean>) {
   return payload;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function apiPrefsToState(data: any): Record<PrefKey, boolean> {
+function apiPrefsToState(data: Record<string, Record<string, boolean>> | null): Record<PrefKey, boolean> {
   const prefs = buildDefaultPrefs();
   if (!data) return prefs;
   for (const cat of PREF_CATEGORIES) {

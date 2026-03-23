@@ -1,7 +1,30 @@
 import { api } from './client';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function registerBusiness(data: any) {
+export interface BusinessData {
+  name: string;
+  description?: string;
+  category?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  parish?: string;
+  address_text?: string;
+  logo_url?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+export interface BranchData {
+  name: string;
+  address_text?: string;
+  parish?: string;
+  phone?: string;
+  latitude?: number;
+  longitude?: number;
+  is_active?: boolean;
+}
+
+export async function registerBusiness(data: BusinessData) {
   const { data: res } = await api.post('/api/business/register', data);
   return res;
 }
@@ -9,8 +32,7 @@ export async function getMyBusiness() {
   const { data } = await api.get('/api/business/me');
   return data;
 }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function updateBusiness(data: any) {
+export async function updateBusiness(data: Partial<BusinessData>) {
   const { data: res } = await api.put('/api/business/me', data);
   return res;
 }
@@ -33,13 +55,11 @@ export async function getBranches() {
   const { data } = await api.get('/api/business/branches');
   return data;
 }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function createBranch(data: any) {
+export async function createBranch(data: BranchData) {
   const { data: res } = await api.post('/api/business/branches', data);
   return res;
 }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function updateBranch(id: string, data: any) {
+export async function updateBranch(id: string, data: Partial<BranchData>) {
   const { data: res } = await api.put(`/api/business/branches/${id}`, data);
   return res;
 }

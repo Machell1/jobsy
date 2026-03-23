@@ -29,6 +29,16 @@ import { COLORS } from "@/constants/theme";
 import { useAuthStore } from "@/stores/auth";
 import { formatCurrency, formatDate } from "@/utils/format";
 
+interface Payout {
+  id: string;
+  amount: number;
+  currency?: string;
+  status: string;
+  destination?: string;
+  created_at?: string;
+  initiated_at?: string;
+}
+
 const TABS = ["Transactions", "Payouts"] as const;
 type Tab = (typeof TABS)[number];
 
@@ -45,8 +55,7 @@ export default function PaymentsScreen() {
 
   // Receipt modal state
   const [receiptTransaction, setReceiptTransaction] = useState<Transaction | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [receiptData, setReceiptData] = useState<any>(null);
+  const [receiptData, setReceiptData] = useState<Record<string, unknown> | null>(null);
   const [loadingReceipt, setLoadingReceipt] = useState(false);
 
   const { data: transactions = [], isLoading: loadingTx } = useQuery({
@@ -225,10 +234,8 @@ export default function PaymentsScreen() {
         /* Payouts tab */
         <FlatList
           data={payouts}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          keyExtractor={(item: any) => item.id}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          renderItem={({ item }: { item: any }) => {
+          keyExtractor={(item: Payout) => item.id}
+          renderItem={({ item }: { item: Payout }) => {
             const sc = statusColors[item.status] || { bg: "#F3F4F6", text: "#374151" };
             return (
               <View className="mx-4 mb-3 rounded-2xl bg-white p-4">

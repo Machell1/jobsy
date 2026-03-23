@@ -32,6 +32,14 @@ import {
 } from "@/api/bookings";
 import { useAuthStore } from "@/stores/auth";
 
+interface Quote {
+  id: string;
+  amount: number;
+  status: string;
+  note?: string;
+  created_at?: string;
+}
+
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
   inquiry: { label: "Inquiry", color: "#92400E", bg: "#FEF3C7" },
   quote_sent: { label: "Quote Sent", color: "#1E40AF", bg: "#DBEAFE" },
@@ -106,8 +114,7 @@ export default function BookingsScreen() {
 
   // Quotes modal state
   const [quotesBooking, setQuotesBooking] = useState<Booking | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [quotes, setQuotes] = useState<any[]>([]);
+  const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loadingQuotes, setLoadingQuotes] = useState(false);
   const [showSendQuoteForm, setShowSendQuoteForm] = useState(false);
   const [quoteAmount, setQuoteAmount] = useState('');
@@ -702,8 +709,7 @@ export default function BookingsScreen() {
                   <Text className="text-sm text-gray-500 mt-2">No quotes yet</Text>
                 </View>
               ) : (
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                quotes.map((q: any) => (
+                quotes.map((q: Quote) => (
                   <View
                     key={q.id}
                     className="bg-white rounded-xl p-4 mb-3"

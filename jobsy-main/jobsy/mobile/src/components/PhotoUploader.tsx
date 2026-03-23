@@ -199,7 +199,7 @@ export function MediaUploader({
             </>
           ) : (
             <>
-              <Ionicons name={actionIcon as any} size={28} color={COLORS.gray[500]} />
+              <Ionicons name={actionIcon as keyof typeof Ionicons.glyphMap} size={28} color={COLORS.gray[500]} />
               <Text className="mt-1 text-xs text-dark-400">{actionLabel}</Text>
             </>
           )}

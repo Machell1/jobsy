@@ -3,7 +3,7 @@ import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-nativ
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { createListing, getListing, updateListing, ListingCreate, ListingUpdate } from "@/api/listings";
+import { createListing, getListing, updateListing, ListingCreate, ListingUpdate, Listing } from "@/api/listings";
 import { CategoryPicker } from "@/components/CategoryPicker";
 import { ParishPicker } from "@/components/ParishPicker";
 import { PhotoUploader } from "@/components/PhotoUploader";
@@ -46,9 +46,8 @@ export default function CreateListingScreen() {
       setParish(existingListing.parish || null);
       if (existingListing.budget_min) setBudgetMin(String(existingListing.budget_min));
       if (existingListing.budget_max) setBudgetMax(String(existingListing.budget_max));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const listing = existingListing as any;
-      if (listing.pricing_mode) setPricingMode(listing.pricing_mode);
+      const listing = existingListing as Listing & { pricing_mode?: string; price?: number; images?: string[] };
+      if (listing.pricing_mode) setPricingMode(listing.pricing_mode as PricingMode);
       if (listing.price) setPrice(String(listing.price));
       if (listing.images) setPhotos(listing.images);
     }
