@@ -622,8 +622,7 @@ export default function SearchScreen() {
             </View>
           ) : (
             <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {(Array.isArray(savedSearches) ? savedSearches : []).map((s: any) => (
+              {(Array.isArray(savedSearches) ? savedSearches : []).map((s: SavedSearch) => (
                 <View
                   key={s.id}
                   style={{

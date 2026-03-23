@@ -11,6 +11,16 @@ import { EmptyState } from "@/components/EmptyState";
 import { COLORS } from "@/constants/theme";
 import { formatCurrency, formatDate } from "@/utils/format";
 
+interface Payout {
+  id: string;
+  amount: number;
+  currency?: string;
+  status: string;
+  destination?: string;
+  created_at?: string;
+  initiated_at?: string;
+}
+
 const statusColors: Record<string, { bg: string; text: string }> = {
   completed: { bg: "#DCFCE7", text: "#166534" },
   pending: { bg: "#FEF9C3", text: "#92400E" },
@@ -221,8 +231,7 @@ export default function PaymentSetupScreen() {
                     <Text className="text-sm text-dark-400 mt-2">No payouts yet</Text>
                   </View>
                 ) : (
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  (Array.isArray(payouts) ? payouts : []).map((payout: any) => {
+                  (Array.isArray(payouts) ? payouts : []).map((payout: Payout) => {
                     const sc = statusColors[payout.status] || { bg: "#F3F4F6", text: "#374151" };
                     return (
                       <View

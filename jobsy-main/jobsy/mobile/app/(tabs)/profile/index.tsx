@@ -71,6 +71,26 @@ type ReportReason = (typeof REPORT_REASONS)[number];
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
+interface PortfolioItem {
+  id: string;
+  title: string;
+  description?: string;
+  image_url?: string;
+  project_url?: string;
+}
+
+interface ServiceItem {
+  id: string;
+  title: string;
+  description?: string;
+  base_price?: number;
+}
+
+interface ShareLinkResponse {
+  url?: string;
+  share_url?: string;
+}
+
 export default function ProfileScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -93,16 +113,14 @@ export default function ProfileScreen() {
 
   // Portfolio state
   const [showPortfolioModal, setShowPortfolioModal] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [editingPortfolioItem, setEditingPortfolioItem] = useState<any | null>(null);
+  const [editingPortfolioItem, setEditingPortfolioItem] = useState<PortfolioItem | null>(null);
   const [portfolioTitle, setPortfolioTitle] = useState('');
   const [portfolioDescription, setPortfolioDescription] = useState('');
   const [portfolioImageUrl, setPortfolioImageUrl] = useState('');
 
   // Services state
   const [showServicesModal, setShowServicesModal] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [editingService, setEditingService] = useState<any | null>(null);
+  const [editingService, setEditingService] = useState<ServiceItem | null>(null);
   const [serviceTitle, setServiceTitle] = useState('');
   const [serviceDescription, setServiceDescription] = useState('');
   const [servicePrice, setServicePrice] = useState('');
@@ -278,8 +296,7 @@ export default function ProfileScreen() {
   // Share link
   const generateShareLinkMutation = useMutation({
     mutationFn: generateShareLink,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onSuccess: (data: any) => {
+    onSuccess: (data: ShareLinkResponse) => {
       const url = data?.url || data?.share_url || '';
       setShareUrl(url);
     },
@@ -695,8 +712,7 @@ export default function ProfileScreen() {
                   <Text style={{ color: '#9CA3AF', marginTop: 8, fontSize: 13 }}>No portfolio items yet</Text>
                 </View>
               ) : (
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (Array.isArray(portfolio) ? portfolio : []).map((item: any) => (
+                (Array.isArray(portfolio) ? portfolio : []).map((item: PortfolioItem) => (
                   <View key={item.id} style={{ backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: '#E5E7EB' }}>
                     {item.image_url && (
                       <Image source={{ uri: item.image_url }} style={{ width: '100%', height: 140, borderRadius: 8, marginBottom: 8 }} resizeMode="cover" />
@@ -793,13 +809,12 @@ export default function ProfileScreen() {
                   <Text style={{ color: '#9CA3AF', marginTop: 8, fontSize: 13 }}>No services yet</Text>
                 </View>
               ) : (
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (Array.isArray(services) ? services : []).map((svc: any) => (
+                (Array.isArray(services) ? services : []).map((svc: ServiceItem) => (
                   <View key={svc.id} style={{ backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: '#E5E7EB' }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827', flex: 1 }}>{svc.title}</Text>
                       {svc.base_price != null && (
-                        <Text style={{ fontSize: 13, fontWeight: '700', color: '#166534' }}>${parseFloat(svc.base_price).toFixed(2)}</Text>
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: '#166534' }}>${Number(svc.base_price).toFixed(2)}</Text>
                       )}
                     </View>
                     {svc.description && <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 3 }}>{svc.description}</Text>}
@@ -1220,19 +1235,13 @@ function PortfolioPhotoUploader({ imageUrl, onUploaded }: { imageUrl: string; on
 }
 
 // Shared style tokens
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const formLabel: any = { fontSize: 13, fontWeight: '500', color: '#374151', marginBottom: 4 };
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const formInput: any = { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, fontSize: 13, color: '#111827', marginBottom: 10 };
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const btnPrimary: any = { backgroundColor: '#1B5E20', borderRadius: 10, paddingVertical: 12, alignItems: 'center' };
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const btnPrimaryText: any = { color: '#fff', fontWeight: '700', fontSize: 14 };
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const btnSecondary: any = { backgroundColor: '#F3F4F6', borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB' };
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const btnSecondaryText: any = { color: '#374151', fontWeight: '600', fontSize: 13 };
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const btnDanger: any = { backgroundColor: '#FEE2E2', borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: '#FECACA' };
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const btnDangerText: any = { color: '#991B1B', fontWeight: '600', fontSize: 13 };
+import type { TextStyle, ViewStyle } from "react-native";
+
+const formLabel: TextStyle = { fontSize: 13, fontWeight: '500', color: '#374151', marginBottom: 4 };
+const formInput: TextStyle & ViewStyle = { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, fontSize: 13, color: '#111827', marginBottom: 10 };
+const btnPrimary: ViewStyle = { backgroundColor: '#1B5E20', borderRadius: 10, paddingVertical: 12, alignItems: 'center' };
+const btnPrimaryText: TextStyle = { color: '#fff', fontWeight: '700', fontSize: 14 };
+const btnSecondary: ViewStyle = { backgroundColor: '#F3F4F6', borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB' };
+const btnSecondaryText: TextStyle = { color: '#374151', fontWeight: '600', fontSize: 13 };
+const btnDanger: ViewStyle = { backgroundColor: '#FEE2E2', borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: '#FECACA' };
+const btnDangerText: TextStyle = { color: '#991B1B', fontWeight: '600', fontSize: 13 };
