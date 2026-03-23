@@ -24,6 +24,8 @@ export interface ListingCreate {
   description: string;
   category: string;
   subcategory?: string;
+  pricing_mode?: "fixed" | "hourly";
+  price?: number;
   budget_min?: number;
   budget_max?: number;
   currency?: string;
@@ -38,8 +40,13 @@ export interface ListingUpdate {
   title?: string;
   description?: string;
   category?: string;
+  subcategory?: string;
+  pricing_mode?: "fixed" | "hourly";
+  price?: number;
   budget_min?: number;
   budget_max?: number;
+  parish?: string;
+  images?: string[];
   status?: string;
 }
 

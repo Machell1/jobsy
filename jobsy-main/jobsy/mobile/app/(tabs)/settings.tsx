@@ -453,6 +453,11 @@ export default function SettingsScreen() {
               />
             }
           />
+          <SettingsRow
+            icon="options-outline"
+            label="Notification Preferences"
+            onPress={() => router.push("/(tabs)/notifications" as never)}
+          />
         </View>
 
         {/* Privacy */}

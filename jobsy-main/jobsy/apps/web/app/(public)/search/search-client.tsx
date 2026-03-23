@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { PARISHES, SERVICE_CATEGORIES } from "@jobsy/config";
-import { apiGet } from "@/lib/api";
+import { apiGet, apiPost } from "@/lib/api";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -80,6 +80,10 @@ export function SearchPageClient() {
   const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
   const [idVerified, setIdVerified] = useState(false);
+  const [availableToday, setAvailableToday] = useState(false);
+  const [availableThisWeek, setAvailableThisWeek] = useState(false);
+  const [savingSearch, setSavingSearch] = useState(false);
+  const [searchSaved, setSearchSaved] = useState(false);
 
   const [results, setResults] = useState<SearchResult[]>([]);
   const [totalResults, setTotalResults] = useState(0);
@@ -115,11 +119,13 @@ export function SearchPageClient() {
       params.set("parish", selectedParishes.join(","));
     if (minRating > 0) params.set("min_rating", String(minRating));
     if (idVerified) params.set("verified", "true");
+    if (availableToday) params.set("available_today", "true");
+    if (availableThisWeek) params.set("available_this_week", "true");
     if (sort !== "relevance") params.set("sort", sort);
     params.set("page", String(page));
     params.set("limit", String(PAGE_SIZE));
     return params.toString();
-  }, [query, selectedCategories, selectedParishes, minRating, idVerified, sort, page]);
+  }, [query, selectedCategories, selectedParishes, minRating, idVerified, availableToday, availableThisWeek, sort, page]);
 
   // Fetch results
   useEffect(() => {
@@ -175,6 +181,8 @@ export function SearchPageClient() {
     setSelectedParishes([]);
     setMinRating(0);
     setIdVerified(false);
+    setAvailableToday(false);
+    setAvailableThisWeek(false);
     setSort("relevance");
     setPage(1);
   }
@@ -192,6 +200,8 @@ export function SearchPageClient() {
     selectedParishes.length > 0,
     minRating > 0,
     idVerified,
+    availableToday,
+    availableThisWeek,
     sort !== "relevance",
   ].filter(Boolean).length;
 
@@ -338,6 +348,45 @@ export function SearchPageClient() {
               </select>
             </div>
 
+            {/* Availability */}
+            <div>
+              <label className="mb-2 block text-sm font-medium text-neutral-700">
+                Availability
+              </label>
+              <div className="flex flex-col gap-2">
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={availableToday}
+                    onChange={(e) => {
+                      setAvailableToday(e.target.checked);
+                      if (e.target.checked) setAvailableThisWeek(false);
+                      setPage(1);
+                    }}
+                    className="h-4 w-4 rounded border-neutral-300 text-brand-primary focus:ring-brand-primary"
+                  />
+                  <span className="text-sm text-neutral-700">
+                    Available Today
+                  </span>
+                </label>
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={availableThisWeek}
+                    onChange={(e) => {
+                      setAvailableThisWeek(e.target.checked);
+                      if (e.target.checked) setAvailableToday(false);
+                      setPage(1);
+                    }}
+                    className="h-4 w-4 rounded border-neutral-300 text-brand-primary focus:ring-brand-primary"
+                  />
+                  <span className="text-sm text-neutral-700">
+                    Available This Week
+                  </span>
+                </label>
+              </div>
+            </div>
+
             {/* Verification */}
             <div>
               <label className="mb-2 block text-sm font-medium text-neutral-700">
@@ -381,8 +430,9 @@ export function SearchPageClient() {
         </div>
       )}
 
-      {/* Results count */}
+      {/* Results count + Save Search */}
       {!isLoading && !error && (
+        <div className="flex items-center justify-between">
         <p className="text-sm text-neutral-600">
           {totalResults > 0 ? (
             <>
@@ -404,6 +454,48 @@ export function SearchPageClient() {
             "0 providers found"
           )}
         </p>
+        <button
+          onClick={async () => {
+            setSavingSearch(true);
+            setSearchSaved(false);
+            try {
+              await apiPost("/api/search/saved-searches", {
+                query: query.trim() || undefined,
+                filters: {
+                  categories: selectedCategories.length ? selectedCategories : undefined,
+                  parishes: selectedParishes.length ? selectedParishes : undefined,
+                  min_rating: minRating > 0 ? minRating : undefined,
+                  verified: idVerified || undefined,
+                  available_today: availableToday || undefined,
+                  available_this_week: availableThisWeek || undefined,
+                  sort: sort !== "relevance" ? sort : undefined,
+                },
+              });
+              setSearchSaved(true);
+              setTimeout(() => setSearchSaved(false), 3000);
+            } catch {
+              // silently fail for unauthenticated users
+            } finally {
+              setSavingSearch(false);
+            }
+          }}
+          disabled={savingSearch}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-700 transition hover:border-brand-primary hover:text-brand-primary disabled:opacity-50"
+          aria-label="Save this search"
+        >
+          {searchSaved ? (
+            <>
+              <svg className="h-3.5 w-3.5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+              Saved
+            </>
+          ) : (
+            <>
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+              {savingSearch ? "Saving..." : "Save Search"}
+            </>
+          )}
+        </button>
+        </div>
       )}
 
       {/* Loading */}

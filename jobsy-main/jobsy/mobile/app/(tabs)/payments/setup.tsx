@@ -1,19 +1,33 @@
 import { useState } from "react";
-import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, FlatList, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { WebView } from "react-native-webview";
 
-import { getMyPaymentAccount, setupPaymentAccount } from "@/api/payments";
+import { getMyPaymentAccount, setupPaymentAccount, requestPayout, getPayouts } from "@/api/payments";
 import { LoadingScreen } from "@/components/LoadingScreen";
+import { EmptyState } from "@/components/EmptyState";
 import { COLORS } from "@/constants/theme";
+import { formatCurrency, formatDate } from "@/utils/format";
+
+const statusColors: Record<string, { bg: string; text: string }> = {
+  completed: { bg: "#DCFCE7", text: "#166534" },
+  pending: { bg: "#FEF9C3", text: "#92400E" },
+  failed: { bg: "#FEE2E2", text: "#991B1B" },
+  processing: { bg: "#DBEAFE", text: "#1E40AF" },
+};
 
 export default function PaymentSetupScreen() {
+  const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [accountType, setAccountType] = useState<"customer" | "provider">("customer");
   const [onboardingUrl, setOnboardingUrl] = useState<string | null>(null);
+
+  // Payout state
+  const [showPayoutSection, setShowPayoutSection] = useState(false);
+  const [payoutAmount, setPayoutAmount] = useState("");
 
   const { data: account, isLoading } = useQuery({
     queryKey: ["payment-account"],
@@ -21,9 +35,16 @@ export default function PaymentSetupScreen() {
     retry: false,
   });
 
-  const mutation = useMutation({
+  const { data: payouts = [], isLoading: loadingPayouts } = useQuery({
+    queryKey: ["payouts"],
+    queryFn: getPayouts,
+    enabled: showPayoutSection,
+  });
+
+  const setupMutation = useMutation({
     mutationFn: () => setupPaymentAccount({ email, name: name || undefined, account_type: accountType }),
     onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["payment-account"] });
       if (data.onboarding_url) {
         setOnboardingUrl(data.onboarding_url);
       } else {
@@ -32,6 +53,31 @@ export default function PaymentSetupScreen() {
     },
     onError: () => Alert.alert("Error", "Failed to set up payment account"),
   });
+
+  const payoutMutation = useMutation({
+    mutationFn: () => requestPayout(parseFloat(payoutAmount)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payouts"] });
+      setPayoutAmount("");
+      Alert.alert("Success", "Payout request submitted. It will be processed within 2-5 business days.");
+    },
+    onError: () => Alert.alert("Error", "Failed to request payout. Please ensure your Stripe Connect account is fully set up."),
+  });
+
+  const handleRequestPayout = () => {
+    const amount = parseFloat(payoutAmount);
+    if (!amount || amount <= 0) {
+      return Alert.alert("Invalid", "Enter a valid payout amount.");
+    }
+    Alert.alert(
+      "Confirm Payout",
+      `Request a payout of ${formatCurrency(amount)}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Request", onPress: () => payoutMutation.mutate() },
+      ]
+    );
+  };
 
   if (isLoading) return <LoadingScreen />;
 
@@ -114,16 +160,100 @@ export default function PaymentSetupScreen() {
         />
 
         <Pressable
-          onPress={() => mutation.mutate()}
-          disabled={mutation.isPending || !email}
+          onPress={() => setupMutation.mutate()}
+          disabled={setupMutation.isPending || !email}
           className={`items-center rounded-xl py-4 ${
-            mutation.isPending || !email ? "bg-primary-300" : "bg-primary-900"
+            setupMutation.isPending || !email ? "bg-primary-300" : "bg-primary-900"
           }`}
         >
           <Text className="text-base font-bold text-white">
-            {mutation.isPending ? "Setting up..." : "Set Up Account"}
+            {setupMutation.isPending ? "Setting up..." : "Set Up Account"}
           </Text>
         </Pressable>
+
+        {/* Payout Section — only for providers with active Stripe Connect */}
+        {account?.has_connect && (
+          <View className="mt-8">
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <Text className="text-lg font-bold text-dark-800">Payouts</Text>
+              <Pressable onPress={() => setShowPayoutSection(!showPayoutSection)}>
+                <Ionicons name={showPayoutSection ? "chevron-up" : "chevron-down"} size={22} color={COLORS.gray[600]} />
+              </Pressable>
+            </View>
+
+            {showPayoutSection && (
+              <>
+                {/* Request Payout */}
+                <View className="rounded-2xl bg-white p-4 mb-4" style={{ borderWidth: 1, borderColor: '#E5E7EB' }}>
+                  <Text className="text-sm font-semibold text-dark-700 mb-2">Request Payout</Text>
+                  <Text className="text-xs text-dark-400 mb-3">
+                    Withdraw your earnings to your connected bank account via Stripe Connect.
+                  </Text>
+                  <TextInput
+                    value={payoutAmount}
+                    onChangeText={setPayoutAmount}
+                    placeholder="Amount (JMD)"
+                    keyboardType="numeric"
+                    className="rounded-xl border border-dark-200 bg-dark-50 px-4 py-3 text-base mb-3"
+                  />
+                  <Pressable
+                    onPress={handleRequestPayout}
+                    disabled={payoutMutation.isPending}
+                    className={`items-center rounded-xl py-3 ${
+                      payoutMutation.isPending ? "bg-primary-300" : "bg-primary-900"
+                    }`}
+                  >
+                    <Text className="text-sm font-bold text-white">
+                      {payoutMutation.isPending ? "Requesting..." : "Request Payout"}
+                    </Text>
+                  </Pressable>
+                </View>
+
+                {/* Payout History */}
+                <Text className="text-sm font-semibold text-dark-700 mb-2">Payout History</Text>
+                {loadingPayouts ? (
+                  <View className="items-center py-6">
+                    <Text className="text-sm text-dark-400">Loading payouts...</Text>
+                  </View>
+                ) : (Array.isArray(payouts) && payouts.length === 0) ? (
+                  <View className="items-center py-6 rounded-xl bg-white" style={{ borderWidth: 1, borderColor: '#E5E7EB' }}>
+                    <Ionicons name="wallet-outline" size={32} color="#9CA3AF" />
+                    <Text className="text-sm text-dark-400 mt-2">No payouts yet</Text>
+                  </View>
+                ) : (
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  (Array.isArray(payouts) ? payouts : []).map((payout: any) => {
+                    const sc = statusColors[payout.status] || { bg: "#F3F4F6", text: "#374151" };
+                    return (
+                      <View
+                        key={payout.id}
+                        className="rounded-xl bg-white p-4 mb-2"
+                        style={{ borderWidth: 1, borderColor: '#E5E7EB' }}
+                      >
+                        <View className="flex-row items-center justify-between mb-1">
+                          <Text className="text-base font-semibold text-dark-800">
+                            {formatCurrency(payout.amount, payout.currency || 'JMD')}
+                          </Text>
+                          <View style={{ backgroundColor: sc.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 }}>
+                            <Text style={{ color: sc.text, fontSize: 11, fontWeight: '600', textTransform: 'capitalize' }}>
+                              {payout.status}
+                            </Text>
+                          </View>
+                        </View>
+                        {payout.destination && (
+                          <Text className="text-xs text-dark-400">{payout.destination}</Text>
+                        )}
+                        <Text className="text-xs text-dark-400 mt-1">
+                          {formatDate(payout.created_at || payout.initiated_at)}
+                        </Text>
+                      </View>
+                    );
+                  })
+                )}
+              </>
+            )}
+          </View>
+        )}
       </View>
     </ScrollView>
   );

@@ -14,8 +14,9 @@ import {
   Platform,
 } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import * as Calendar from "expo-calendar";
 
 import {
   getBookings,
@@ -77,6 +78,7 @@ function StatCard({ title, value, color }: { title: string; value: number; color
 
 export default function BookingsScreen() {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const { provider_id: paramProviderId } = useLocalSearchParams<{ provider_id?: string }>();
   const activeRole = useAuthStore((s) => s.user?.activeRole);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -234,6 +236,57 @@ export default function BookingsScreen() {
     }
   }
 
+  async function addToCalendar(booking: Booking) {
+    try {
+      const { status } = await Calendar.requestCalendarPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission Required", "Calendar access is needed to add events.");
+        return;
+      }
+
+      const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
+      const defaultCalendar =
+        Platform.OS === "ios"
+          ? calendars.find((c) => c.source?.name === "Default") || calendars.find((c) => c.allowsModifications) || calendars[0]
+          : calendars.find((c) => c.accessLevel === "owner") || calendars.find((c) => c.allowsModifications) || calendars[0];
+
+      if (!defaultCalendar) {
+        Alert.alert("Error", "No writable calendar found on this device.");
+        return;
+      }
+
+      const startDate = booking.scheduled_date
+        ? new Date(booking.scheduled_date)
+        : new Date();
+
+      if (booking.scheduled_time_start) {
+        const [hours, minutes] = booking.scheduled_time_start.split(":").map(Number);
+        if (!isNaN(hours)) startDate.setHours(hours, minutes || 0);
+      }
+
+      const endDate = new Date(startDate.getTime());
+      if (booking.scheduled_time_end) {
+        const [hours, minutes] = booking.scheduled_time_end.split(":").map(Number);
+        if (!isNaN(hours)) endDate.setHours(hours, minutes || 0);
+      } else {
+        endDate.setHours(endDate.getHours() + 1);
+      }
+
+      await Calendar.createEventAsync(defaultCalendar.id, {
+        title: booking.title || "Jobsy Booking",
+        notes: booking.description || "",
+        location: booking.location_text || "",
+        startDate,
+        endDate,
+        timeZone: "America/Jamaica",
+      });
+
+      Alert.alert("Added", "Booking has been added to your calendar.");
+    } catch (err) {
+      Alert.alert("Error", "Failed to add event to calendar.");
+    }
+  }
+
   const filteredBookings = getFilteredBookings(bookings, activeTab);
 
   const [refreshing, setRefreshing] = useState(false);
@@ -349,6 +402,36 @@ export default function BookingsScreen() {
             <Ionicons name="document-text-outline" size={14} color="#92400E" />
             <Text style={{ color: '#92400E', fontWeight: '600', fontSize: 12, marginLeft: 3 }}>Quotes</Text>
           </Pressable>
+          {item.scheduled_date && (
+            <Pressable
+              onPress={() => addToCalendar(item)}
+              className="flex-1 flex-row items-center justify-center rounded-lg py-2"
+              style={{ backgroundColor: '#F0F9FF', borderWidth: 1, borderColor: '#0284C7' }}
+            >
+              <Ionicons name="calendar" size={14} color="#0284C7" />
+              <Text style={{ color: '#0284C7', fontWeight: '600', fontSize: 12, marginLeft: 3 }}>Calendar</Text>
+            </Pressable>
+          )}
+          {item.status === 'completed' && (
+            <Pressable
+              onPress={() => {
+                // Determine who to review: if provider, review customer; if customer, review provider
+                const revieweeId = canProviderAct
+                  ? (item.customer as { display_name: string } & { user_id?: string })?.user_id
+                  : (item.provider as { display_name: string } & { user_id?: string })?.user_id;
+                if (revieweeId) {
+                  router.push({ pathname: '/(tabs)/reviews/write', params: { revieweeId } });
+                } else {
+                  Alert.alert('Error', 'Could not determine user to review.');
+                }
+              }}
+              className="flex-1 flex-row items-center justify-center rounded-lg py-2"
+              style={{ backgroundColor: '#FEF9C3', borderWidth: 1, borderColor: '#F59E0B' }}
+            >
+              <Ionicons name="star" size={14} color="#D97706" />
+              <Text style={{ color: '#D97706', fontWeight: '600', fontSize: 12, marginLeft: 3 }}>Review</Text>
+            </Pressable>
+          )}
         </View>
       </Pressable>
     );

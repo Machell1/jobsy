@@ -23,6 +23,7 @@ import {
   getSavedSearches,
   deleteSavedSearch,
   getTrending,
+  type SearchParams,
 } from "@/api/search";
 import { CategoryPicker } from "@/components/CategoryPicker";
 import { EmptyState } from "@/components/EmptyState";
@@ -52,6 +53,7 @@ export default function SearchScreen() {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [availabilityFilter, setAvailabilityFilter] = useState<"today" | "this_week" | null>(null);
   const [searchTab, setSearchTab] = useState<SearchTab>("services");
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>();
 
@@ -63,20 +65,23 @@ export default function SearchScreen() {
   }, [query]);
 
   const { data: listings = [], isLoading } = useQuery({
-    queryKey: ["search-listings", debouncedQuery, selectedCategory],
+    queryKey: ["search-listings", debouncedQuery, selectedCategory, availabilityFilter],
     queryFn: async () => {
+      const availabilityParam = availabilityFilter || undefined;
       if (debouncedQuery.length > 0) {
         const result = await searchListings({
           q: debouncedQuery,
           category: selectedCategory || undefined,
+          availability: availabilityParam,
           limit: 30,
-        });
+        } as SearchParams & { availability?: string });
         return result.hits || [];
       }
       return getListings({
         category: selectedCategory || undefined,
+        availability: availabilityParam,
         limit: 30,
-      });
+      } as Parameters<typeof getListings>[0] & { availability?: string });
     },
     staleTime: 1000 * 30,
   });
@@ -282,6 +287,46 @@ export default function SearchScreen() {
             </View>
           </Pressable>
         </View>
+      </View>
+
+      {/* Availability filter chips */}
+      <View style={{ flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 8, gap: 8, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6' }}>
+        <Pressable
+          onPress={() => setAvailabilityFilter(availabilityFilter === "today" ? null : "today")}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: 14,
+            paddingVertical: 7,
+            borderRadius: 20,
+            backgroundColor: availabilityFilter === "today" ? '#1B5E20' : '#F3F4F6',
+            borderWidth: 1,
+            borderColor: availabilityFilter === "today" ? '#1B5E20' : '#E5E7EB',
+          }}
+        >
+          <Ionicons name="today-outline" size={14} color={availabilityFilter === "today" ? '#fff' : '#374151'} />
+          <Text style={{ fontSize: 13, fontWeight: '600', marginLeft: 4, color: availabilityFilter === "today" ? '#fff' : '#374151' }}>
+            Available Today
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setAvailabilityFilter(availabilityFilter === "this_week" ? null : "this_week")}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: 14,
+            paddingVertical: 7,
+            borderRadius: 20,
+            backgroundColor: availabilityFilter === "this_week" ? '#1B5E20' : '#F3F4F6',
+            borderWidth: 1,
+            borderColor: availabilityFilter === "this_week" ? '#1B5E20' : '#E5E7EB',
+          }}
+        >
+          <Ionicons name="calendar-outline" size={14} color={availabilityFilter === "this_week" ? '#fff' : '#374151'} />
+          <Text style={{ fontSize: 13, fontWeight: '600', marginLeft: 4, color: availabilityFilter === "this_week" ? '#fff' : '#374151' }}>
+            Available This Week
+          </Text>
+        </Pressable>
       </View>
 
       {/* Category chips */}

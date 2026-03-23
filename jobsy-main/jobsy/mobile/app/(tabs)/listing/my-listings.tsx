@@ -108,7 +108,7 @@ export default function MyListingsScreen() {
             />
             <View className="mx-4 mb-3 -mt-2 flex-row justify-end gap-2">
               <Pressable
-                onPress={() => openEdit(item)}
+                onPress={() => router.push({ pathname: "/(tabs)/listing/create", params: { editId: item.id } })}
                 className="flex-row items-center rounded-lg bg-primary-100 px-3 py-1.5"
               >
                 <Ionicons name="pencil-outline" size={14} color={COLORS.primary} />

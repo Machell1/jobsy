@@ -42,6 +42,8 @@ import {
   getBlockedUsers,
   type BlockedUser,
 } from "@/api/trust";
+import { uploadFile } from "@/api/storage";
+import * as ImagePicker from "expo-image-picker";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { ReviewStars } from "@/components/ReviewStars";
 import { RoleSwitcher } from "@/components/RoleSwitcher";
@@ -652,8 +654,16 @@ export default function ProfileScreen() {
                 <Text style={formLabel}>Description</Text>
                 <TextInput style={[formInput, { minHeight: 60 }]} placeholder="Describe the project..." value={portfolioDescription} onChangeText={setPortfolioDescription} multiline textAlignVertical="top" />
 
-                <Text style={formLabel}>Image URL</Text>
-                <TextInput style={formInput} placeholder="https://..." value={portfolioImageUrl} onChangeText={setPortfolioImageUrl} autoCapitalize="none" autoCorrect={false} />
+                <Text style={formLabel}>Photo</Text>
+                {portfolioImageUrl ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                    <Image source={{ uri: portfolioImageUrl }} style={{ width: 80, height: 80, borderRadius: 8 }} />
+                    <Pressable onPress={() => setPortfolioImageUrl('')} style={{ marginLeft: 8, padding: 4 }}>
+                      <Ionicons name="close-circle" size={24} color="#EF4444" />
+                    </Pressable>
+                  </View>
+                ) : null}
+                <PortfolioPhotoUploader imageUrl={portfolioImageUrl} onUploaded={setPortfolioImageUrl} />
 
                 <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
                   {editingPortfolioItem && (
@@ -1157,6 +1167,54 @@ function MenuItem({
       <Ionicons name={icon} size={22} color={COLORS.gray[600]} />
       <Text className="ml-3 flex-1 text-base text-dark-700">{label}</Text>
       <Ionicons name="chevron-forward" size={18} color={COLORS.gray[400]} />
+    </Pressable>
+  );
+}
+
+function PortfolioPhotoUploader({ imageUrl, onUploaded }: { imageUrl: string; onUploaded: (url: string) => void }) {
+  const [uploading, setUploading] = useState(false);
+
+  async function pickAndUpload() {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+    if (result.canceled) return;
+
+    setUploading(true);
+    try {
+      const uploadResult = await uploadFile(result.assets[0].uri, "portfolio");
+      onUploaded(uploadResult.url);
+    } catch {
+      Alert.alert("Upload failed", "Please try again");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  if (imageUrl) return null;
+
+  return (
+    <Pressable
+      onPress={pickAndUpload}
+      disabled={uploading}
+      style={{
+        backgroundColor: '#F9FAFB',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        borderStyle: 'dashed',
+        borderRadius: 8,
+        paddingVertical: 12,
+        alignItems: 'center',
+        marginBottom: 10,
+      }}
+    >
+      <Ionicons name={uploading ? "hourglass" : "camera-outline"} size={20} color="#6B7280" />
+      <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 4 }}>
+        {uploading ? 'Uploading...' : 'Upload Photo'}
+      </Text>
     </Pressable>
   );
 }
