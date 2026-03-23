@@ -10,7 +10,8 @@
   "scripts": {
     "build": "tsc --build",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "type-check": "tsc --noEmit"
   },
   "devDependencies": {
     "typescript": "^5.7.0"

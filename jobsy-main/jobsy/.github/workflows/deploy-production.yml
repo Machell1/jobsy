@@ -1,0 +1,62 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type DEPLOY to confirm production deployment'
+        required: true
+        type: string
+
+jobs:
+  validate:
+    name: Validate Confirmation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check confirmation
+        if: github.event.inputs.confirmation != 'DEPLOY'
+        run: |
+          echo "::error::You must type DEPLOY to confirm production deployment"
+          exit 1
+
+  deploy:
+    name: Deploy Production
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npm run type-check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy
+        run: |
+          echo "Deploying to production..."
+          # Add your deployment command here (e.g., Railway, Vercel, etc.)
+        env:
+          NODE_ENV: production
+
+      - name: Post-deploy health check
+        run: |
+          chmod +x scripts/post-deploy-check.sh
+          ./scripts/post-deploy-check.sh
