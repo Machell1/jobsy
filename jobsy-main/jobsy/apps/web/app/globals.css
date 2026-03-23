@@ -1,48 +1,156 @@
 @import "tailwindcss";
 
-/* ─── Jobsy Design System Tokens ──────────────────────────── */
+/* ─── Jobsy World-Class Design Tokens ──────────────────── */
 
 @theme {
-  --color-brand-primary: #1A56DB;
-  --color-brand-secondary: #16A34A;
-  --color-brand-accent: #F59E0B;
+  /* Typography */
+  --font-display: var(--font-display), "Georgia", serif;
+  --font-body: var(--font-body), "system-ui", sans-serif;
 
-  --color-neutral-50: #F9FAFB;
-  --color-neutral-100: #F3F4F6;
-  --color-neutral-200: #E5E7EB;
-  --color-neutral-300: #D1D5DB;
-  --color-neutral-400: #9CA3AF;
-  --color-neutral-500: #6B7280;
-  --color-neutral-600: #4B5563;
-  --color-neutral-700: #374151;
-  --color-neutral-800: #1F2937;
-  --color-neutral-900: #111827;
-  --color-neutral-950: #030712;
+  /* Primary Palette */
+  --color-navy: #0F2556;
+  --color-navy-hover: #0A1A3D;
+  --color-navy-subtle: #EEF1F9;
+  --color-gold: #C8861A;
+  --color-gold-light: #FEF3DC;
+  --color-gold-bright: #F5A623;
+  --color-emerald: #0A7B55;
+  --color-emerald-light: #E6F5F0;
 
-  --color-success: #16A34A;
-  --color-warning: #F59E0B;
+  /* Warm Neutrals */
+  --color-neutral-950: #0D0D0D;
+  --color-neutral-800: #1A1A1A;
+  --color-neutral-600: #4A4A4A;
+  --color-neutral-400: #8A8A8A;
+  --color-neutral-200: #E0DDD8;
+  --color-neutral-100: #F5F3F0;
+  --color-neutral-50: #FAFAF8;
+  --color-warm-white: #FFFFFF;
+
+  /* Semantic */
+  --color-success: #0A7B55;
+  --color-warning: #C8861A;
   --color-error: #DC2626;
-  --color-info: #1A56DB;
+  --color-info: #0F2556;
+
+  /* Legacy compat — old brand tokens mapped to new palette */
+  --color-brand-primary: #0F2556;
+  --color-brand-secondary: #0A7B55;
+  --color-brand-accent: #C8861A;
+
+  /* Legacy neutral scale (referenced by existing UI components) */
+  --color-neutral-300: #D1D5DB;
+  --color-neutral-500: #6B7280;
+  --color-neutral-700: #374151;
+  --color-neutral-900: #111827;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* Shadows — warm navy-tinted */
+  --shadow-xs: 0 1px 2px rgb(15 37 86 / 0.04);
+  --shadow-sm: 0 2px 4px rgb(15 37 86 / 0.06), 0 1px 2px rgb(15 37 86 / 0.04);
+  --shadow-md: 0 4px 12px rgb(15 37 86 / 0.08), 0 2px 4px rgb(15 37 86 / 0.04);
+  --shadow-lg: 0 8px 24px rgb(15 37 86 / 0.10), 0 4px 8px rgb(15 37 86 / 0.06);
+  --shadow-xl: 0 16px 40px rgb(15 37 86 / 0.12), 0 8px 16px rgb(15 37 86 / 0.07);
 }
 
-/* ─── Base Styles ─────────────────────────────────────────── */
+/* ─── Easing Functions ─────────────────────────────────── */
+:root {
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-expo: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── Base Styles ──────────────────────────────────────── */
 
 body {
-  font-family:
-    "Inter",
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    sans-serif;
-  color: var(--color-neutral-900);
-  background-color: var(--color-neutral-50);
+  font-family: var(--font-body);
+  color: var(--color-neutral-950);
+  background-color: var(--color-neutral-100);
 }
 
-/* ─── Focus Styles ────────────────────────────────────────── */
+/* ─── Typography Classes ───────────────────────────────── */
+
+.type-display-2xl { font-family: var(--font-display); font-size: 4rem; line-height: 1.05; letter-spacing: -0.03em; font-weight: 700; }
+.type-display-xl { font-family: var(--font-display); font-size: 3rem; line-height: 1.1; letter-spacing: -0.025em; font-weight: 700; }
+.type-display-lg { font-family: var(--font-display); font-size: 2.25rem; line-height: 1.15; letter-spacing: -0.02em; font-weight: 600; }
+.type-display-md { font-family: var(--font-display); font-size: 1.75rem; line-height: 1.2; letter-spacing: -0.015em; font-weight: 600; }
+.type-price { font-variant-numeric: tabular-nums; }
+
+/* ─── Animations ───────────────────────────────────────── */
+
+@keyframes card-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
+}
+
+@keyframes success-pulse {
+  0% { transform: scale(0.8); opacity: 0; }
+  60% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+.card-animate {
+  animation: card-enter 280ms var(--ease-out-expo) both;
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #F5F3F0 25%, #E8E4DC 50%, #F5F3F0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+}
+
+.success-icon {
+  animation: success-pulse 500ms var(--ease-spring) both;
+}
+
+/* Button press */
+.btn-press:active {
+  transform: scale(0.96);
+  transition: transform 80ms ease-in;
+}
+
+/* Provider card hover */
+.provider-card {
+  transition: transform 200ms var(--ease-out-expo), box-shadow 200ms var(--ease-out-expo);
+}
+.provider-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+.provider-card:hover .cover-image {
+  transform: scale(1.04);
+}
+.cover-image {
+  transition: transform 400ms var(--ease-out-expo);
+}
+
+/* ─── Focus Styles ─────────────────────────────────────── */
 
 @layer base {
   *:focus-visible {
-    outline: 2px solid var(--color-brand-primary);
+    outline: 2px solid var(--color-navy);
     outline-offset: 2px;
+  }
+}
+
+/* ─── Reduced Motion ───────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

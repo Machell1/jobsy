@@ -1,14 +1,26 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { SERVICE_CATEGORIES, PARISHES } from "@jobsy/config";
+import { SERVICE_CATEGORIES } from "@jobsy/config";
+import {
+  Search,
+  MessageSquare,
+  ShieldCheck,
+  Star,
+  MapPin,
+  ChevronRight,
+  ArrowRight,
+  Lock,
+} from "lucide-react";
+import { CategoryTile } from "../components/CategoryTile";
+import { CategoryGradient } from "../components/CategoryGradient";
 import { HeroSearchForm } from "./hero-search-form";
 
 export const metadata: Metadata = {
-  title: "Jobsy -- Jamaica's Premier Service Marketplace",
+  title: "Jobsy — Jamaica's Premier Service Marketplace",
   description:
     "Find trusted service providers across Jamaica. From home repairs to beauty services, Jobsy connects you with skilled professionals in every parish.",
   openGraph: {
-    title: "Jobsy -- Jamaica's Premier Service Marketplace",
+    title: "Jobsy — Jamaica's Premier Service Marketplace",
     description:
       "Find trusted service providers across every parish in Jamaica.",
     url: "https://jobsyja.com",
@@ -21,88 +33,82 @@ export const metadata: Metadata = {
 /*  Static data                                                        */
 /* ------------------------------------------------------------------ */
 
-const CATEGORY_ICONS: Record<string, string> = {
-  plumbing: "\u{1F6BF}",
-  electrical: "\u{26A1}",
-  carpentry: "\u{1FA93}",
-  cleaning: "\u{2728}",
-  gardening: "\u{1F33F}",
-  painting: "\u{1F3A8}",
-  masonry: "\u{1F9F1}",
-  roofing: "\u{1F3E0}",
-  automotive: "\u{1F697}",
-  catering: "\u{1F37D}",
-  tutoring: "\u{1F393}",
-  beauty: "\u{1F484}",
-  tailoring: "\u{1FAA1}",
-  moving: "\u{1F4E6}",
-  tech_repair: "\u{1F4F1}",
-  photography: "\u{1F4F7}",
-  event_planning: "\u{1F389}",
-  other: "\u{2699}",
-};
-
-const STEPS = [
-  {
-    number: 1,
-    title: "Post a Job",
-    description:
-      "Describe what you need done. Set your budget and timeline so providers can find you.",
-  },
-  {
-    number: 2,
-    title: "Get Bids",
-    description:
-      "Qualified providers send proposals. Compare ratings, reviews, and prices.",
-  },
-  {
-    number: 3,
-    title: "Hire & Pay",
-    description:
-      "Choose your provider and pay securely through the platform when the job is complete.",
-  },
-];
-
-const FEATURED_SERVICES = [
+const FEATURED_PROVIDERS = [
   {
     id: "1",
+    name: "Sparkle Clean JA",
     title: "Professional Home Cleaning",
-    provider: "Sparkle Clean JA",
     parish: "Kingston",
     rating: 4.9,
     reviews: 127,
     price: "J$5,000",
     category: "Cleaning",
+    verified: true,
+    responseHours: 1,
+    bookedCount: 42,
   },
   {
     id: "2",
+    name: "PowerFix Solutions",
     title: "Electrical Wiring & Repair",
-    provider: "PowerFix Solutions",
     parish: "St. Andrew",
     rating: 4.8,
     reviews: 89,
     price: "J$8,000",
     category: "Electrical",
+    verified: true,
+    responseHours: 2,
+    bookedCount: 31,
   },
   {
     id: "3",
+    name: "GreenThumb Jamaica",
     title: "Garden & Lawn Care",
-    provider: "GreenThumb Jamaica",
     parish: "St. Catherine",
     rating: 4.7,
     reviews: 64,
     price: "J$4,500",
-    category: "Landscaping",
+    category: "Gardening",
+    verified: true,
+    responseHours: 3,
+    bookedCount: 18,
   },
   {
     id: "4",
+    name: "FlowRight Plumbing",
     title: "Plumbing Installation",
-    provider: "FlowRight Plumbing",
     parish: "St. James",
     rating: 4.9,
     reviews: 112,
     price: "J$7,000",
     category: "Plumbing",
+    verified: true,
+    responseHours: 1,
+    bookedCount: 56,
+  },
+];
+
+const STEPS = [
+  {
+    number: "01",
+    title: "Search & Discover",
+    description:
+      "Browse verified providers by category, parish, or keyword. Read reviews from real Jamaicans.",
+    icon: Search,
+  },
+  {
+    number: "02",
+    title: "Connect & Discuss",
+    description:
+      "Message providers directly. Discuss your needs, get quotes, and agree on terms.",
+    icon: MessageSquare,
+  },
+  {
+    number: "03",
+    title: "Book & Pay Securely",
+    description:
+      "Pay through Jobsy with escrow protection. Funds release only when you confirm the job is done.",
+    icon: ShieldCheck,
   },
 ];
 
@@ -126,6 +132,44 @@ const TESTIMONIALS = [
     rating: 5,
   },
 ];
+
+const AVATAR_COLORS = [
+  "bg-[var(--color-navy)]",
+  "bg-[var(--color-emerald)]",
+  "bg-[var(--color-gold)]",
+];
+
+const FOOTER_NAV = {
+  Marketplace: [
+    { label: "Browse Services", href: "/search" },
+    { label: "Become a Provider", href: "/register" },
+    { label: "How It Works", href: "#how-it-works" },
+    { label: "Pricing", href: "/pricing" },
+  ],
+  Company: [
+    { label: "About Jobsy", href: "/about" },
+    { label: "Blog", href: "/blog" },
+    { label: "Careers", href: "/careers" },
+    { label: "Contact", href: "/contact" },
+  ],
+  Support: [
+    { label: "Help Centre", href: "/help" },
+    { label: "Safety", href: "/safety" },
+    { label: "Community Guidelines", href: "/guidelines" },
+    { label: "Accessibility", href: "/accessibility" },
+  ],
+};
+
+/* ------------------------------------------------------------------ */
+/*  Helper: initials from name                                         */
+/* ------------------------------------------------------------------ */
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("");
+}
 
 /* ------------------------------------------------------------------ */
 /*  Page component (Server Component)                                  */
@@ -166,130 +210,60 @@ export default function HomePage() {
       />
 
       {/* ============================================================ */}
-      {/*  HERO                                                        */}
+      {/*  HERO — Dark, premium, commanding                            */}
       {/* ============================================================ */}
-      <section className="bg-gradient-to-br from-brand-primary to-blue-900 px-4 py-20 text-white">
-        <div className="mx-auto max-w-4xl text-center">
-          <p className="mb-4 text-lg font-semibold text-brand-accent">Jobsy</p>
-          <h1 className="text-4xl font-bold leading-tight md:text-5xl">
-            Jamaica&apos;s Premier Service Marketplace
+      <section className="relative overflow-hidden bg-[var(--color-neutral-950)] px-4 py-24 md:py-32">
+        {/* Subtle grid pattern overlay */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
+          }}
+        />
+
+        <div className="relative z-10 mx-auto max-w-4xl text-center">
+          {/* Trust badge */}
+          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 backdrop-blur-sm">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--color-emerald)] opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[var(--color-emerald)]" />
+            </span>
+            <span className="text-sm font-medium text-white/80">
+              500+ verified providers across Jamaica
+            </span>
+          </div>
+
+          {/* Headline */}
+          <h1 className="type-display-2xl text-white md:text-[4.5rem]">
+            Find Trusted{" "}
+            <span className="text-[var(--color-gold-bright)]">Professionals</span>
+            <br className="hidden md:block" /> in Every Parish
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-blue-200 md:text-xl">
-            Find trusted service providers across every parish. From plumbing to
-            beauty, connect with skilled professionals in your community.
+
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-white/60">
+            From plumbing to photography, Jobsy connects you with verified local
+            service providers across all 14 parishes. Book with confidence.
           </p>
 
-          {/* Search bar (client component for interactivity) */}
+          {/* Search bar */}
           <div className="mt-10">
             <HeroSearchForm
               categories={SERVICE_CATEGORIES.map((c) => c.label)}
-              parishes={["All Parishes", ...PARISHES]}
             />
           </div>
-        </div>
-      </section>
 
-      {/* ============================================================ */}
-      {/*  FEATURED SERVICES                                           */}
-      {/* ============================================================ */}
-      <section className="mx-auto max-w-6xl px-4 py-16">
-        <div className="mb-10 flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-neutral-900 md:text-3xl">
-              Featured Services
-            </h2>
-            <p className="text-neutral-500">Top-rated providers ready to help</p>
-          </div>
-          <Link
-            href="/search"
-            className="hidden items-center gap-1 text-sm font-medium text-brand-primary hover:underline sm:inline-flex"
-          >
-            View all &rarr;
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {FEATURED_SERVICES.map((svc) => (
-            <Link
-              key={svc.id}
-              href={`/provider/${svc.id}`}
-              className="group overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm transition hover:shadow-md"
-            >
-              <div className="bg-neutral-100 p-6 text-center text-4xl">
-                {CATEGORY_ICONS[svc.category.toLowerCase()] ?? "\u{2699}"}
-              </div>
-              <div className="space-y-2 p-4">
-                <span className="inline-block rounded-full bg-brand-secondary/10 px-2 py-0.5 text-xs font-medium text-brand-secondary">
-                  {svc.category}
-                </span>
-                <h3 className="font-semibold leading-snug text-neutral-900 group-hover:text-brand-primary">
-                  {svc.title}
-                </h3>
-                <p className="text-sm text-neutral-500">{svc.provider}</p>
-                <p className="flex items-center gap-1 text-sm text-neutral-500">
-                  <span aria-hidden="true">{"\u{1F4CD}"}</span>
-                  {svc.parish}
-                </p>
-                <div className="flex items-center justify-between border-t border-neutral-100 pt-2">
-                  <div className="flex items-center gap-1 text-sm">
-                    <span
-                      className="text-brand-accent"
-                      aria-label={`${svc.rating} out of 5 stars`}
-                    >
-                      {"\u{2B50}"}
-                    </span>
-                    <span className="font-medium">{svc.rating}</span>
-                    <span className="text-neutral-400">({svc.reviews})</span>
-                  </div>
-                  <span className="text-sm font-semibold text-brand-primary">
-                    From {svc.price}
-                  </span>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-
-        <div className="mt-6 text-center sm:hidden">
-          <Link
-            href="/search"
-            className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary hover:underline"
-          >
-            View all services &rarr;
-          </Link>
-        </div>
-      </section>
-
-      {/* ============================================================ */}
-      {/*  POPULAR CATEGORIES                                          */}
-      {/* ============================================================ */}
-      <section id="categories" className="bg-neutral-50 px-4 py-16">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-10 text-center">
-            <h2 className="text-2xl font-bold text-neutral-900 md:text-3xl">
-              Popular Categories
-            </h2>
-            <p className="text-neutral-500">
-              Browse our most requested service categories
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-            {SERVICE_CATEGORIES.map((cat) => (
+          {/* Quick category links */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
+            <span className="text-sm text-white/40">Popular:</span>
+            {["Cleaning", "Plumbing", "Electrical", "Beauty"].map((cat) => (
               <Link
-                key={cat.key}
-                href={`/search?category=${encodeURIComponent(cat.label)}`}
-                className="group flex flex-col items-center gap-3 rounded-xl border border-neutral-200 bg-white p-6 transition hover:border-brand-primary/30 hover:shadow-md"
+                key={cat}
+                href={`/search?category=${encodeURIComponent(cat)}`}
+                className="rounded-full border border-white/10 px-3 py-1 text-sm text-white/60 transition-colors hover:border-white/20 hover:text-white/80"
               >
-                <span
-                  className="text-3xl transition-transform group-hover:scale-110"
-                  aria-hidden="true"
-                >
-                  {CATEGORY_ICONS[cat.key] ?? "\u{2699}"}
-                </span>
-                <span className="text-sm font-medium text-neutral-700">
-                  {cat.label}
-                </span>
+                {cat}
               </Link>
             ))}
           </div>
@@ -297,33 +271,177 @@ export default function HomePage() {
       </section>
 
       {/* ============================================================ */}
-      {/*  HOW IT WORKS                                                */}
+      {/*  CATEGORIES                                                  */}
       {/* ============================================================ */}
-      <section className="px-4 py-16">
+      <section id="categories" className="bg-[var(--color-warm-white)] px-4 py-24">
         <div className="mx-auto max-w-6xl">
           <div className="mb-12 text-center">
-            <h2 className="text-2xl font-bold text-neutral-900 md:text-3xl">
-              How It Works
+            <h2 className="type-display-lg text-[var(--color-neutral-950)]">
+              Browse by Category
             </h2>
-            <p className="text-neutral-500">
+            <p className="mt-3 text-[var(--color-neutral-600)]">
+              Explore our most requested service categories across Jamaica
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            {SERVICE_CATEGORIES.map((cat) => (
+              <CategoryTile key={cat.key} category={cat.label} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================================ */}
+      {/*  FEATURED PROVIDERS                                          */}
+      {/* ============================================================ */}
+      <section className="bg-[var(--color-neutral-100)] px-4 py-24">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-12 flex items-end justify-between">
+            <div>
+              <h2 className="type-display-lg text-[var(--color-neutral-950)]">
+                Featured Providers
+              </h2>
+              <p className="mt-3 text-[var(--color-neutral-600)]">
+                Top-rated professionals ready to help
+              </p>
+            </div>
+            <Link
+              href="/search"
+              className="btn-press hidden items-center gap-1 rounded-full bg-[var(--color-navy)] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-navy-hover)] sm:inline-flex"
+            >
+              View all
+              <ChevronRight className="h-4 w-4" strokeWidth={2} />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {FEATURED_PROVIDERS.map((provider, index) => (
+              <Link
+                key={provider.id}
+                href={`/provider/${provider.id}`}
+                className="provider-card card-animate group overflow-hidden rounded-[14px] border border-[var(--color-neutral-200)] bg-[var(--color-warm-white)] shadow-[var(--shadow-sm)]"
+                style={{ animationDelay: `${index * 40}ms` }}
+              >
+                {/* Category gradient banner */}
+                <div className="relative h-32 overflow-hidden">
+                  <div className="cover-image h-full w-full">
+                    <CategoryGradient category={provider.category} />
+                  </div>
+                  {/* Category badge */}
+                  <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-[var(--color-neutral-800)] shadow-[var(--shadow-xs)] backdrop-blur-sm">
+                    {provider.category}
+                  </span>
+                </div>
+
+                {/* Content */}
+                <div className="p-6">
+                  {/* Provider name + verified */}
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-semibold text-[var(--color-neutral-950)] group-hover:text-[var(--color-navy)]">
+                      {provider.name}
+                    </h3>
+                    {provider.verified && (
+                      <span
+                        className="inline-flex items-center justify-center rounded-full bg-[var(--color-emerald)] p-0.5 text-white"
+                        title="Verified provider"
+                      >
+                        <ShieldCheck className="h-3 w-3" strokeWidth={2.5} />
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="mt-1 text-sm text-[var(--color-neutral-600)]">
+                    {provider.title}
+                  </p>
+
+                  {/* Location */}
+                  <div className="mt-3 flex items-center gap-1.5 text-sm text-[var(--color-neutral-400)]">
+                    <MapPin className="h-4 w-4" strokeWidth={1.5} />
+                    {provider.parish}
+                  </div>
+
+                  {/* Rating + Price */}
+                  <div className="mt-4 flex items-center justify-between border-t border-[var(--color-neutral-200)] pt-4">
+                    <div className="flex items-center gap-1">
+                      <Star
+                        className="h-4 w-4 fill-amber-400 text-amber-400"
+                        strokeWidth={1.5}
+                      />
+                      <span className="text-sm font-semibold text-[var(--color-neutral-950)]">
+                        {provider.rating}
+                      </span>
+                      <span className="text-sm text-[var(--color-neutral-400)]">
+                        ({provider.reviews})
+                      </span>
+                    </div>
+                    <span className="type-price text-sm font-semibold text-[var(--color-navy)]">
+                      From {provider.price}
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* Mobile view-all link */}
+          <div className="mt-8 text-center sm:hidden">
+            <Link
+              href="/search"
+              className="btn-press inline-flex items-center gap-1 rounded-full bg-[var(--color-navy)] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-navy-hover)]"
+            >
+              View all providers
+              <ChevronRight className="h-4 w-4" strokeWidth={2} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================================ */}
+      {/*  HOW IT WORKS                                                */}
+      {/* ============================================================ */}
+      <section id="how-it-works" className="bg-[var(--color-warm-white)] px-4 py-24">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-16 text-center">
+            <h2 className="type-display-lg text-[var(--color-neutral-950)]">
+              How Jobsy Works
+            </h2>
+            <p className="mt-3 text-[var(--color-neutral-600)]">
               Three simple steps to get any job done
             </p>
           </div>
 
           <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-            {STEPS.map((step) => (
-              <div key={step.number} className="text-center">
-                <div className="relative mx-auto mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-brand-primary text-2xl font-bold text-white">
-                  {step.number}
+            {STEPS.map((step) => {
+              const StepIcon = step.icon;
+              return (
+                <div
+                  key={step.number}
+                  className="relative rounded-[14px] border border-[var(--color-neutral-200)] bg-[var(--color-warm-white)] p-8 shadow-[var(--shadow-xs)]"
+                >
+                  {/* Step number */}
+                  <span className="font-mono text-xs font-semibold tracking-widest text-[var(--color-neutral-400)]">
+                    {step.number}
+                  </span>
+
+                  {/* Icon */}
+                  <div className="mt-4 flex h-12 w-12 items-center justify-center rounded-[10px] bg-[var(--color-navy-subtle)]">
+                    <StepIcon
+                      className="h-6 w-6 text-[var(--color-navy)]"
+                      strokeWidth={1.5}
+                    />
+                  </div>
+
+                  {/* Text */}
+                  <h3 className="mt-5 font-display text-lg font-semibold text-[var(--color-neutral-950)]">
+                    {step.title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-[var(--color-neutral-600)]">
+                    {step.description}
+                  </p>
                 </div>
-                <h3 className="mb-2 text-lg font-semibold text-neutral-900">
-                  {step.title}
-                </h3>
-                <p className="mx-auto max-w-xs text-sm leading-relaxed text-neutral-600">
-                  {step.description}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -331,52 +449,62 @@ export default function HomePage() {
       {/* ============================================================ */}
       {/*  TESTIMONIALS                                                */}
       {/* ============================================================ */}
-      <section className="bg-neutral-50 px-4 py-16">
+      <section className="bg-[var(--color-neutral-100)] px-4 py-24">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-12 text-center">
-            <h2 className="text-2xl font-bold text-neutral-900 md:text-3xl">
+          <div className="mb-16 text-center">
+            <h2 className="type-display-lg text-[var(--color-neutral-950)]">
               What Our Community Says
             </h2>
-            <p className="text-neutral-500">
+            <p className="mt-3 text-[var(--color-neutral-600)]">
               Real feedback from Jamaicans using Jobsy every day
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            {TESTIMONIALS.map((t) => (
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+            {TESTIMONIALS.map((t, i) => (
               <div
                 key={t.name}
-                className="relative rounded-xl border border-neutral-200 bg-white p-6"
+                className="relative rounded-[14px] border border-[var(--color-neutral-200)] bg-[var(--color-warm-white)] p-8"
               >
-                <div className="mb-3 flex gap-0.5">
-                  {Array.from({ length: t.rating }).map((_, i) => (
-                    <span
-                      key={i}
-                      className="text-brand-accent"
-                      aria-hidden="true"
-                    >
-                      {"\u{2B50}"}
-                    </span>
+                {/* Decorative quote mark */}
+                <span
+                  className="absolute right-6 top-4 font-display text-6xl leading-none text-[var(--color-navy)] opacity-[0.07]"
+                  aria-hidden="true"
+                >
+                  &ldquo;
+                </span>
+
+                {/* Stars */}
+                <div className="mb-4 flex gap-0.5">
+                  {Array.from({ length: t.rating }).map((_, si) => (
+                    <Star
+                      key={si}
+                      className="h-4 w-4 fill-amber-400 text-amber-400"
+                      strokeWidth={1.5}
+                    />
                   ))}
                 </div>
-                <p className="mb-5 text-sm leading-relaxed text-neutral-600">
+
+                {/* Quote text */}
+                <p className="mb-6 text-sm leading-relaxed text-[var(--color-neutral-600)]">
                   &ldquo;{t.text}&rdquo;
                 </p>
-                <div className="flex items-center gap-3 border-t border-neutral-100 pt-4">
+
+                {/* Author */}
+                <div className="flex items-center gap-3 border-t border-[var(--color-neutral-200)] pt-5">
                   <div
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-primary/10 text-sm font-bold text-brand-primary"
+                    className={`flex h-10 w-10 items-center justify-center rounded-full ${AVATAR_COLORS[i % AVATAR_COLORS.length]} text-sm font-bold text-white`}
                     aria-hidden="true"
                   >
-                    {t.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
+                    {getInitials(t.name)}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-neutral-900">
+                    <p className="text-sm font-semibold text-[var(--color-neutral-950)]">
                       {t.name}
                     </p>
-                    <p className="text-xs text-neutral-500">{t.role}</p>
+                    <p className="text-xs text-[var(--color-neutral-400)]">
+                      {t.role}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -386,33 +514,117 @@ export default function HomePage() {
       </section>
 
       {/* ============================================================ */}
-      {/*  CTA                                                         */}
+      {/*  PROVIDER CTA — Dark with gold accent                        */}
       {/* ============================================================ */}
-      <section className="px-4 py-16">
-        <div className="mx-auto max-w-3xl rounded-2xl bg-gradient-to-br from-brand-primary to-blue-900 p-10 text-center text-white">
-          <h2 className="text-2xl font-bold md:text-3xl">
-            Ready to Get Started?
+      <section className="bg-[var(--color-neutral-950)] px-4 py-24">
+        <div className="mx-auto max-w-3xl text-center">
+          {/* Gold accent bar */}
+          <div className="mx-auto mb-8 h-1 w-16 rounded-full bg-[var(--color-gold-bright)]" />
+
+          <h2 className="type-display-lg text-white">
+            Ready to Grow Your Business?
           </h2>
-          <p className="mx-auto mt-3 max-w-lg text-blue-200">
-            Join thousands of Jamaicans already using Jobsy to find and offer
-            services. Sign up today and connect with your community.
+          <p className="mx-auto mt-4 max-w-lg text-white/60">
+            Join hundreds of skilled Jamaican professionals already earning more
+            with Jobsy. Set your own rates. Build your reputation. Get paid
+            securely.
           </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+
+          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
               href="/register"
-              className="rounded-lg bg-white px-8 py-3 text-sm font-semibold text-brand-primary shadow hover:bg-blue-50"
+              className="btn-press inline-flex items-center gap-2 rounded-full bg-[var(--color-gold-bright)] px-8 py-3.5 text-sm font-semibold text-[var(--color-neutral-950)] shadow-[var(--shadow-md)] transition-transform hover:brightness-110"
             >
-              Sign Up Free
+              Become a Provider
+              <ArrowRight className="h-4 w-4" strokeWidth={2} />
             </Link>
             <Link
               href="/search"
-              className="rounded-lg border-2 border-white/50 px-8 py-3 text-sm font-semibold text-white hover:bg-white/10"
+              className="btn-press rounded-full border border-white/20 px-8 py-3.5 text-sm font-semibold text-white transition-colors hover:border-white/40 hover:bg-white/5"
             >
               Browse Services
             </Link>
           </div>
+
+          {/* Trust signals */}
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-6 text-sm text-white/40">
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="h-4 w-4" strokeWidth={1.5} />
+              Verified profiles
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Lock className="h-4 w-4" strokeWidth={1.5} />
+              Secure payments
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Star className="h-4 w-4" strokeWidth={1.5} />
+              Real reviews
+            </span>
+          </div>
         </div>
       </section>
+
+      {/* ============================================================ */}
+      {/*  FOOTER                                                      */}
+      {/* ============================================================ */}
+      <footer className="border-t border-[var(--color-neutral-200)] bg-[var(--color-warm-white)] px-4 py-16">
+        <div className="mx-auto max-w-6xl">
+          <div className="grid grid-cols-2 gap-12 md:grid-cols-4">
+            {/* Brand column */}
+            <div className="col-span-2 md:col-span-1">
+              <Link href="/" className="font-display text-xl font-bold text-[var(--color-navy)]">
+                Jobsy
+              </Link>
+              <p className="mt-3 text-sm leading-relaxed text-[var(--color-neutral-400)]">
+                Jamaica&apos;s premier service marketplace. Connecting communities
+                with trusted local professionals.
+              </p>
+            </div>
+
+            {/* Navigation columns */}
+            {Object.entries(FOOTER_NAV).map(([heading, links]) => (
+              <div key={heading}>
+                <h3 className="text-sm font-semibold text-[var(--color-neutral-950)]">
+                  {heading}
+                </h3>
+                <ul className="mt-4 space-y-3">
+                  {links.map((link) => (
+                    <li key={link.label}>
+                      <Link
+                        href={link.href}
+                        className="text-sm text-[var(--color-neutral-400)] transition-colors hover:text-[var(--color-neutral-950)]"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          {/* Bottom bar */}
+          <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-[var(--color-neutral-200)] pt-8 md:flex-row">
+            <p className="text-sm text-[var(--color-neutral-400)]">
+              Made with love in Jamaica
+            </p>
+            <div className="flex gap-6">
+              <Link
+                href="/privacy"
+                className="text-sm text-[var(--color-neutral-400)] transition-colors hover:text-[var(--color-neutral-950)]"
+              >
+                Privacy Policy
+              </Link>
+              <Link
+                href="/terms"
+                className="text-sm text-[var(--color-neutral-400)] transition-colors hover:text-[var(--color-neutral-950)]"
+              >
+                Terms of Service
+              </Link>
+            </div>
+          </div>
+        </div>
+      </footer>
     </main>
   );
 }
