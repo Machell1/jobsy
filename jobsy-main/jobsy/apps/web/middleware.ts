@@ -13,7 +13,10 @@ const PUBLIC_PATHS = new Set([
   "/login",
   "/register",
   "/forgot-password",
+  "/search",
 ]);
+
+const PUBLIC_PREFIXES = ["/provider/"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -21,6 +24,7 @@ export function middleware(request: NextRequest) {
   // Allow public routes and static assets
   if (
     PUBLIC_PATHS.has(pathname) ||
+    PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix)) ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
     pathname.includes(".")

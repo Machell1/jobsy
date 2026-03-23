@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { PARISHES, SERVICE_CATEGORIES } from "@jobsy/config";
-import { apiGet } from "@/app/lib/api";
+import { apiGet } from "@/lib/api";
 
 // ---------------------------------------------------------------------------
 // Constants
