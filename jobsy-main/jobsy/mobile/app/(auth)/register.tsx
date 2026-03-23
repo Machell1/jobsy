@@ -67,6 +67,10 @@ export default function RegisterScreen() {
       Alert.alert("Invalid Password", passError);
       return;
     }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      Alert.alert("Invalid Email", "Please enter a valid email address");
+      return;
+    }
     if (accountType !== "individual" && !orgName.trim()) {
       Alert.alert("Required Field", "Organization name is required for organization and school accounts");
       return;

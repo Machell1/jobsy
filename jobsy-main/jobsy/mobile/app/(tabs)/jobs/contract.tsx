@@ -7,11 +7,14 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
-  Linking,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
+
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
+import * as SecureStore from "expo-secure-store";
 
 import {
   getContract,
@@ -110,10 +113,28 @@ export default function ContractDetailScreen() {
     );
   }
 
-  function handleDownloadPdf() {
+  async function handleDownloadPdf() {
     if (!contract) return;
-    const url = `${API_URL}${getContractPdfUrl(contract.id)}`;
-    Linking.openURL(url);
+    try {
+      const token = await SecureStore.getItemAsync("access_token");
+      const url = `${API_URL}${getContractPdfUrl(contract.id)}`;
+      const fileUri = `${FileSystem.cacheDirectory}contract-${contract.id}.pdf`;
+      const result = await FileSystem.downloadAsync(url, fileUri, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(result.uri, {
+          mimeType: "application/pdf",
+          dialogTitle: "Contract PDF",
+        });
+      } else {
+        Alert.alert("Error", "Sharing is not available on this device.");
+      }
+    } catch {
+      Alert.alert("Error", "Failed to download contract PDF. Please try again.");
+    }
   }
 
   const hasSigned = contract?.signatures?.some((s) => s.signer_id === user?.id);

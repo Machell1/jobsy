@@ -11,7 +11,7 @@ export function useSwipeDeck() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const swipedIds = useRef(new Set<string>());
 
-  const { data: listings = [], isLoading, refetch } = useQuery({
+  const { data: listings = [], isLoading, error, refetch } = useQuery({
     queryKey: ["listing-feed"],
     queryFn: () => getListingFeed(50),
   });
@@ -62,6 +62,7 @@ export function useSwipeDeck() {
     listings: visibleListings,
     currentIndex,
     isLoading,
+    error,
     handleSwipe,
     refetch,
   };

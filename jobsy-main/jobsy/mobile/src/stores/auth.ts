@@ -17,6 +17,7 @@ interface User {
   avatarUrl: string | null;
   parish: string | null;
   isVerified: boolean;
+  account_type?: string;
 }
 
 interface AuthState {

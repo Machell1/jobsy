@@ -244,12 +244,11 @@ const REQUIRED_MAP: Record<string, string[]> = {
   ],
 };
 
-function getStepsForUser(user: { activeRole?: string; role?: string } | null): {
+function getStepsForUser(user: { activeRole?: string; role?: string; account_type?: string } | null): {
   steps: BadgeStep[];
   required: string[];
 } {
-  // Mobile auth store doesn't expose account_type yet — default to individual
-  const accountType = "individual";
+  const accountType = user?.account_type || "individual";
   const role = user?.activeRole || user?.role || "user";
   const isHirer = role === "user" || role === "hirer";
 
@@ -352,7 +351,7 @@ export default function VerifyScreen() {
   // Fetch on mount
   useEffect(() => {
     fetchStatus();
-  }, []);
+  }, [fetchStatus]);
 
   // ── OTP flow ──────────────────────────────────────────────────────────
 
