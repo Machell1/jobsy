@@ -140,22 +140,24 @@ const AVATAR_COLORS = [
 ];
 
 const FOOTER_NAV = {
-  Marketplace: [
-    { label: "Browse Services", href: "/search" },
-    { label: "Become a Provider", href: "/register" },
-    { label: "How It Works", href: "#how-it-works" },
-    { label: "Pricing", href: "/pricing" },
+  Services: [
+    { label: "Browse All", href: "/search" },
+    { label: "Plumbing", href: "/search?category=Plumbing" },
+    { label: "Electrical", href: "/search?category=Electrical" },
+    { label: "Cleaning", href: "/search?category=Cleaning" },
+    { label: "Beauty", href: "/search?category=Beauty" },
+    { label: "View all \u2192", href: "/search" },
   ],
   Company: [
-    { label: "About Jobsy", href: "/about" },
-    { label: "Blog", href: "/blog" },
-    { label: "Careers", href: "/careers" },
-    { label: "Contact", href: "/contact" },
+    { label: "About", href: "/about" },
+    { label: "Become a Provider", href: "/register" },
+    { label: "How It Works", href: "#how-it-works" },
+    { label: "Contact Us", href: "/contact" },
   ],
   Support: [
     { label: "Help Centre", href: "/help" },
     { label: "Safety", href: "/safety" },
-    { label: "Community Guidelines", href: "/guidelines" },
+    { label: "Community Guidelines", href: "/community-guidelines" },
     { label: "Accessibility", href: "/accessibility" },
   ],
 };
@@ -567,24 +569,28 @@ export default function HomePage() {
       {/* ============================================================ */}
       {/*  FOOTER                                                      */}
       {/* ============================================================ */}
-      <footer className="border-t border-[var(--color-neutral-200)] bg-[var(--color-warm-white)] px-4 py-16">
+      <footer className="border-t border-[var(--color-neutral-100)] bg-white px-4 py-16">
         <div className="mx-auto max-w-6xl">
           <div className="grid grid-cols-2 gap-12 md:grid-cols-4">
-            {/* Brand column */}
+            {/* Column 1 — Brand */}
             <div className="col-span-2 md:col-span-1">
-              <Link href="/" className="font-display text-xl font-bold text-[var(--color-navy)]">
-                Jobsy
+              <Link href="/" className="inline-flex items-center gap-2.5">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0F2556] text-sm font-bold text-white">
+                  J
+                </span>
+                <span className="font-display text-xl font-bold text-[var(--color-navy)]">
+                  Jobsy
+                </span>
               </Link>
-              <p className="mt-3 text-sm leading-relaxed text-[var(--color-neutral-400)]">
-                Jamaica&apos;s premier service marketplace. Connecting communities
-                with trusted local professionals.
+              <p className="mt-4 max-w-[200px] text-sm leading-relaxed text-[var(--color-neutral-400)]">
+                Jamaica&apos;s trusted marketplace for local service professionals.
               </p>
             </div>
 
-            {/* Navigation columns */}
+            {/* Columns 2-4 — Navigation */}
             {Object.entries(FOOTER_NAV).map(([heading, links]) => (
               <div key={heading}>
-                <h3 className="text-sm font-semibold text-[var(--color-neutral-950)]">
+                <h3 className="text-xs font-semibold uppercase tracking-widest text-[var(--color-neutral-400)]">
                   {heading}
                 </h3>
                 <ul className="mt-4 space-y-3">
@@ -604,24 +610,28 @@ export default function HomePage() {
           </div>
 
           {/* Bottom bar */}
-          <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-[var(--color-neutral-200)] pt-8 md:flex-row">
-            <p className="text-sm text-[var(--color-neutral-400)]">
-              Made with love in Jamaica
-            </p>
-            <div className="flex gap-6">
-              <Link
-                href="/privacy"
-                className="text-sm text-[var(--color-neutral-400)] transition-colors hover:text-[var(--color-neutral-950)]"
-              >
-                Privacy Policy
-              </Link>
-              <Link
-                href="/terms"
-                className="text-sm text-[var(--color-neutral-400)] transition-colors hover:text-[var(--color-neutral-950)]"
-              >
-                Terms of Service
-              </Link>
+          <div className="mt-12 border-t border-[var(--color-neutral-100)] pt-8">
+            <div className="flex flex-col items-center gap-4 md:flex-row md:justify-between">
+              <p className="text-sm text-[var(--color-neutral-400)]">
+                &copy; 2026 Jobsy Jamaica Limited. All rights reserved.
+              </p>
+              <div className="flex items-center gap-1.5 text-sm text-[var(--color-neutral-400)]">
+                <Link href="/privacy" className="transition-colors hover:text-[var(--color-neutral-600)]">
+                  Privacy Policy
+                </Link>
+                <span>&middot;</span>
+                <Link href="/terms" className="transition-colors hover:text-[var(--color-neutral-600)]">
+                  Terms of Service
+                </Link>
+                <span>&middot;</span>
+                <Link href="/cookies" className="transition-colors hover:text-[var(--color-neutral-600)]">
+                  Cookie Policy
+                </Link>
+              </div>
             </div>
+            <p className="mt-6 text-center text-sm text-[var(--color-neutral-400)]">
+              Made with <span className="text-[#C8861A]">love</span> in Jamaica 🇯🇲
+            </p>
           </div>
         </div>
       </footer>

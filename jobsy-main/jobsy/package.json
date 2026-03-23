@@ -19,8 +19,7 @@
     "type-check": "turbo run type-check",
     "lighthouse": "lhci autorun",
     "test:all": "npm run type-check && npm run lint && npm run test:unit && npm run test:e2e",
-    "analyze": "ANALYZE=true next build",
-    "prepare": "husky install"
+    "analyze": "ANALYZE=true next build"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
@@ -29,17 +28,17 @@
     ]
   },
   "devDependencies": {
-    "turbo": "^2.4.0",
-    "prettier": "^3.4.0",
-    "husky": "^9.1.0",
-    "lint-staged": "^15.4.0",
-    "jest": "^29.7.0",
+    "@lhci/cli": "^0.14.0",
+    "@playwright/test": "^1.49.0",
     "@types/jest": "^29.5.0",
+    "eslint": "^9.0.0",
+    "husky": "^9.1.0",
+    "jest": "^29.7.0",
+    "lint-staged": "^15.4.0",
+    "prettier": "^3.4.0",
     "ts-jest": "^29.2.0",
     "ts-node": "^10.9.0",
-    "@playwright/test": "^1.49.0",
-    "@lhci/cli": "^0.14.0",
-    "eslint": "^9.0.0"
+    "turbo": "^2.4.0"
   },
   "packageManager": "npm@10.8.0",
   "engines": {
