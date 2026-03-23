@@ -134,7 +134,6 @@ export default function BookingsScreen() {
       queryClient.invalidateQueries({ queryKey: ["bookingStats"] });
       setSelectedBooking(null);
     },
-    onError: () => Alert.alert("Error", "Failed to update booking status. Please try again."),
   });
 
   const editBookingMutation = useMutation({

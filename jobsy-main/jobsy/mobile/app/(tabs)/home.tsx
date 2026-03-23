@@ -97,7 +97,7 @@ export default function HomeScreen() {
   // Fetch on mount
   useEffect(() => {
     fetchDashboard();
-  }, [fetchDashboard]);
+  }, []);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -141,7 +141,7 @@ export default function HomeScreen() {
             value: formatCurrency(stats?.earnings ?? 0),
             icon: "wallet" as keyof typeof Ionicons.glyphMap,
             color: COLORS.success,
-            onPress: () => router.push("/(tabs)/payments/" as any),
+            onPress: () => router.push("/(tabs)/payments" as never),
           },
         ]
       : [
@@ -380,7 +380,7 @@ export default function HomeScreen() {
                 </Text>
               </View>
               <Pressable
-                onPress={() => router.push("/(tabs)/payments/" as any)}
+                onPress={() => router.push("/(tabs)/payments" as never)}
                 className="bg-green-50 px-4 py-2.5 rounded-xl"
               >
                 <Text className="text-green-700 font-semibold text-sm">

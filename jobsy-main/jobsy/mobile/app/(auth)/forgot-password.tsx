@@ -93,7 +93,7 @@ export default function ForgotPasswordScreen() {
           <Text className="mt-2 text-center text-sm text-dark-500">
             {step === 1
               ? "Enter your phone number and we'll send you a reset code."
-              : `A 6-digit code was sent to your phone or email`}
+              : `A 6-digit code was sent to ${phone}`}
           </Text>
         </View>
 
@@ -159,10 +159,8 @@ export default function ForgotPasswordScreen() {
               </Text>
             </Pressable>
 
-            <Pressable onPress={handleSendOtp} disabled={sendingOtp} className="mt-4 items-center">
-              <Text className="text-sm text-primary-900">
-                {sendingOtp ? "Sending..." : "Didn't get the code? Resend Code"}
-              </Text>
+            <Pressable onPress={() => setStep(1)} className="mt-4 items-center">
+              <Text className="text-sm text-primary-900">Didn&apos;t get the code? Send again</Text>
             </Pressable>
           </>
         )}

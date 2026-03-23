@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Slot, useRouter, useSegments } from "expo-router";
@@ -33,21 +33,12 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     initialize();
   }, [initialize]);
 
-  const wasAuthenticated = useRef(false);
-
   useEffect(() => {
     if (isLoading) return;
     if (isAuthenticated) {
-      wasAuthenticated.current = true;
       initChat();
     } else {
       disconnectChat();
-      // Only clear cache when transitioning FROM authenticated TO unauthenticated
-      // (not on initial mount when the user was never logged in)
-      if (wasAuthenticated.current) {
-        wasAuthenticated.current = false;
-        queryClient.clear();
-      }
     }
   }, [isAuthenticated, isLoading, initChat, disconnectChat]);
 

@@ -131,10 +131,6 @@ export default function JobDetailScreen() {
       Alert.alert("Required", "Please enter an amount and proposal.");
       return;
     }
-    if (isNaN(Number(bidAmount)) || Number(bidAmount) <= 0) {
-      Alert.alert("Invalid Amount", "Please enter a valid bid amount greater than zero.");
-      return;
-    }
     submitBidMutation.mutate({
       amount: Number(bidAmount),
       currency: "JMD",

@@ -87,8 +87,6 @@ api.interceptors.response.use(
       processQueue(refreshError, null);
       await SecureStore.deleteItemAsync("access_token");
       await SecureStore.deleteItemAsync("refresh_token");
-      // Tokens cleared above — AuthGuard in _layout.tsx will detect
-      // the missing token on next API call and redirect to login
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;

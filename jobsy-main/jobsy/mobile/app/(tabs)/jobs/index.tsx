@@ -266,8 +266,8 @@ export default function JobBoardScreen() {
   const editJobMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) => updateJobPost(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["myJobPosts"] });
-      queryClient.invalidateQueries({ queryKey: ["jobPosts"] });
+      queryClient.invalidateQueries({ queryKey: ['my-posts'] });
+      queryClient.invalidateQueries({ queryKey: ['job-posts'] });
       setEditingJob(null);
       Alert.alert('Success', 'Job post updated');
     },
@@ -277,8 +277,8 @@ export default function JobBoardScreen() {
   const deleteJobMutation = useMutation({
     mutationFn: (id: string) => deleteJobPost(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["myJobPosts"] });
-      queryClient.invalidateQueries({ queryKey: ["jobPosts"] });
+      queryClient.invalidateQueries({ queryKey: ['my-posts'] });
+      queryClient.invalidateQueries({ queryKey: ['job-posts'] });
       Alert.alert('Deleted', 'Job post has been cancelled');
     },
     onError: () => Alert.alert('Error', 'Failed to delete job post'),
