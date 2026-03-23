@@ -46,7 +46,7 @@ interface AuthState {
 function base64Decode(str: string): string {
   const chars =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-  let output = "";
+  const bytes: number[] = [];
   let i = 0;
   const input = str.replace(/[^A-Za-z0-9+/=]/g, "");
   while (i < input.length) {
@@ -54,14 +54,12 @@ function base64Decode(str: string): string {
     const enc2 = chars.indexOf(input.charAt(i++));
     const enc3 = chars.indexOf(input.charAt(i++));
     const enc4 = chars.indexOf(input.charAt(i++));
-    const chr1 = (enc1 << 2) | (enc2 >> 4);
-    const chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
-    const chr3 = ((enc3 & 3) << 6) | enc4;
-    output += String.fromCharCode(chr1);
-    if (enc3 !== 64) output += String.fromCharCode(chr2);
-    if (enc4 !== 64) output += String.fromCharCode(chr3);
+    bytes.push((enc1 << 2) | (enc2 >> 4));
+    if (enc3 !== 64) bytes.push(((enc2 & 15) << 4) | (enc3 >> 2));
+    if (enc4 !== 64) bytes.push(((enc3 & 3) << 6) | enc4);
   }
-  return decodeURIComponent(escape(output));
+  // Build string without deprecated escape() — safe for Hermes
+  return String.fromCharCode(...bytes);
 }
 
 function parseJwt(token: string): Record<string, unknown> | null {
