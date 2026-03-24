@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { apiGet, ApiError } from "@/lib/api";
+import { Briefcase, CalendarCheck, MessageCircle, Heart, Search } from "lucide-react";
+import { DashboardGreeting } from "../../../app/components/DashboardGreeting";
+import { ProfileStrengthBar } from "../../../app/components/ProfileStrengthBar";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -132,19 +135,28 @@ export default function DashboardPage() {
 
   const quickActions = isHirer
     ? [
-        { href: "/search", label: "Browse Providers", description: "Find service providers" },
-        { href: "/bookings", label: "View Bookings", description: "Manage your bookings" },
-        { href: "/messages", label: "Messages", description: "Check messages" },
+        { href: "/search", label: "Post a Job", description: "Find service providers", icon: Briefcase },
+        { href: "/bookings", label: "My Bookings", description: "Manage your bookings", icon: CalendarCheck },
+        { href: "/messages", label: "Messages (3)", description: "Check messages", icon: MessageCircle, badge: 3 },
+        { href: "/search/saved", label: "Saved Providers", description: "Your favorites", icon: Heart },
       ]
     : isProvider
       ? [
-          { href: "/search", label: "Browse Jobs", description: "Find available work" },
-          { href: "/bookings", label: "View Earnings", description: "Track your income" },
-          { href: "/messages", label: "Messages", description: "Check messages" },
+          { href: "/search", label: "Browse Jobs", description: "Find available work", icon: Search },
+          { href: "/bookings", label: "View Earnings", description: "Track your income", icon: CalendarCheck },
+          { href: "/messages", label: "Messages", description: "Check messages", icon: MessageCircle },
         ]
       : [
-          { href: "/messages", label: "Messages", description: "Check messages" },
+          { href: "/messages", label: "Messages", description: "Check messages", icon: MessageCircle },
         ];
+
+  const profileItems = [
+    { label: "Add a profile photo", done: true },
+    { label: "Verify your email", done: true },
+    { label: "Add your parish", done: true },
+    { label: "Complete your bio", done: false },
+    { label: "Add a payment method", done: false },
+  ];
 
   function formatDate(iso: string) {
     return new Date(iso).toLocaleDateString("en-JM", {
@@ -157,13 +169,11 @@ export default function DashboardPage() {
 
   return (
     <main className="mx-auto max-w-6xl space-y-8 px-4 py-8">
-      {/* Welcome */}
+      {/* Personalized Greeting */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">
-            Welcome back!
-          </h1>
-          <p className="mt-1 flex flex-wrap items-center gap-2 text-neutral-500">
+          <DashboardGreeting />
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-[var(--color-neutral-400)]">
             Viewing as{" "}
             <span
               className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${
@@ -177,7 +187,7 @@ export default function DashboardPage() {
 
         {/* Role switcher */}
         <div className="flex items-center gap-2">
-          <span className="text-sm text-neutral-500">Switch:</span>
+          <span className="text-sm text-[var(--color-neutral-400)]">Switch:</span>
           {["customer", "provider", "advertiser"].map((role) => (
             <button
               key={role}
@@ -188,8 +198,8 @@ export default function DashboardPage() {
               disabled={role === currentRole}
               className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition ${
                 role === currentRole
-                  ? "bg-brand-primary text-white shadow-sm"
-                  : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                  ? "bg-[var(--color-navy)] text-white shadow-sm"
+                  : "bg-[var(--color-neutral-100)] text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-200)]"
               } disabled:opacity-50`}
             >
               {ROLE_LABELS[role] ?? role}
@@ -198,26 +208,45 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Live Activity */}
+      <div className="flex items-center gap-2 rounded-[14px] border border-[var(--color-neutral-200)] bg-white px-4 py-3">
+        <span className="relative flex h-2.5 w-2.5">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+        </span>
+        <span className="text-sm text-[var(--color-neutral-400)]">
+          23 bookings completed today in Jamaica
+        </span>
+      </div>
+
       {/* Quick Actions */}
       <section>
-        <h2 className="mb-4 text-lg font-semibold text-neutral-800">
+        <h2 className="mb-4 text-lg font-semibold text-[var(--color-neutral-800)]">
           Quick Actions
         </h2>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-          {quickActions.map((action) => (
-            <Link
-              key={action.href + action.label}
-              href={action.href}
-              className="group flex flex-col items-center gap-2 rounded-xl border border-neutral-200 bg-white p-5 transition hover:border-brand-primary/30 hover:shadow-md"
-            >
-              <span className="text-sm font-medium text-neutral-800">
-                {action.label}
-              </span>
-              <span className="text-center text-xs text-neutral-500">
-                {action.description}
-              </span>
-            </Link>
-          ))}
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {quickActions.map((action) => {
+            const ActionIcon = action.icon;
+            return (
+              <Link
+                key={action.href + action.label}
+                href={action.href}
+                className="btn-press group relative flex flex-col items-center gap-3 rounded-[14px] border border-[var(--color-neutral-200)] bg-white p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)] hover:border-[var(--color-navy)]/20"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-[var(--color-navy-subtle)]">
+                  <ActionIcon className="h-5 w-5 text-[var(--color-navy)]" strokeWidth={1.5} />
+                </div>
+                <span className="text-sm font-medium text-[var(--color-neutral-800)]">
+                  {action.label}
+                </span>
+                {"badge" in action && action.badge ? (
+                  <span className="badge-pop absolute top-2 right-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--color-error)] px-1.5 text-[10px] font-bold text-white">
+                    {action.badge}
+                  </span>
+                ) : null}
+              </Link>
+            );
+          })}
         </div>
       </section>
 
@@ -303,6 +332,34 @@ export default function DashboardPage() {
           )}
         </div>
       </section>
+
+      {/* Continue Where You Left Off + Profile Strength */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Continue where you left off */}
+        <div className="rounded-[14px] border border-[var(--color-neutral-200)] bg-white p-6">
+          <h3 className="mb-4 font-semibold text-[var(--color-neutral-950)]">Continue where you left off</h3>
+          <div className="space-y-3">
+            {["Sparkle Clean JA", "PowerFix Solutions", "GreenThumb Jamaica"].map((name) => (
+              <Link
+                key={name}
+                href="/search"
+                className="flex items-center gap-3 rounded-[10px] border border-[var(--color-neutral-100)] p-3 transition-colors hover:bg-[var(--color-neutral-50)]"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-[var(--color-navy-subtle)] text-sm font-bold text-[var(--color-navy)]">
+                  {name.charAt(0)}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-[var(--color-neutral-950)]">{name}</p>
+                  <p className="text-xs text-[var(--color-neutral-400)]">Viewed recently</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Profile Strength */}
+        <ProfileStrengthBar items={profileItems} />
+      </div>
 
       {/* Role-specific CTA */}
       {isHirer && (

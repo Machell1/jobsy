@@ -14,6 +14,9 @@ import {
 import { CategoryTile } from "../components/CategoryTile";
 import { CategoryGradient } from "../components/CategoryGradient";
 import { HeroSearchForm } from "./hero-search-form";
+import { JamaicaFlag } from "../components/TwemojiFlag";
+import { SaveButton } from "../components/SaveButton";
+import { ProviderBadges } from "../components/ProviderBadges";
 
 export const metadata: Metadata = {
   title: "Jobsy — Jamaica's Premier Service Marketplace",
@@ -46,6 +49,9 @@ const FEATURED_PROVIDERS = [
     verified: true,
     responseHours: 1,
     bookedCount: 42,
+    isHot: true,
+    isNew: false,
+    isFast: true,
   },
   {
     id: "2",
@@ -59,6 +65,9 @@ const FEATURED_PROVIDERS = [
     verified: true,
     responseHours: 2,
     bookedCount: 31,
+    isHot: false,
+    isNew: false,
+    isFast: true,
   },
   {
     id: "3",
@@ -72,6 +81,9 @@ const FEATURED_PROVIDERS = [
     verified: true,
     responseHours: 3,
     bookedCount: 18,
+    isHot: false,
+    isNew: true,
+    isFast: false,
   },
   {
     id: "4",
@@ -85,6 +97,9 @@ const FEATURED_PROVIDERS = [
     verified: true,
     responseHours: 1,
     bookedCount: 56,
+    isHot: true,
+    isNew: false,
+    isFast: false,
   },
 ];
 
@@ -273,6 +288,19 @@ export default function HomePage() {
       </section>
 
       {/* ============================================================ */}
+      {/*  LIVE ACTIVITY                                               */}
+      {/* ============================================================ */}
+      <div className="flex items-center justify-center gap-2 py-4 bg-[var(--color-warm-white)]">
+        <span className="relative flex h-2.5 w-2.5">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+        </span>
+        <span className="text-sm text-[var(--color-neutral-400)]">
+          23 bookings completed today in Jamaica
+        </span>
+      </div>
+
+      {/* ============================================================ */}
       {/*  CATEGORIES                                                  */}
       {/* ============================================================ */}
       <section id="categories" className="bg-[var(--color-warm-white)] px-4 py-24">
@@ -334,6 +362,8 @@ export default function HomePage() {
                   <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-[var(--color-neutral-800)] shadow-[var(--shadow-xs)] backdrop-blur-sm">
                     {provider.category}
                   </span>
+                  {/* Save button (Heart) */}
+                  <SaveButton />
                 </div>
 
                 {/* Content */}
@@ -356,6 +386,17 @@ export default function HomePage() {
                   <p className="mt-1 text-sm text-[var(--color-neutral-600)]">
                     {provider.title}
                   </p>
+
+                  {/* Engagement badges */}
+                  {(provider.isHot || provider.isNew || provider.isFast) && (
+                    <div className="mt-2">
+                      <ProviderBadges
+                        isHot={provider.isHot}
+                        isNew={provider.isNew}
+                        isFast={provider.isFast}
+                      />
+                    </div>
+                  )}
 
                   {/* Location */}
                   <div className="mt-3 flex items-center gap-1.5 text-sm text-[var(--color-neutral-400)]">
@@ -630,7 +671,7 @@ export default function HomePage() {
               </div>
             </div>
             <p className="mt-6 text-center text-sm text-[var(--color-neutral-400)]">
-              Made with <span className="text-[#C8861A]">love</span> in Jamaica 🇯🇲
+              Made with <span className="text-[#C8861A]">love</span> in Jamaica <JamaicaFlag />
             </p>
           </div>
         </div>

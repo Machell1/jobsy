@@ -11,11 +11,15 @@
   --color-navy: #0F2556;
   --color-navy-hover: #0A1A3D;
   --color-navy-subtle: #EEF1F9;
+  --color-navy-muted: rgba(15, 37, 86, 0.7);
+  --color-navy-ghost: rgba(15, 37, 86, 0.08);
   --color-gold: #C8861A;
   --color-gold-light: #FEF3DC;
   --color-gold-bright: #F5A623;
+  --color-gold-hover: #B5780F;
   --color-emerald: #0A7B55;
   --color-emerald-light: #E6F5F0;
+  --color-emerald-hover: #066644;
 
   /* Warm Neutrals */
   --color-neutral-950: #0D0D0D;
@@ -27,11 +31,16 @@
   --color-neutral-50: #FAFAF8;
   --color-warm-white: #FFFFFF;
 
+  /* Warm Neutrals — extended */
+  --color-neutral-n700: #3D3D3D;
+  --color-neutral-n300: #C4C0BA;
+  --color-neutral-n50: #FAF9F7;
+
   /* Semantic */
   --color-success: #0A7B55;
   --color-warning: #C8861A;
   --color-error: #DC2626;
-  --color-info: #0F2556;
+  --color-info: #1971C2;
 
   /* Legacy compat — old brand tokens mapped to new palette */
   --color-brand-primary: #0F2556;
@@ -45,6 +54,7 @@
   --color-neutral-900: #111827;
 
   /* Radius */
+  --radius-xs: 4px;
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
@@ -57,6 +67,10 @@
   --shadow-md: 0 4px 12px rgb(15 37 86 / 0.08), 0 2px 4px rgb(15 37 86 / 0.04);
   --shadow-lg: 0 8px 24px rgb(15 37 86 / 0.10), 0 4px 8px rgb(15 37 86 / 0.06);
   --shadow-xl: 0 16px 40px rgb(15 37 86 / 0.12), 0 8px 16px rgb(15 37 86 / 0.07);
+  --shadow-focus: 0 0 0 3px rgba(15, 37, 86, 0.25);
+
+  /* Border */
+  --border-focus: 2px solid var(--color-navy);
 }
 
 /* ─── Easing Functions ─────────────────────────────────── */
@@ -65,6 +79,21 @@
   --ease-in-expo: cubic-bezier(0.7, 0, 0.84, 0);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Spacing scale (4px base) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+  --sp-20: 80px;
+  --sp-24: 96px;
+  --sp-32: 128px;
 }
 
 /* ─── Base Styles ──────────────────────────────────────── */
@@ -77,6 +106,22 @@ body {
 
 /* ─── Typography Classes ───────────────────────────────── */
 
+/* Display scale (d-*) */
+.d-2xl { font-family: var(--font-display); font-size: 4rem; line-height: 1.05; letter-spacing: -0.03em; font-weight: 700; }
+.d-xl  { font-family: var(--font-display); font-size: 3rem; line-height: 1.1; letter-spacing: -0.025em; font-weight: 700; }
+.d-lg  { font-family: var(--font-display); font-size: 2.25rem; line-height: 1.15; letter-spacing: -0.02em; font-weight: 600; }
+.d-md  { font-family: var(--font-display); font-size: 1.75rem; line-height: 1.2; letter-spacing: -0.015em; font-weight: 600; }
+.d-sm  { font-family: var(--font-display); font-size: 1.25rem; line-height: 1.3; letter-spacing: -0.01em; font-weight: 600; }
+
+/* Text scale (t-*) */
+.t-xl  { font-size: 1.25rem; line-height: 1.5; }
+.t-lg  { font-size: 1.125rem; line-height: 1.5; }
+.t-md  { font-size: 1rem; line-height: 1.5; }
+.t-sm  { font-size: 0.875rem; line-height: 1.5; }
+.t-xs  { font-size: 0.75rem; line-height: 1.5; }
+.t-price { font-variant-numeric: tabular-nums; }
+
+/* Legacy aliases */
 .type-display-2xl { font-family: var(--font-display); font-size: 4rem; line-height: 1.05; letter-spacing: -0.03em; font-weight: 700; }
 .type-display-xl { font-family: var(--font-display); font-size: 3rem; line-height: 1.1; letter-spacing: -0.025em; font-weight: 700; }
 .type-display-lg { font-family: var(--font-display); font-size: 2.25rem; line-height: 1.15; letter-spacing: -0.02em; font-weight: 600; }
@@ -134,6 +179,29 @@ body {
 }
 .cover-image {
   transition: transform 400ms var(--ease-out-expo);
+}
+
+/* Heart save animation */
+@keyframes heart-fill {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.3); }
+  50% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+.heart-saved {
+  animation: heart-fill 300ms var(--ease-spring) both;
+  color: var(--color-gold) !important;
+  fill: var(--color-gold);
+}
+
+/* Notification badge pop */
+@keyframes badge-pop {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+.badge-pop {
+  animation: badge-pop 200ms var(--ease-spring) both;
 }
 
 /* ─── Focus Styles ─────────────────────────────────────── */
