@@ -76,6 +76,10 @@ interface ProviderGridProps {
   filter?: string;
 }
 
+export function HomepageProviders() {
+  return <ProviderGrid />;
+}
+
 export function ProviderGrid({ filter = "All" }: ProviderGridProps) {
   const [saved, setSaved] = useState<Set<string>>(new Set());
 

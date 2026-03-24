@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, Instrument_Sans } from "next/font/google";
+import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
 const bricolage = Bricolage_Grotesque({
@@ -30,8 +31,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${bricolage.variable} ${instrument.variable}`}>
-      <body className="font-body antialiased">{children}</body>
+    <html lang="en" className={`${bricolage.variable} ${instrument.variable}`} suppressHydrationWarning>
+      <body className="font-body antialiased">
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   );
 }
