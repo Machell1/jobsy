@@ -1,16 +1,15 @@
 import type { Metadata } from "next";
-import { Fraunces, DM_Sans } from "next/font/google";
+import { Bricolage_Grotesque, Instrument_Sans } from "next/font/google";
 import "./globals.css";
 
-const fraunces = Fraunces({
+const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
   variable: "--font-display",
-  weight: ["400", "600", "700", "900"],
-  style: ["normal", "italic"],
+  weight: ["400", "600", "700", "800"],
   display: "swap",
 });
 
-const dmSans = DM_Sans({
+const instrument = Instrument_Sans({
   subsets: ["latin"],
   variable: "--font-body",
   weight: ["400", "500", "600", "700"],
@@ -18,11 +17,10 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Jobsy — Jamaica's Premier Service Marketplace",
-  description:
-    "Find and book trusted local service providers across Jamaica. From plumbing to beauty, connect with skilled professionals in every parish.",
+  title: "Jobsy — Jamaica's Service Marketplace",
+  description: "Find and book trusted local service providers across every parish in Jamaica.",
   openGraph: {
-    title: "Jobsy — Jamaica's Premier Service Marketplace",
+    title: "Jobsy — Jamaica's Service Marketplace",
     description: "Find trusted service providers across every parish in Jamaica.",
     url: "https://jobsyja.com",
     siteName: "Jobsy",
@@ -30,14 +28,10 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${dmSans.variable}`}>
-      <body className="font-body antialiased bg-warm-white text-neutral-950">
-        {children}
-      </body>
+    <html lang="en" className={`${bricolage.variable} ${instrument.variable}`}>
+      <body className="font-body antialiased">{children}</body>
     </html>
   );
 }
