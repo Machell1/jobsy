@@ -29,8 +29,6 @@
         "NSLocationAlwaysUsageDescription": "Jobsy uses your location to find nearby service providers",
         "NSPhotoLibraryAddUsageDescription": "Jobsy needs permission to save images to your photo library",
         "NSMicrophoneUsageDescription": "Jobsy needs microphone access to record audio for video uploads",
-        "NSCalendarsUsageDescription": "Jobsy uses your calendar to add booking reminders",
-        "NSCalendarsFullAccessUsageDescription": "Jobsy uses your calendar to add booking reminders",
         "ITSAppUsesNonExemptEncryption": false
       },
       "config": {
@@ -76,9 +74,9 @@
           },
           "android": {
             "minSdkVersion": 24,
-            "compileSdkVersion": 36,
+            "compileSdkVersion": 35,
             "targetSdkVersion": 35,
-            "buildToolsVersion": "36.0.0"
+            "buildToolsVersion": "35.0.0"
           }
         }
       ],
@@ -91,12 +89,17 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/splash.png",
-          "backgroundColor": "#01696F",
-          "imageWidth": 200
+          "backgroundColor": "#01696F"
         }
       ],
       "expo-font",
+      [
+        "@rnmapbox/maps",
+        {
+          "RNMapboxMapsImpl": "mapbox",
+          "RNMapboxMapsDownloadToken": "sk.eyJ1Ijoiam9ic3kxIiwiYSI6ImNtbXFqdDVoaTB6Y3EycXBzOXBuZXVrOXoifQ.aajUPUxtdM9XHKgHEDN-cA"
+        }
+      ],
       [
         "@stripe/stripe-react-native",
         {
@@ -104,8 +107,7 @@
         }
       ],
       "expo-sharing",
-      "expo-web-browser",
-      "expo-calendar"
+      "expo-web-browser"
     ],
     "web": {
       "bundler": "metro",

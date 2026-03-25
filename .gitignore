@@ -77,3 +77,4 @@ credentials.json
 
 # Build outputs
 *.tsbuildinfo
+.github/

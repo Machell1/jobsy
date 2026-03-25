@@ -46,9 +46,9 @@
         "appleId": "williamsmachell@gmail.com",
         "ascAppId": "6760623768",
         "appleTeamId": "K6TZR6QQGS",
-        "ascApiKeyPath": "./AuthKey_49M47UJQQD.p8",
+        "ascApiKeyPath": "./AuthKey_7M4M4MG3CH.p8",
         "ascApiKeyIssuerId": "942e1253-2c7a-4216-a3cb-29364038d1e9",
-        "ascApiKeyId": "49M47UJQQD"
+        "ascApiKeyId": "7M4M4MG3CH"
       },
       "android": {
         "serviceAccountKeyPath": "./play-store-key.json",
