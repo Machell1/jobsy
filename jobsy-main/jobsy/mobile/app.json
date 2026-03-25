@@ -29,6 +29,8 @@
         "NSLocationAlwaysUsageDescription": "Jobsy uses your location to find nearby service providers",
         "NSPhotoLibraryAddUsageDescription": "Jobsy needs permission to save images to your photo library",
         "NSMicrophoneUsageDescription": "Jobsy needs microphone access to record audio for video uploads",
+        "NSCalendarsUsageDescription": "Jobsy uses your calendar to add booking reminders",
+        "NSCalendarsFullAccessUsageDescription": "Jobsy uses your calendar to add booking reminders",
         "ITSAppUsesNonExemptEncryption": false
       },
       "config": {
@@ -102,7 +104,8 @@
         }
       ],
       "expo-sharing",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-calendar"
     ],
     "web": {
       "bundler": "metro",
