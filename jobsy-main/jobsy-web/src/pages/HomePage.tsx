@@ -22,6 +22,7 @@ import {
   ChevronRight,
   Quote,
 } from 'lucide-react'
+import { API_BASE } from '../lib/api'
 import SEO from '../components/SEO'
 import Button from '../components/ui/Button'
 import { Card, CardContent } from '../components/ui/Card'
@@ -177,7 +178,7 @@ function AdBanner() {
   const impressionTracked = useRef(false)
 
   useEffect(() => {
-    fetch('https://api.jobsyja.com/api/ads/serve/home_banner')
+    fetch(`${API_BASE}/api/ads/serve/home_banner`)
       .then(r => r.json())
       .then(data => {
         if (data.ad) {
@@ -193,7 +194,7 @@ function AdBanner() {
   if (!ad || !ad.creative_url) return null
 
   const handleClick = () => {
-    fetch(`https://api.jobsyja.com/api/ads/click/${ad.id}`, { method: 'POST' }).catch(() => {})
+    fetch(`${API_BASE}/api/ads/click/${ad.id}`, { method: 'POST' }).catch(() => {})
     if (ad.click_url) {
       window.open(ad.click_url, '_blank', 'noopener,noreferrer')
     }

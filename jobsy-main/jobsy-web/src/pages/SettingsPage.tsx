@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiGet, apiPut, apiPost, apiDelete, ApiError } from '../lib/api'
+import { apiGet, apiPut, apiPost, apiDelete, ApiError, API_BASE } from '../lib/api'
 import {
   Settings,
   User,
@@ -146,7 +146,7 @@ export default function SettingsPage() {
   const handleExportData = async () => {
     setIsExporting(true)
     try {
-      const res = await fetch(`https://api.jobsyja.com/auth/me/export`, {
+      const res = await fetch(`${API_BASE}/auth/me/export`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (!res.ok) {

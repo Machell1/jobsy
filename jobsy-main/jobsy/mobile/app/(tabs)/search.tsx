@@ -69,7 +69,7 @@ export default function SearchScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [availabilityFilter, setAvailabilityFilter] = useState<"today" | "this_week" | null>(null);
   const [searchTab, setSearchTab] = useState<SearchTab>("services");
-  const debounceTimer = useRef<ReturnType<typeof setTimeout>>();
+  const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const [showSavedModal, setShowSavedModal] = useState(false);
 

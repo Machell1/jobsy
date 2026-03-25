@@ -250,7 +250,7 @@ export default function PaymentsScreen() {
                 {item.destination && (
                   <Text className="text-sm text-dark-500">{item.destination}</Text>
                 )}
-                <Text className="text-xs text-dark-400 mt-1">{formatDate(item.created_at || item.initiated_at)}</Text>
+                <Text className="text-xs text-dark-400 mt-1">{formatDate((item.created_at || item.initiated_at) ?? "")}</Text>
               </View>
             );
           }}

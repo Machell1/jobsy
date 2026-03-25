@@ -249,7 +249,7 @@ function getStepsForUser(user: { activeRole?: string; role?: string } | null): {
   required: string[];
 } {
   // Mobile auth store doesn't expose account_type yet — default to individual
-  const accountType = "individual";
+  const accountType: string = "individual";
   const role = user?.activeRole || user?.role || "user";
   const isHirer = role === "user" || role === "hirer";
 

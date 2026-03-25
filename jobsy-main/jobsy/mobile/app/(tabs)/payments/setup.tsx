@@ -253,7 +253,7 @@ export default function PaymentSetupScreen() {
                           <Text className="text-xs text-dark-400">{payout.destination}</Text>
                         )}
                         <Text className="text-xs text-dark-400 mt-1">
-                          {formatDate(payout.created_at || payout.initiated_at)}
+                          {formatDate((payout.created_at || payout.initiated_at) ?? "")}
                         </Text>
                       </View>
                     );

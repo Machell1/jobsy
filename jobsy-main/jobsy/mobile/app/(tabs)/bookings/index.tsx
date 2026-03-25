@@ -182,7 +182,7 @@ export default function BookingsScreen() {
   const rescheduleMutation = useMutation({
     mutationFn: () =>
       rescheduleBooking(reschedulingBooking!.id, {
-        scheduled_date: rescheduleDate.trim() || undefined,
+        scheduled_date: rescheduleDate.trim() ?? "",
         scheduled_time_start: rescheduleTime.trim() || undefined,
         note: rescheduleNote.trim() || undefined,
       }),

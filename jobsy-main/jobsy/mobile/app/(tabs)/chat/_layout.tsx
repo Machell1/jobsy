@@ -30,9 +30,9 @@ export default function ChatLayout() {
   }
 
   return (
-    <OverlayProvider style={STREAM_THEME}>
+    <OverlayProvider>
       {/* @ts-expect-error stream-chat dual-package generics mismatch */}
-      <Chat client={client}>
+      <Chat client={client} style={STREAM_THEME}>
         <Stack screenOptions={{ headerShown: true }} />
       </Chat>
     </OverlayProvider>

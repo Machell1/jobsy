@@ -240,7 +240,7 @@ export default function ProfileScreen() {
   });
 
   const updatePortfolioMutation = useMutation({
-    mutationFn: () => updatePortfolioItem(editingPortfolioItem.id, { title: portfolioTitle.trim(), description: portfolioDescription.trim() || undefined, image_url: portfolioImageUrl.trim() || undefined }),
+    mutationFn: () => updatePortfolioItem(editingPortfolioItem!.id, { title: portfolioTitle.trim(), description: portfolioDescription.trim() || undefined, image_url: portfolioImageUrl.trim() || undefined }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-portfolio'] });
       resetPortfolioForm();
@@ -257,7 +257,7 @@ export default function ProfileScreen() {
 
   // Services mutations
   const createServiceMutation = useMutation({
-    mutationFn: () => createService({ title: serviceTitle.trim(), description: serviceDescription.trim() || undefined, base_price: servicePrice ? parseFloat(servicePrice) : undefined }),
+    mutationFn: () => createService({ name: serviceTitle.trim(), description: serviceDescription.trim() || undefined, price: servicePrice ? parseFloat(servicePrice) : undefined }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-services'] });
       resetServiceForm();
@@ -267,7 +267,7 @@ export default function ProfileScreen() {
   });
 
   const updateServiceMutation = useMutation({
-    mutationFn: () => updateService(editingService.id, { title: serviceTitle.trim(), description: serviceDescription.trim() || undefined, base_price: servicePrice ? parseFloat(servicePrice) : undefined }),
+    mutationFn: () => updateService(editingService!.id, { name: serviceTitle.trim(), description: serviceDescription.trim() || undefined, price: servicePrice ? parseFloat(servicePrice) : undefined }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-services'] });
       resetServiceForm();
@@ -284,7 +284,7 @@ export default function ProfileScreen() {
 
   // Availability mutation
   const updateAvailabilityMutation = useMutation({
-    mutationFn: () => updateAvailability({ schedule: availSchedule }),
+    mutationFn: () => updateAvailability({ slots: Object.entries(availSchedule).filter(([, v]) => v.available).map(([day, v]) => ({ day, start_time: v.start, end_time: v.end, is_available: v.available })) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-availability'] });
       setShowAvailabilityModal(false);
