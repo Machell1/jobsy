@@ -89,7 +89,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#01696F"
+          "image": "./assets/splash.png",
+          "backgroundColor": "#01696F",
+          "imageWidth": 200
         }
       ],
       "expo-font",
