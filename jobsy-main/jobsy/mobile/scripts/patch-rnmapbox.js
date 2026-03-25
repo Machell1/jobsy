@@ -73,4 +73,54 @@ if (fs.existsSync(tsSpecFile)) {
   }
 }
 
+// Fix 5: Patch RNMBXLocationModule.kt to implement missing onLocationUpdate abstract method
+// and fix the emitOnLocationUpdate reference
+const ktFile = path.join(mapboxRoot,
+  'android', 'src', 'main', 'java', 'com', 'rnmapbox', 'rnmbx',
+  'modules', 'RNMBXLocationModule.kt');
+
+if (fs.existsSync(ktFile)) {
+  let content = fs.readFileSync(ktFile, 'utf8');
+  let patched = false;
+
+  // Add missing onLocationUpdate implementation if not present
+  if (!content.includes('override fun onLocationUpdate(callback: Callback?)')) {
+    // Find the class body opening and add the missing method
+    content = content.replace(
+      /class RNMBXLocationModule\([^)]*\)\s*:\s*NativeRNMBXLocationModuleSpec\([^)]*\)\s*\{/,
+      (match) => `${match}\n\n  override fun onLocationUpdate(callback: Callback?) {\n    mEventEmitterCallback = callback\n  }\n`
+    );
+    patched = true;
+  }
+
+  // Fix emitOnLocationUpdate references — replace with direct callback invocation
+  if (content.includes('emitOnLocationUpdate') && !content.includes('fun emitOnLocationUpdate')) {
+    content = content.replace(
+      /emitOnLocationUpdate\(([^)]+)\)/g,
+      'mEventEmitterCallback?.invoke("onLocationUpdate", $1)'
+    );
+    patched = true;
+  }
+
+  if (patched) {
+    fs.writeFileSync(ktFile, content);
+    console.log('[patch-rnmapbox] Patched RNMBXLocationModule.kt');
+  } else {
+    console.log('[patch-rnmapbox] RNMBXLocationModule.kt already patched or not needed');
+  }
+} else {
+  console.log('[patch-rnmapbox] RNMBXLocationModule.kt not found (checking alternative paths)');
+  // Try alternative path structure
+  const altPaths = [
+    path.join(mapboxRoot, 'android', 'src', 'main', 'java', 'com', 'mapbox', 'rctmgl', 'modules', 'RNMBXLocationModule.kt'),
+    path.join(mapboxRoot, 'android', 'src', 'main', 'kotlin', 'com', 'rnmapbox', 'rnmbx', 'modules', 'RNMBXLocationModule.kt'),
+  ];
+  for (const alt of altPaths) {
+    if (fs.existsSync(alt)) {
+      console.log('[patch-rnmapbox] Found at:', alt);
+      break;
+    }
+  }
+}
+
 console.log('[patch-rnmapbox] Patch applied successfully');
