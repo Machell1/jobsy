@@ -11,3 +11,4 @@ web-build/
 .env
 .env.local
 AuthKey_*.p8
+play-store-key.json

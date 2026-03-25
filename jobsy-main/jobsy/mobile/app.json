@@ -94,13 +94,6 @@
       ],
       "expo-font",
       [
-        "@rnmapbox/maps",
-        {
-          "RNMapboxMapsImpl": "mapbox",
-          "RNMapboxMapsDownloadToken": "sk.eyJ1Ijoiam9ic3kxIiwiYSI6ImNtbXFqdDVoaTB6Y3EycXBzOXBuZXVrOXoifQ.aajUPUxtdM9XHKgHEDN-cA"
-        }
-      ],
-      [
         "@stripe/stripe-react-native",
         {
           "enableGooglePay": true
