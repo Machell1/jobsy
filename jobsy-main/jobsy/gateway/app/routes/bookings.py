@@ -412,6 +412,8 @@ async def update_booking_status(
         "booking.status_changed",
         {
             "booking_id": booking.id,
+            "customer_id": booking.customer_id,
+            "provider_id": booking.provider_id,
             "from_status": old_status,
             "to_status": data.status,
             "actor_id": user_id,

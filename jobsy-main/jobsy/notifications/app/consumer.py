@@ -132,6 +132,74 @@ async def handle_listing_expired(payload: dict) -> None:
     logger.info("Expiry notification sent for listing %s", listing_id)
 
 
+async def handle_booking_created(payload: dict) -> None:
+    """Notify the provider when a new booking inquiry is created."""
+    data = payload.get("data", {})
+    booking_id = data.get("booking_id")
+    customer_id = data.get("customer_id")
+    provider_id = data.get("provider_id")
+
+    if not provider_id:
+        return
+
+    title = "New Booking Request"
+    body = "You have a new booking inquiry. Check it now and send a quote."
+    notif_data = {"type": "booking_created", "booking_id": booking_id}
+
+    tokens = await _get_user_tokens(provider_id)
+    sent = await send_push_to_user(tokens, title, body, notif_data)
+    await _log_notification(provider_id, title, body, "booking_created", notif_data, delivered=sent > 0)
+
+    logger.info("Booking created notification sent to provider %s for booking %s", provider_id, booking_id)
+
+
+async def handle_booking_status_changed(payload: dict) -> None:
+    """Notify the relevant party when a booking status changes."""
+    data = payload.get("data", {})
+    booking_id = data.get("booking_id")
+    from_status = data.get("from_status", "")
+    to_status = data.get("to_status", "")
+    actor_id = data.get("actor_id")
+    customer_id = data.get("customer_id")
+    provider_id = data.get("provider_id")
+
+    # Map each status to (title, body, who_to_notify: "customer"|"provider"|"other")
+    STATUS_MESSAGES: dict[str, tuple[str, str, str]] = {
+        "quote_sent": ("Quote Received", "Your provider sent a quote. Review and accept to confirm.", "customer"),
+        "quote_accepted": ("Quote Accepted", "Your quote was accepted! Confirm the booking.", "provider"),
+        "booking_confirmed": ("Booking Confirmed", "Your booking has been confirmed.", "customer"),
+        "in_progress": ("Job Started", "Your service provider has started the job.", "customer"),
+        "completed": ("Job Completed", "The job is complete. Please leave a review!", "customer"),
+        "cancelled": ("Booking Cancelled", "A booking has been cancelled.", "other"),
+    }
+
+    if to_status not in STATUS_MESSAGES:
+        return
+
+    msg_title, msg_body, notify_role = STATUS_MESSAGES[to_status]
+
+    if notify_role == "customer":
+        recipient_id = customer_id
+    elif notify_role == "provider":
+        recipient_id = provider_id
+    else:
+        # Notify the party that did NOT cancel
+        recipient_id = provider_id if actor_id == customer_id else customer_id
+
+    if not recipient_id:
+        return
+
+    notif_data = {"type": "booking_status", "booking_id": booking_id, "status": to_status}
+    tokens = await _get_user_tokens(recipient_id)
+    sent = await send_push_to_user(tokens, msg_title, msg_body, notif_data)
+    await _log_notification(recipient_id, msg_title, msg_body, "booking_status", notif_data, delivered=sent > 0)
+
+    logger.info(
+        "Booking status notification sent to %s: %s → %s (booking %s)",
+        recipient_id, from_status, to_status, booking_id,
+    )
+
+
 async def start_consumers() -> None:
     """Start all notification event consumers."""
     logger.info("Starting notification consumers...")
@@ -139,4 +207,6 @@ async def start_consumers() -> None:
         consume_events("notifications.match_created", "match.created", handle_match_created),
         consume_events("notifications.message_new", "message.new", handle_new_message),
         consume_events("notifications.listing_expired", "listing.expired", handle_listing_expired),
+        consume_events("notifications.booking_created", "booking.created", handle_booking_created),
+        consume_events("notifications.booking_status", "booking.status_changed", handle_booking_status_changed),
     )

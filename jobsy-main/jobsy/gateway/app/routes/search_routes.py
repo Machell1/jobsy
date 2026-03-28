@@ -97,6 +97,7 @@ async def search_listings_endpoint(
 async def search_profiles_endpoint(
     q: str = Query(default="", description="Search query"),
     parish: str | None = None,
+    category: str | None = None,
     skills: str | None = Query(default=None, description="Comma-separated skills"),
     min_rating: float | None = None,
     max_rating: float | None = None,
@@ -115,6 +116,7 @@ async def search_profiles_endpoint(
         query=q,
         parish=parish,
         skills=skill_list,
+        category=category,
         limit=limit,
         offset=offset,
     )

@@ -222,6 +222,7 @@ async def _fallback_search_profiles(
     query: str,
     parish: str | None = None,
     skills: list[str] | None = None,
+    category: str | None = None,
     limit: int = 20,
     offset: int = 0,
 ) -> dict:
@@ -240,6 +241,9 @@ async def _fallback_search_profiles(
         if parish:
             conditions.append("parish = :parish")
             params["parish"] = parish
+        if category:
+            conditions.append("service_category ILIKE :category")
+            params["category"] = category
 
         where = " AND ".join(conditions)
 
@@ -373,6 +377,7 @@ async def search_profiles(
     query: str,
     parish: str | None = None,
     skills: list[str] | None = None,
+    category: str | None = None,
     limit: int = 20,
     offset: int = 0,
 ) -> dict:
@@ -384,6 +389,7 @@ async def search_profiles(
             query=query,
             parish=parish,
             skills=skills,
+            category=category,
             limit=limit,
             offset=offset,
         )
@@ -407,6 +413,8 @@ async def search_profiles(
     if skills:
         for skill in skills:
             filter_clauses.append({"term": {"skills": skill}})
+    if category:
+        filter_clauses.append({"match": {"service_category": {"query": category, "operator": "and"}}})
 
     body = {
         "query": {

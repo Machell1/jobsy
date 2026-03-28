@@ -708,7 +708,7 @@ export default function SearchPage() {
                 </div>
 
                 {/* Skills */}
-                {item.skills && item.skills.length > 0 && (
+                {Array.isArray(item.skills) && item.skills.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-3">
                     {item.skills.slice(0, 4).map(skill => (
                       <span key={skill} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px]">

@@ -113,6 +113,7 @@ _PROFILE_COLUMNS = (
 
 def _serialize_profile(row) -> dict:
     """Convert a profile DB row to JSON-safe dict."""
+    import json as _json
     d = dict(row._mapping)
     for k, v in d.items():
         if isinstance(v, UUID):
@@ -121,6 +122,11 @@ def _serialize_profile(row) -> dict:
             d[k] = float(v)
         elif isinstance(v, (datetime, date)):
             d[k] = v.isoformat()
+        elif k in ("skills", "photos") and isinstance(v, str):
+            try:
+                d[k] = _json.loads(v)
+            except (ValueError, TypeError):
+                d[k] = []
     return d
 
 
