@@ -1,11 +1,12 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #1B5E20;
-  --color-primary-dark: #0D3B0E;
-  --color-primary-light: #4CAF50;
-  --color-gold: #FFD700;
-  --color-gold-dark: #B8860B;
+  --color-primary: #059669;
+  --color-primary-dark: #047857;
+  --color-primary-light: #34d399;
+  --color-gold: #D97706;
+  --color-gold-dark: #B45309;
+  --color-gold-light: #FCD34D;
 }
 
 body {
@@ -23,4 +24,15 @@ body {
 a {
   text-decoration: none;
   color: inherit;
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid #059669;
+  outline-offset: 2px;
 }

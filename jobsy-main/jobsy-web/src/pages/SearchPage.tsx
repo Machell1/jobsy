@@ -10,6 +10,37 @@ import {
 } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function formatJMD(amount: number): string {
+  return `J$${amount.toLocaleString('en-JM')}`
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  plumbing: 'from-blue-400 to-blue-600',
+  electrical: 'from-yellow-400 to-orange-500',
+  cleaning: 'from-teal-400 to-cyan-600',
+  beauty: 'from-pink-400 to-rose-600',
+  carpentry: 'from-orange-400 to-amber-600',
+  painting: 'from-purple-400 to-violet-600',
+  landscaping: 'from-green-400 to-emerald-600',
+  'auto repair': 'from-red-400 to-red-600',
+  construction: 'from-stone-400 to-stone-600',
+  catering: 'from-orange-300 to-amber-500',
+  photography: 'from-indigo-400 to-blue-600',
+  tutoring: 'from-sky-400 to-blue-600',
+}
+
+function getCategoryGradient(cat?: string): string {
+  const key = (cat ?? '').toLowerCase()
+  for (const [k, v] of Object.entries(CATEGORY_COLORS)) {
+    if (key.includes(k)) return v
+  }
+  return 'from-emerald-400 to-green-600'
+}
+
+// ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
@@ -645,41 +676,56 @@ export default function SearchPage() {
       {/* Results Grid */}
       {!isLoading && !isError && results.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {results.map(item => (
+          {results.map(item => {
+            const rating = getRating(item)
+            const reviewCount = getReviewCount(item)
+            const gradient = getCategoryGradient(item.category)
+            const isNew = reviewCount === 0
+            return (
             <div
               key={item.id}
-              className="bg-white rounded-lg border border-gray-200 hover:shadow-md hover:border-primary/30 transition overflow-hidden"
+              className="bg-white rounded-xl border border-gray-200 hover:shadow-lg hover:border-[#059669]/30 transition overflow-hidden group"
             >
-              <div className="p-4">
-                {/* Avatar + Name Row */}
-                <div className="flex items-start gap-3">
-                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    {item.avatar_url ? (
-                      <img src={item.avatar_url} alt="" className="h-12 w-12 rounded-full object-cover" />
-                    ) : (
-                      <User className="h-6 w-6 text-primary" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <h3 className="font-semibold text-gray-900 text-sm truncate">
-                        {item.display_name}
-                      </h3>
-                      {item.is_verified && <ShieldCheck className="h-3.5 w-3.5 text-primary shrink-0" />}
-                      {item.background_checked && <ShieldCheck className="h-3.5 w-3.5 text-green-600 shrink-0" />}
+              {/* Gradient banner */}
+              <div className={`h-20 bg-gradient-to-br ${gradient} relative flex items-end px-4 pb-2`}>
+                {/* Avatar */}
+                <div className="absolute -bottom-5 left-4 h-12 w-12 rounded-full border-2 border-white shadow-md bg-white">
+                  {item.avatar_url ? (
+                    <img src={item.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
+                  ) : (
+                    <div className={`h-full w-full rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
+                      <User className="h-5 w-5 text-white" />
                     </div>
-                    {item.level && item.level > 0 && (
-                      <div className="mt-0.5">
-                        <ProviderLevelBadge level={item.level} size="sm" />
-                      </div>
-                    )}
-                  </div>
+                  )}
+                </div>
+                {/* New / Featured badge */}
+                {isNew && (
+                  <span className="absolute top-2 right-2 bg-[#D97706] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    New
+                  </span>
+                )}
+              </div>
+
+              <div className="p-4 pt-7">
+                {/* Name + Verified */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <h3 className="font-semibold text-gray-900 text-sm truncate">
+                    {item.display_name}
+                  </h3>
+                  {item.is_verified && <ShieldCheck className="h-3.5 w-3.5 text-[#059669] shrink-0" aria-label="ID Verified" />}
+                  {item.background_checked && <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" aria-label="Background Checked" />}
                 </div>
 
+                {item.level && item.level > 0 && (
+                  <div className="mt-0.5">
+                    <ProviderLevelBadge level={item.level} size="sm" />
+                  </div>
+                )}
+
                 {/* Category + Parish */}
-                <div className="flex items-center gap-2 mt-3 flex-wrap">
+                <div className="flex items-center gap-2 mt-2.5 flex-wrap">
                   {item.category && (
-                    <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-medium">
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-semibold">
                       {item.category}
                     </span>
                   )}
@@ -694,30 +740,34 @@ export default function SearchPage() {
                 {/* Rating */}
                 <div className="flex items-center justify-between mt-3">
                   <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                    <span className="font-semibold text-sm">{getRating(item).toFixed(1)}</span>
-                    <span className="text-xs text-gray-500">
-                      ({getReviewCount(item)} {getReviewCount(item) === 1 ? 'review' : 'reviews'})
-                    </span>
+                    {isNew ? (
+                      <span className="text-xs text-gray-400 italic">No reviews yet</span>
+                    ) : (
+                      <>
+                        <Star className="h-3.5 w-3.5 text-[#D97706] fill-[#D97706]" />
+                        <span className="font-semibold text-sm">{rating.toFixed(1)}</span>
+                        <span className="text-xs text-gray-400">({reviewCount})</span>
+                      </>
+                    )}
                   </div>
                   {item.starting_price != null && (
-                    <span className="text-sm font-semibold text-gray-900">
-                      ${item.starting_price.toLocaleString()}
+                    <span className="text-sm font-bold text-[#059669]">
+                      {formatJMD(item.starting_price)}
                     </span>
                   )}
                 </div>
 
                 {/* Skills */}
                 {Array.isArray(item.skills) && item.skills.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-3">
-                    {item.skills.slice(0, 4).map(skill => (
+                  <div className="flex flex-wrap gap-1 mt-2.5">
+                    {item.skills.slice(0, 3).map(skill => (
                       <span key={skill} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px]">
                         {skill}
                       </span>
                     ))}
-                    {item.skills.length > 4 && (
+                    {item.skills.length > 3 && (
                       <span className="px-2 py-0.5 text-gray-400 text-[10px]">
-                        +{item.skills.length - 4}
+                        +{item.skills.length - 3}
                       </span>
                     )}
                   </div>
@@ -727,12 +777,13 @@ export default function SearchPage() {
               {/* View Profile Button */}
               <Link
                 to={`/provider/${item.id}`}
-                className="block text-center py-2.5 border-t border-gray-100 text-primary text-sm font-medium hover:bg-primary/5 transition"
+                className="block text-center py-2.5 border-t border-gray-100 text-[#059669] text-sm font-semibold hover:bg-emerald-50 transition"
               >
-                View Profile
+                View Profile →
               </Link>
             </div>
-          ))}
+          )})}
+
         </div>
       )}
 
