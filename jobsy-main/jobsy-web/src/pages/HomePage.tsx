@@ -89,9 +89,9 @@ const HOW_IT_WORKS = [
     step: '2',
   },
   {
-    icon: CheckCircle2,
-    title: 'Done',
-    description: 'Get the job done and pay securely. Leave a review to help the community.',
+    icon: CreditCard,
+    title: 'Pay Securely',
+    description: 'Pay through Jobsy with secure NCB-powered payments. Leave a review to help the community.',
     step: '3',
   },
 ]
@@ -319,7 +319,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="-mx-4 -mt-6">
+    <div>
       <SEO
         title="Jobsy — Jamaica's Service Marketplace"
         description="Find trusted service providers across Jamaica. From home repairs to personal care — book verified professionals in your parish."
@@ -392,7 +392,7 @@ export default function HomePage() {
             </span>
             <span className="flex items-center gap-1.5">
               <CreditCard className="h-4 w-4 text-[#FCD34D]" />
-              Secure Payments
+              Secure Payments via NCB
             </span>
           </div>
         </div>
@@ -612,82 +612,25 @@ export default function HomePage() {
               Join thousands of Jamaicans already connecting with trusted service providers on Jobsy.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link to="/search">
-                <button className="bg-white text-[#059669] hover:bg-gray-50 font-semibold px-7 py-3 rounded-lg transition flex items-center gap-2 text-sm shadow">
-                  <Search className="h-4 w-4" />
-                  Find a Service
-                </button>
+              <Link
+                to="/search"
+                className="bg-white text-[#059669] hover:bg-gray-50 font-semibold px-7 py-3 rounded-lg transition inline-flex items-center gap-2 text-sm shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              >
+                <Search className="h-4 w-4" aria-hidden="true" />
+                Find a Service
               </Link>
-              <Link to="/register?role=provider">
-                <button className="bg-transparent border-2 border-white/60 hover:border-white text-white font-semibold px-7 py-3 rounded-lg transition flex items-center gap-2 text-sm hover:bg-white/10">
-                  <ArrowRight className="h-4 w-4" />
-                  Become a Provider
-                </button>
+              <Link
+                to="/register?role=provider"
+                className="bg-transparent border-2 border-white/60 hover:border-white text-white font-semibold px-7 py-3 rounded-lg transition inline-flex items-center gap-2 text-sm hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              >
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                Become a Provider
               </Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ============================================================ */}
-      {/*  FOOTER                                                      */}
-      {/* ============================================================ */}
-      <footer className="bg-gray-900 text-gray-300 py-12 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
-            {/* Brand */}
-            <div className="md:col-span-1">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-[#059669] rounded-lg flex items-center justify-center">
-                  <MapPin className="h-4 w-4 text-white" />
-                </div>
-                <span className="text-white font-bold text-lg">Jobsy</span>
-              </div>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                Jamaica's trusted marketplace for local service professionals.
-              </p>
-            </div>
-
-            {/* Services */}
-            <div>
-              <h4 className="text-white font-semibold text-sm mb-4">Services</h4>
-              <ul className="space-y-2.5 text-sm">
-                <li><Link to="/search?q=Plumbing" className="hover:text-white transition">Plumbing</Link></li>
-                <li><Link to="/search?q=Electrical" className="hover:text-white transition">Electrical</Link></li>
-                <li><Link to="/search?q=Cleaning" className="hover:text-white transition">Home Cleaning</Link></li>
-                <li><Link to="/search?q=Beauty" className="hover:text-white transition">Beauty & Hair</Link></li>
-                <li><Link to="/search" className="hover:text-white transition text-[#059669]">All Categories →</Link></li>
-              </ul>
-            </div>
-
-            {/* Company */}
-            <div>
-              <h4 className="text-white font-semibold text-sm mb-4">Company</h4>
-              <ul className="space-y-2.5 text-sm">
-                <li><Link to="/about" className="hover:text-white transition">About Us</Link></li>
-                <li><Link to="/contact" className="hover:text-white transition">Contact</Link></li>
-                <li><Link to="/business" className="hover:text-white transition">For Businesses</Link></li>
-              </ul>
-            </div>
-
-            {/* Legal */}
-            <div>
-              <h4 className="text-white font-semibold text-sm mb-4">Legal</h4>
-              <ul className="space-y-2.5 text-sm">
-                <li><Link to="/terms" className="hover:text-white transition">Terms of Service</Link></li>
-                <li><Link to="/privacy" className="hover:text-white transition">Privacy Policy</Link></li>
-                <li><Link to="/refund-policy" className="hover:text-white transition">Refund Policy</Link></li>
-                <li><Link to="/community-guidelines" className="hover:text-white transition">Community Guidelines</Link></li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500">
-            <p>&copy; {new Date().getFullYear()} Jobsy Jamaica Ltd. All rights reserved.</p>
-            <p>Made with care in Jamaica 🇯🇲</p>
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }
