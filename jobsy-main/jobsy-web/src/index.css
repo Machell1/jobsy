@@ -26,9 +26,22 @@ a {
   color: inherit;
 }
 
-/* Smooth scroll */
+/* Smooth scroll + scroll-padding so anchor jumps clear the sticky header */
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 120px;
+}
+
+@media (min-width: 768px) {
+  html {
+    scroll-padding-top: 120px;
+  }
+}
+
+@media (max-width: 767px) {
+  html {
+    scroll-padding-top: 70px;
+  }
 }
 
 /* Focus ring */

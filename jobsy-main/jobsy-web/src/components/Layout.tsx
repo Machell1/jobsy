@@ -123,6 +123,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     setRoleDropdownOpen(false)
   }, [location.pathname])
 
+  // Lock body scroll while mobile menu overlay is open
+  useEffect(() => {
+    if (!mobileMenu) return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prevOverflow }
+  }, [mobileMenu])
+
   // Auto-dismiss toast
   useEffect(() => {
     if (!toast) return
@@ -376,9 +384,60 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        {/* Mobile menu */}
-        {mobileMenu && (
-          <div id="mobile-menu" className="md:hidden border-t border-white/20 px-4 py-3 space-y-1">
+        {/* Desktop nav tabs */}
+        {isAuthenticated && (
+          <div className="hidden md:block border-t border-white/20">
+            <div className="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto" role="navigation" aria-label="Sections">
+              {navLinks.map(l => (
+                <Link
+                  key={l.to}
+                  to={l.to}
+                  aria-current={isActive(l.to) ? 'page' : undefined}
+                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition whitespace-nowrap ${
+                    isActive(l.to)
+                      ? 'border-gold text-gold'
+                      : 'border-transparent text-white/80 hover:text-white hover:border-white/40'
+                  }`}
+                >
+                  <l.icon className="h-4 w-4" aria-hidden="true" />
+                  {l.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+      </header>
+
+      {/* Mobile menu overlay — fixed so it doesn't expand the sticky header */}
+      {mobileMenu && (
+        <>
+          <div
+            className="md:hidden fixed inset-0 bg-black/40 z-40"
+            onClick={() => setMobileMenu(false)}
+            aria-hidden="true"
+          />
+          <div
+            id="mobile-menu"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Main menu"
+            className="md:hidden fixed inset-x-0 top-0 bottom-0 bg-primary text-white z-50 overflow-y-auto overscroll-contain flex flex-col"
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/20 sticky top-0 bg-primary">
+              <Link to="/" className="text-xl font-bold tracking-tight flex items-center gap-2" onClick={() => setMobileMenu(false)}>
+                <MapPin className="h-6 w-6 text-gold" aria-hidden="true" />
+                Jobsy
+              </Link>
+              <button
+                type="button"
+                onClick={() => setMobileMenu(false)}
+                className="p-2 rounded-lg hover:bg-white/10"
+                aria-label="Close menu"
+              >
+                <X className="h-6 w-6" aria-hidden="true" />
+              </button>
+            </div>
+            <div className="px-4 py-3 space-y-1 flex-1">
             {isAuthenticated && (
               <form onSubmit={handleSearch} className="mb-3" role="search">
                 <div className="relative">
@@ -493,32 +552,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </button>
               </>
             )}
-          </div>
-        )}
-
-        {/* Desktop nav tabs */}
-        {isAuthenticated && (
-          <div className="hidden md:block border-t border-white/20">
-            <div className="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto" role="navigation" aria-label="Sections">
-              {navLinks.map(l => (
-                <Link
-                  key={l.to}
-                  to={l.to}
-                  aria-current={isActive(l.to) ? 'page' : undefined}
-                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition whitespace-nowrap ${
-                    isActive(l.to)
-                      ? 'border-gold text-gold'
-                      : 'border-transparent text-white/80 hover:text-white hover:border-white/40'
-                  }`}
-                >
-                  <l.icon className="h-4 w-4" aria-hidden="true" />
-                  {l.label}
-                </Link>
-              ))}
             </div>
           </div>
-        )}
-      </header>
+        </>
+      )}
 
       {/* Main content */}
       <main
