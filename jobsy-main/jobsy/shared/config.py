@@ -121,3 +121,39 @@ POSTHOG_HOST = os.getenv("POSTHOG_HOST", "https://us.i.posthog.com")
 SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN", "")
 SLACK_SIGNING_SECRET = os.getenv("SLACK_SIGNING_SECRET", "")
 SLACK_DEFAULT_CHANNEL = os.getenv("SLACK_DEFAULT_CHANNEL", "#alerts")
+
+# =============================================================================
+# AI Assistant (OpenRouter + DeepSeek + Tavily)
+# =============================================================================
+# Primary LLM routing via OpenRouter -> DeepSeek V3. Web research via Tavily.
+# These power /api/ai/* endpoints (Jobsy AI Assistant).
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "deepseek/deepseek-chat")
+OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+OPENROUTER_SITE_URL = os.getenv("OPENROUTER_SITE_URL", "https://www.jobsyja.com")
+OPENROUTER_APP_NAME = os.getenv("OPENROUTER_APP_NAME", "Jobsy")
+
+# Direct DeepSeek key (optional fallback / alternative path)
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
+DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
+
+# Tavily web search (grounding layer for Jamaica market research)
+TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "")
+TAVILY_BASE_URL = os.getenv("TAVILY_BASE_URL", "https://api.tavily.com")
+
+# AI token / cost guardrails (these minimize unnecessary token usage)
+AI_MAX_TOKENS_CHAT = int(os.getenv("AI_MAX_TOKENS_CHAT", "1200"))
+AI_MAX_TOKENS_ANALYSIS = int(os.getenv("AI_MAX_TOKENS_ANALYSIS", "2000"))
+AI_MAX_TOKENS_CLASSIFIER = int(os.getenv("AI_MAX_TOKENS_CLASSIFIER", "150"))
+AI_MAX_TOKENS_EXTRACT = int(os.getenv("AI_MAX_TOKENS_EXTRACT", "600"))
+AI_RATE_LIMIT_PER_USER_HOUR = int(os.getenv("AI_RATE_LIMIT_PER_USER_HOUR", "30"))
+AI_DAILY_TOKEN_BUDGET = int(os.getenv("AI_DAILY_TOKEN_BUDGET", "2000000"))
+AI_REQUEST_TIMEOUT_SECONDS = int(os.getenv("AI_REQUEST_TIMEOUT_SECONDS", "30"))
+
+# In production we warn (not raise) if OpenRouter is missing, so the app can
+# still boot for hirers who don't use the assistant. The /api/ai/* routes will
+# return HTTP 503 with a clear message when the key is absent.
+if _is_production() and not OPENROUTER_API_KEY:
+    logging.warning(
+        "OPENROUTER_API_KEY not set in production - /api/ai/* will return 503"
+    )

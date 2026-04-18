@@ -1,0 +1,476 @@
+[
+  {
+    "businessName": "Free Estimate Plumbing",
+    "phone": "+18764173880",
+    "parish": "Kingston",
+    "category": "Plumbing"
+  },
+  {
+    "businessName": "CSL Plumbing",
+    "phone": "+18769302156",
+    "parish": "Kingston",
+    "category": "Plumbing"
+  },
+  {
+    "businessName": "Quick Fix Plumbing Service",
+    "phone": "+18763324895",
+    "parish": "Kingston",
+    "category": "Plumbing"
+  },
+  {
+    "businessName": "Right Choice Plumbing",
+    "phone": "+18765733321",
+    "parish": "St. Catherine",
+    "category": "Plumbing"
+  },
+  {
+    "businessName": "PR Plumbing and Construction Service",
+    "phone": "+18765082250",
+    "parish": "Kingston",
+    "category": "Plumbing"
+  },
+  {
+    "businessName": "Xpert Plumbing & Maintenance Services",
+    "phone": "+18766797200",
+    "parish": "Kingston",
+    "category": "Plumbing"
+  },
+  {
+    "businessName": "Walker's Plumbing Service",
+    "phone": "+18769523006",
+    "parish": "St. James",
+    "category": "Plumbing"
+  },
+  {
+    "businessName": "Wisdom Plumbing and Maintenance Services",
+    "phone": "+18763789006",
+    "parish": "St. Catherine",
+    "category": "Plumbing"
+  },
+  {
+    "businessName": "A-1 Plumbing & Maintenance Service Ltd",
+    "phone": "+18762209613",
+    "parish": "Kingston",
+    "category": "Plumbing"
+  },
+  {
+    "businessName": "Japp's Plumbing Services",
+    "phone": "+18764640652",
+    "parish": "St. Catherine",
+    "category": "Plumbing"
+  },
+  {
+    "businessName": "Jamaica Plumbing Supplies Limited",
+    "phone": "+18769373116",
+    "parish": "Kingston",
+    "category": "Plumbing"
+  },
+  {
+    "businessName": "B&E Caterers and Restaurant Limited",
+    "phone": "+18769695612",
+    "parish": "Kingston",
+    "category": "Catering"
+  },
+  {
+    "businessName": "Great House Caterers",
+    "phone": "+18764085986",
+    "parish": "Kingston",
+    "category": "Catering"
+  },
+  {
+    "businessName": "Jacqui Tyson Catering",
+    "phone": "+18769488697",
+    "parish": "Kingston",
+    "category": "Catering"
+  },
+  {
+    "businessName": "Jacqui Tyson Catering (alt line)",
+    "phone": "+18765659095",
+    "parish": "Kingston",
+    "category": "Catering"
+  },
+  {
+    "businessName": "The Pantry Caterers",
+    "phone": "+18769296804",
+    "parish": "Kingston",
+    "category": "Catering"
+  },
+  {
+    "businessName": "Jehovah Jireh Restaurant & Catering Services",
+    "phone": "+18769291408",
+    "parish": "Kingston",
+    "category": "Catering"
+  },
+  {
+    "businessName": "Chucky's AUTO Shop A/C",
+    "phone": "+18768684064",
+    "parish": "Kingston",
+    "category": "Auto Repair"
+  },
+  {
+    "businessName": "Lowe's Mobile Auto Mechanic Service",
+    "phone": "+18762161507",
+    "parish": "Kingston",
+    "category": "Auto Repair"
+  },
+  {
+    "businessName": "Kacs Auto Sales and Services",
+    "phone": "+18769317672",
+    "parish": "Kingston",
+    "category": "Auto Repair"
+  },
+  {
+    "businessName": "Wilfred's Wheel Alignment Centre Ltd",
+    "phone": "+18769291321",
+    "parish": "Kingston",
+    "category": "Auto Repair"
+  },
+  {
+    "businessName": "Dream Motors Limited",
+    "phone": "+18763975756",
+    "parish": "Kingston",
+    "category": "Auto Repair"
+  },
+  {
+    "businessName": "Cars to Cars Auto",
+    "phone": "+18769791147",
+    "parish": "St. James",
+    "category": "Auto Repair"
+  },
+  {
+    "businessName": "Massive Used Parts",
+    "phone": "+18769747197",
+    "parish": "St. Ann",
+    "category": "Auto Parts"
+  },
+  {
+    "businessName": "Estilo By Scott Natural Hair Salon",
+    "phone": "+18763463684",
+    "parish": "Kingston",
+    "category": "Beauty & Hair"
+  },
+  {
+    "businessName": "Keisha's Total Image Beauty Salon & Day Spa",
+    "phone": "+18769698724",
+    "parish": "Kingston",
+    "category": "Beauty & Hair"
+  },
+  {
+    "businessName": "Kiddi Palace Kids Hair Salon",
+    "phone": "+18768176729",
+    "parish": "Kingston",
+    "category": "Beauty & Hair"
+  },
+  {
+    "businessName": "June's Hair Of Essence Beauty Salon",
+    "phone": "+18769699216",
+    "parish": "Kingston",
+    "category": "Beauty & Hair"
+  },
+  {
+    "businessName": "Avery's Beauty Concept Ltd",
+    "phone": "+18767652627",
+    "parish": "Kingston",
+    "category": "Beauty & Hair"
+  },
+  {
+    "businessName": "Corinthians Miracle Hair & Nail Beauty Salon",
+    "phone": "+18769011493",
+    "parish": "Kingston",
+    "category": "Beauty & Hair"
+  },
+  {
+    "businessName": "Sparky Licensed Electricians Connection Ltd",
+    "phone": "+18768072639",
+    "parish": "Kingston",
+    "category": "Electrical"
+  },
+  {
+    "businessName": "R E Forrester Electrical Contractors Ltd",
+    "phone": "+18766326176",
+    "parish": "Kingston",
+    "category": "Electrical"
+  },
+  {
+    "businessName": "Jamaica Licensed Electrician Association",
+    "phone": "+18767938298",
+    "parish": "Kingston",
+    "category": "Electrical"
+  },
+  {
+    "businessName": "A South Electrical",
+    "phone": "+18769013496",
+    "parish": "Kingston",
+    "category": "Electrical"
+  },
+  {
+    "businessName": "MAA Electrical & Telephone Services",
+    "phone": "+18769239433",
+    "parish": "Kingston",
+    "category": "Electrical"
+  },
+  {
+    "businessName": "LNR Electrical Co Ltd",
+    "phone": "+18769069504",
+    "parish": "Kingston",
+    "category": "Electrical"
+  },
+  {
+    "businessName": "Cranbrook Electrical Ltd",
+    "phone": "+18769263340",
+    "parish": "Kingston",
+    "category": "Electrical"
+  },
+  {
+    "businessName": "Jamaica Elevator & Electrical Services Ltd",
+    "phone": "+18769268935",
+    "parish": "Kingston",
+    "category": "Electrical"
+  },
+  {
+    "businessName": "Allen Box Associates Electrical Contractors Ltd",
+    "phone": "+18769261864",
+    "parish": "Kingston",
+    "category": "Electrical"
+  },
+  {
+    "businessName": "Great Divine Construction Solutions",
+    "phone": "+18768064986",
+    "parish": "Kingston",
+    "category": "Construction"
+  },
+  {
+    "businessName": "Delroy Williams Construction Solutions",
+    "phone": "+18767725474",
+    "parish": "Kingston",
+    "category": "Construction"
+  },
+  {
+    "businessName": "Shark Constructions & Rental Ltd",
+    "phone": "+18766034347",
+    "parish": "Kingston",
+    "category": "Construction"
+  },
+  {
+    "businessName": "Nunez Concrete and Construction Company Limited",
+    "phone": "+18769525060",
+    "parish": "St. James",
+    "category": "Construction"
+  },
+  {
+    "businessName": "4Gen Design & Construction Ltd",
+    "phone": "+18766308950",
+    "parish": "Kingston",
+    "category": "Construction"
+  },
+  {
+    "businessName": "Immaculate Maintenance and Construction",
+    "phone": "+18763126036",
+    "parish": "Kingston",
+    "category": "Construction"
+  },
+  {
+    "businessName": "HP Store Jamaica",
+    "phone": "+18769065779",
+    "parish": "Kingston",
+    "category": "Tech Support"
+  },
+  {
+    "businessName": "Adapat Computer Services",
+    "phone": "+18769674641",
+    "parish": "Kingston",
+    "category": "Tech Support"
+  },
+  {
+    "businessName": "Tech Support Ltd",
+    "phone": "+18766849960",
+    "parish": "St. James",
+    "category": "Tech Support"
+  },
+  {
+    "businessName": "City College",
+    "phone": "+18769083505",
+    "parish": "Kingston",
+    "category": "Education & Training"
+  },
+  {
+    "businessName": "Bethlehem Moravian College",
+    "phone": "+18769665148",
+    "parish": "St. Elizabeth",
+    "category": "Education & Training"
+  },
+  {
+    "businessName": "Ocho Rios High School",
+    "phone": "+18769742634",
+    "parish": "St. Ann",
+    "category": "Education & Training"
+  },
+  {
+    "businessName": "Naggo Head Primary School",
+    "phone": "+18769883150",
+    "parish": "St. Catherine",
+    "category": "Education & Training"
+  },
+  {
+    "businessName": "The Service Place Cleaning Services",
+    "phone": "+18768238361",
+    "parish": "Kingston",
+    "category": "Cleaning"
+  },
+  {
+    "businessName": "Housen's Locksmith",
+    "phone": "+18769068876",
+    "parish": "Kingston",
+    "category": "Locksmith"
+  },
+  {
+    "businessName": "Brooks Locksmith",
+    "phone": "+18768519593",
+    "parish": "St. Ann",
+    "category": "Locksmith"
+  },
+  {
+    "businessName": "Advance Security Locksmith",
+    "phone": "+18769776568",
+    "parish": "Kingston",
+    "category": "Locksmith"
+  },
+  {
+    "businessName": "Julius Locksmith Services",
+    "phone": "+18769082136",
+    "parish": "Kingston",
+    "category": "Locksmith"
+  },
+  {
+    "businessName": "A H Advance Locksmith & Mobile Services",
+    "phone": "+18769377823",
+    "parish": "Kingston",
+    "category": "Locksmith"
+  },
+  {
+    "businessName": "CS Locksmith",
+    "phone": "+18769884761",
+    "parish": "Kingston",
+    "category": "Locksmith"
+  },
+  {
+    "businessName": "Bella Oasis Day Spa",
+    "phone": "+18769462649",
+    "parish": "Kingston",
+    "category": "Spa & Massage"
+  },
+  {
+    "businessName": "La-Bell's Therapeutic Massage",
+    "phone": "+18763915694",
+    "parish": "Kingston",
+    "category": "Spa & Massage"
+  },
+  {
+    "businessName": "Janus Cosmetic and Medical Spa",
+    "phone": "+18769257228",
+    "parish": "Kingston",
+    "category": "Spa & Massage"
+  },
+  {
+    "businessName": "432 Body Works",
+    "phone": "+18763644576",
+    "parish": "Kingston",
+    "category": "Spa & Massage"
+  },
+  {
+    "businessName": "Diva Salon and Spa",
+    "phone": "+18769783888",
+    "parish": "Kingston",
+    "category": "Spa & Massage"
+  },
+  {
+    "businessName": "BODY Wellness Massage Services",
+    "phone": "+18768891109",
+    "parish": "Kingston",
+    "category": "Spa & Massage"
+  },
+  {
+    "businessName": "Hands of Gold Jamaica",
+    "phone": "+18764406870",
+    "parish": "Kingston",
+    "category": "Spa & Massage"
+  },
+  {
+    "businessName": "Emerald Gifted Hands Massage and Spa",
+    "phone": "+18768203874",
+    "parish": "Kingston",
+    "category": "Spa & Massage"
+  },
+  {
+    "businessName": "General Paintings Limited",
+    "phone": "+18769236058",
+    "parish": "Kingston",
+    "category": "Painting"
+  },
+  {
+    "businessName": "Prime Transit Wrecker Services",
+    "phone": "+18764708275",
+    "parish": "Kingston",
+    "category": "Towing & Wrecker"
+  },
+  {
+    "businessName": "Fudgie's Wrecker Services Ltd",
+    "phone": "+18767717771",
+    "parish": "Kingston",
+    "category": "Towing & Wrecker"
+  },
+  {
+    "businessName": "Jones Stephen Landscaping & Garden Centre",
+    "phone": "+18767564767",
+    "parish": "Kingston",
+    "category": "Landscaping"
+  },
+  {
+    "businessName": "Alsan Pest Control Services",
+    "phone": "+18763386056",
+    "parish": "Manchester",
+    "category": "Pest Control"
+  },
+  {
+    "businessName": "Boswell's Hardware",
+    "phone": "+18769744395",
+    "parish": "St. Ann",
+    "category": "Hardware"
+  },
+  {
+    "businessName": "Ocho Rios Glass & Hardware Supplies Ltd",
+    "phone": "+18769745396",
+    "parish": "St. Ann",
+    "category": "Hardware"
+  },
+  {
+    "businessName": "Sadhwani's Dental Care",
+    "phone": "+18767770000",
+    "parish": "St. Ann",
+    "category": "Dental"
+  },
+  {
+    "businessName": "Ace Loan Express",
+    "phone": "+18769744167",
+    "parish": "St. Ann",
+    "category": "Financial Services"
+  },
+  {
+    "businessName": "Lannaman and Morris Shipping Limited",
+    "phone": "+18769742253",
+    "parish": "St. Ann",
+    "category": "Shipping"
+  },
+  {
+    "businessName": "Advantage General Insurance Company Limited",
+    "phone": "+18769744085",
+    "parish": "St. Ann",
+    "category": "Insurance"
+  },
+  {
+    "businessName": "Senior-Smith Oswest & Co",
+    "phone": "+18769747743",
+    "parish": "St. Ann",
+    "category": "Legal Services"
+  }
+]

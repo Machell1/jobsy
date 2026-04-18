@@ -20,6 +20,7 @@ from shared.database import get_db
 
 from ..deps import get_current_user
 from ..models_payments import PaymentAccount, Payout, Refund, Transaction
+from ..payment_gateway import get_gateway
 
 logger = logging.getLogger(__name__)
 
@@ -705,6 +706,14 @@ async def stripe_webhook(
         if txn:
             txn.status = "completed"
             txn.updated_at = now
+            # Sync booking payment_status
+            if txn.booking_id:
+                from ..models_bookings import Booking
+                br = await db.execute(select(Booking).where(Booking.id == txn.booking_id))
+                booking = br.scalar_one_or_none()
+                if booking:
+                    booking.payment_status = "paid"
+                    booking.updated_at = now
             await db.flush()
 
     elif etype == "payment_intent.payment_failed":
@@ -731,3 +740,75 @@ async def stripe_webhook(
             await db.flush()
 
     return {"status": "processed", "type": etype}
+
+
+# ---------------------------------------------------------------------------
+# Gateway info & NCB webhook
+# ---------------------------------------------------------------------------
+
+@router.get("/gateway/info")
+async def gateway_info():
+    """Return the active payment gateway type and configuration status."""
+    gw = get_gateway()
+    configured = await gw.is_configured()
+    gateway_type = type(gw).__name__.replace("Gateway", "").lower()
+    return {
+        "gateway": gateway_type,
+        "configured": configured,
+        "currency": "JMD",
+        "platform_fee_percent": float(PLATFORM_FEE_PERCENT),
+        "message": None if configured else (
+            "Secure online payments are being configured with NCB Jamaica. "
+            "In the meantime, arrange payments directly with your service provider."
+        ),
+    }
+
+
+@router.post("/webhooks/ncb")
+async def ncb_webhook(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Handle NCB/PowerTranz payment callbacks after 3DS authentication."""
+    gw = get_gateway()
+    body = await request.body()
+    signature = request.headers.get("X-PowerTranz-Signature", "")
+
+    event = await gw.verify_webhook(body, signature)
+    if not event:
+        return {"status": "skipped", "reason": "could not verify webhook"}
+
+    now = datetime.now(UTC)
+
+    if event.event_type == "payment.completed" and event.payment_id:
+        # Find transaction by the order/payment identifier stored in metadata
+        r = await db.execute(
+            select(Transaction).where(
+                or_(
+                    Transaction.stripe_payment_intent_id == event.payment_id,
+                    Transaction.id == event.payment_id,
+                )
+            )
+        )
+        txn = r.scalar_one_or_none()
+        if txn:
+            txn.status = "completed"
+            txn.updated_at = now
+            await db.flush()
+
+    elif event.event_type == "payment.failed" and event.payment_id:
+        r = await db.execute(
+            select(Transaction).where(
+                or_(
+                    Transaction.stripe_payment_intent_id == event.payment_id,
+                    Transaction.id == event.payment_id,
+                )
+            )
+        )
+        txn = r.scalar_one_or_none()
+        if txn:
+            txn.status = "failed"
+            txn.updated_at = now
+            await db.flush()
+
+    return {"status": "processed", "type": event.event_type}

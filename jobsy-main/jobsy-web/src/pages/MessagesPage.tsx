@@ -172,7 +172,28 @@ export default function MessagesPage() {
 
       {showNewConversation && <NewConversationInfo />}
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+      <div
+        className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm jobsy-stream-chat"
+        style={{
+          // Jobsy theme overrides for Stream Chat's CSS variables so the
+          // peer-to-peer chat visually belongs to the same product as the
+          // AI Assistant at /assistant.
+          // Stream Chat v2 theme tokens: https://getstream.io/chat/docs/sdk/react/theming/themingv2/
+          ['--str-chat__primary-color' as never]: '#059669',
+          ['--str-chat__active-primary-color' as never]: '#047857',
+          ['--str-chat__surface-color' as never]: '#f9fafb',
+          ['--str-chat__secondary-surface-color' as never]: '#f3f4f6',
+          ['--str-chat__primary-surface-color' as never]: '#ecfdf5',
+          ['--str-chat__primary-surface-color-low-emphasis' as never]: '#f0fdf4',
+          ['--str-chat__border-radius-circle' as never]: '9999px',
+          ['--str-chat__message-bubble-background-color' as never]: '#f3f4f6',
+          ['--str-chat__own-message-bubble-background-color' as never]: '#059669',
+          ['--str-chat__own-message-bubble-color' as never]: '#ffffff',
+          ['--str-chat__avatar-background-color' as never]: '#059669',
+          ['--str-chat__font-family' as never]:
+            'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        }}
+      >
         <Chat client={chatClient} theme="str-chat__theme-light">
           <div className="flex h-[calc(100vh-220px)] min-h-[500px]">
             {/* Channel List - hidden on mobile when a channel is selected */}

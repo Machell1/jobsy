@@ -490,13 +490,18 @@ async def _generate_contract_from_bid(
 # ===================================================================
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
-async def create_job_post(
+async def _create_job_post_impl(
     data: JobPostCreate,
-    user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Create a new job post (hirers only)."""
+    user: dict,
+    db: AsyncSession,
+) -> dict:
+    """Shared implementation for creating a job post.
+
+    Called by BOTH the public /api/bidding/ route AND the Jobsy AI assistant
+    (via app.ai.job_builder.finalize_session). Keeps a single code path so
+    any post-creation side effects (provider notifications, analytics events)
+    stay consistent regardless of how the user arrived at the post.
+    """
     if user.get("active_role") not in ("user", "hirer"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -547,6 +552,16 @@ async def create_job_post(
     )
 
     return _job_post_response(job_post)
+
+
+@router.post("/", status_code=status.HTTP_201_CREATED)
+async def create_job_post(
+    data: JobPostCreate,
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a new job post (hirers only)."""
+    return await _create_job_post_impl(data=data, user=user, db=db)
 
 
 @router.get("/my-posts")

@@ -18,6 +18,7 @@ import {
   FileText,
   MapPin,
   User,
+  CreditCard,
 } from 'lucide-react'
 
 type BookingStatus = 'all' | 'active' | 'completed' | 'cancelled'
@@ -357,6 +358,18 @@ export default function BookingsPage() {
                     </span>
                     {isActionable && (
                       <div className="flex items-center gap-1">
+                        {booking.status === 'confirmed' && (
+                          <button
+                            onClick={() => {
+                              window.location.href = `/payments?booking=${booking.id}`
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700 transition"
+                            title="Pay for this booking"
+                          >
+                            <CreditCard className="h-3.5 w-3.5" />
+                            Pay Now
+                          </button>
+                        )}
                         <button
                           onClick={() => {
                             setShowRescheduleModal(booking.id)

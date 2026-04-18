@@ -21,6 +21,7 @@ from shared.logging import setup_json_logging
 from shared.middleware import setup_middleware
 
 from .middleware.rate_limit import rate_limit_check
+from .routes.ai import router as ai_router
 from .routes.analytics import router as analytics_router
 from .routes.auth import router as auth_router
 from .routes.bidding import router as bidding_router
@@ -1192,6 +1193,130 @@ async def _apply_migrations() -> None:
             await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_vb_status ON verification_badges(status)"))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_vb_type ON verification_badges(badge_type)"))
 
+            # Migration 007: AI Assistant tables
+            await conn.execute(
+                text(
+                    "CREATE TABLE IF NOT EXISTS ai_job_sessions ("
+                    "id VARCHAR PRIMARY KEY, "
+                    "user_id VARCHAR NOT NULL, "
+                    "mode VARCHAR(20) NOT NULL DEFAULT 'guided', "
+                    "status VARCHAR(20) NOT NULL DEFAULT 'active', "
+                    "collected_slots JSONB NOT NULL DEFAULT '{}', "
+                    "cost_projection JSONB, "
+                    "messages JSONB NOT NULL DEFAULT '[]', "
+                    "contract_id VARCHAR, "
+                    "created_job_post_id VARCHAR, "
+                    "created_at TIMESTAMPTZ NOT NULL DEFAULT now(), "
+                    "updated_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+                )
+            )
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_ai_sessions_user ON ai_job_sessions(user_id)"))
+            await conn.execute(
+                text("CREATE INDEX IF NOT EXISTS idx_ai_sessions_user_status ON ai_job_sessions(user_id, status)")
+            )
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_ai_sessions_created ON ai_job_sessions(created_at)"))
+
+            await conn.execute(
+                text(
+                    "CREATE TABLE IF NOT EXISTS ai_usage_log ("
+                    "id BIGSERIAL PRIMARY KEY, "
+                    "user_id VARCHAR, "
+                    "session_id VARCHAR, "
+                    "endpoint VARCHAR(60) NOT NULL, "
+                    "model VARCHAR(100), "
+                    "prompt_tokens INTEGER NOT NULL DEFAULT 0, "
+                    "completion_tokens INTEGER NOT NULL DEFAULT 0, "
+                    "total_tokens INTEGER NOT NULL DEFAULT 0, "
+                    "cost_usd_estimate NUMERIC(10,6), "
+                    "latency_ms INTEGER, "
+                    "cached_search_hit BOOLEAN NOT NULL DEFAULT false, "
+                    "scope_rejected BOOLEAN NOT NULL DEFAULT false, "
+                    "budget_rejected BOOLEAN NOT NULL DEFAULT false, "
+                    "error VARCHAR(500), "
+                    "created_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+                )
+            )
+            await conn.execute(
+                text("CREATE INDEX IF NOT EXISTS idx_ai_usage_user_created ON ai_usage_log(user_id, created_at)")
+            )
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_ai_usage_created ON ai_usage_log(created_at)"))
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_ai_usage_endpoint ON ai_usage_log(endpoint)"))
+
+            await conn.execute(
+                text(
+                    "CREATE TABLE IF NOT EXISTS jmd_price_references ("
+                    "id VARCHAR PRIMARY KEY, "
+                    "category VARCHAR(100) NOT NULL, "
+                    "subcategory VARCHAR(100), "
+                    "parish_tier VARCHAR(20) NOT NULL DEFAULT 'island', "
+                    "unit VARCHAR(20) NOT NULL DEFAULT 'per_job', "
+                    "low_jmd NUMERIC(12,2) NOT NULL, "
+                    "mid_jmd NUMERIC(12,2) NOT NULL, "
+                    "high_jmd NUMERIC(12,2) NOT NULL, "
+                    "typical_duration_days INTEGER, "
+                    "sources JSONB NOT NULL DEFAULT '[]', "
+                    "confidence VARCHAR(20) NOT NULL DEFAULT 'seed', "
+                    "notes VARCHAR(500), "
+                    "last_verified_at TIMESTAMPTZ, "
+                    "created_at TIMESTAMPTZ NOT NULL DEFAULT now(), "
+                    "updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), "
+                    "CONSTRAINT uq_jmd_price_cat_sub_tier UNIQUE (category, subcategory, parish_tier))"
+                )
+            )
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_jmd_price_category ON jmd_price_references(category)"))
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_jmd_price_tier ON jmd_price_references(parish_tier)"))
+
+            # Seed jmd_price_references from packaged JSON if the table is empty
+            try:
+                import json as _ai_json  # noqa: PLC0415
+                import os as _ai_os  # noqa: PLC0415
+                import uuid as _ai_uuid  # noqa: PLC0415
+                from datetime import datetime as _ai_dt  # noqa: PLC0415
+                from datetime import timezone as _ai_tz  # noqa: PLC0415
+
+                count_result = await conn.execute(text("SELECT COUNT(*) FROM jmd_price_references"))
+                current_count = count_result.scalar() or 0
+                if current_count == 0:
+                    seed_path = _ai_os.path.join(
+                        _ai_os.path.dirname(__file__), "ai", "data", "jmd_price_references.json"
+                    )
+                    if _ai_os.path.exists(seed_path):
+                        with open(seed_path, "r", encoding="utf-8") as _seed_f:
+                            seed_rows = _ai_json.load(_seed_f)
+                        _ai_now = _ai_dt.now(_ai_tz.utc)
+                        for _r in seed_rows:
+                            await conn.execute(
+                                text(
+                                    "INSERT INTO jmd_price_references "
+                                    "(id, category, subcategory, parish_tier, unit, "
+                                    " low_jmd, mid_jmd, high_jmd, typical_duration_days, "
+                                    " sources, confidence, notes, created_at, updated_at) "
+                                    "VALUES (:id, :category, :subcategory, :parish_tier, :unit, "
+                                    " :low_jmd, :mid_jmd, :high_jmd, :typical_duration_days, "
+                                    " CAST(:sources AS JSONB), :confidence, :notes, :created_at, :updated_at) "
+                                    "ON CONFLICT (category, subcategory, parish_tier) DO NOTHING"
+                                ),
+                                {
+                                    "id": str(_ai_uuid.uuid4()),
+                                    "category": _r["category"],
+                                    "subcategory": _r.get("subcategory"),
+                                    "parish_tier": _r.get("parish_tier", "island"),
+                                    "unit": _r.get("unit", "per_job"),
+                                    "low_jmd": _r["low_jmd"],
+                                    "mid_jmd": _r["mid_jmd"],
+                                    "high_jmd": _r["high_jmd"],
+                                    "typical_duration_days": _r.get("typical_duration_days"),
+                                    "sources": _ai_json.dumps(_r.get("sources", [])),
+                                    "confidence": _r.get("confidence", "seed"),
+                                    "notes": _r.get("notes"),
+                                    "created_at": _ai_now,
+                                    "updated_at": _ai_now,
+                                },
+                            )
+                        logger.info("Seeded %d jmd_price_references rows", len(seed_rows))
+            except Exception:
+                logger.exception("Failed to seed jmd_price_references (non-fatal)")
+
         logger.info("Database migrations applied successfully")
     except Exception:
         logger.warning("Could not apply migrations on startup -- will retry on next deploy")
@@ -1430,6 +1555,11 @@ app.include_router(
     contact_router,
     prefix="/api",
     tags=["contact"],
+)
+app.include_router(
+    ai_router,
+    prefix="/api/ai",
+    tags=["ai"],
 )
 
 CHAT_SERVICE_URL = os.getenv("CHAT_SERVICE_URL", "http://chat.railway.internal:8080")

@@ -47,6 +47,7 @@ const ReferralPage = React.lazy(() => import('./pages/ReferralPage'))
 const DisputesPage = React.lazy(() => import('./pages/DisputesPage'))
 const VerifyAccountPage = React.lazy(() => import('./pages/VerifyAccountPage'))
 const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage'))
+const AssistantPage = React.lazy(() => import('./pages/AssistantPage'))
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, token } = useAuth()
@@ -60,6 +61,7 @@ const ROUTE_TITLES: Record<string, string> = {
   '/register': 'Create Account',
   '/forgot-password': 'Forgot Password',
   '/reset-password': 'Reset Password',
+  '/assistant': 'Jobsy Assistant',
   '/dashboard': 'Dashboard',
   '/search': 'Search',
   '/bookings': 'Bookings',
@@ -120,6 +122,7 @@ export default function App() {
           <Route path="/community-guidelines" element={<CommunityGuidelinesPage />} />
           <Route path="/advertiser-terms" element={<AdvertiserTermsPage />} />
           <Route path="/contract-terms" element={<ContractTermsPage />} />
+          <Route path="/assistant" element={<ProtectedRoute><AssistantPage /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/provider/:id" element={<ProviderPage />} />

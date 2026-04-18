@@ -21,7 +21,7 @@ const values = [
     icon: Shield,
     title: 'Trust & Safety',
     description:
-      'Every provider on Jobsy is vetted and reviewed. We prioritise your safety with secure payments and verified profiles.',
+      'Every provider on Jobsy is vetted and reviewed. We prioritise your safety with secure NCB-powered payments and verified profiles.',
   },
   {
     icon: Zap,

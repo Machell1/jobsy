@@ -416,6 +416,25 @@ function PaymentsContent() {
         </div>
       </div>
 
+      {/* NCB Payment Info Banner */}
+      <div className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-xl p-5">
+        <div className="flex items-start gap-3">
+          <div className="p-2 rounded-lg bg-emerald-100 shrink-0">
+            <CreditCard className="h-5 w-5 text-emerald-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-emerald-900 mb-1">
+              Secure Payments Powered by NCB Jamaica
+            </h3>
+            <p className="text-sm text-emerald-700">
+              Jobsy uses National Commercial Bank Jamaica for secure payment processing.
+              Visa, MasterCard, and NCB KeyCard accepted. All transactions are protected
+              with 3D Secure authentication.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Setup Payment Account */}
       <SetupPaymentAccount />
 

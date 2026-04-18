@@ -187,6 +187,102 @@ export async function apiDelete(endpoint: string, token?: string | null) {
   }, token)
 }
 
+/**
+ * Stream Server-Sent Events from a POST endpoint.
+ *
+ * Used by the Jobsy AI Assistant to stream DeepSeek completions token-by-token.
+ * Chose fetch + ReadableStream over EventSource because EventSource cannot set
+ * Authorization headers, and we already handle 401 refresh via apiPost pattern.
+ *
+ * The server wire format is standard SSE: lines beginning with `data: ` followed
+ * by a JSON object. An empty line (\n\n) delimits events.
+ *
+ * onEvent is called once per parsed event. The Promise resolves when the stream
+ * ends normally, or rejects on HTTP error / network failure.
+ */
+export async function apiStream(
+  endpoint: string,
+  body: unknown,
+  token: string | null | undefined,
+  onEvent: (event: { type: string; [key: string]: unknown }) => void,
+  signal?: AbortSignal
+): Promise<void> {
+  async function attempt(currentToken: string | null | undefined): Promise<Response> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Accept: 'text/event-stream',
+    }
+    if (currentToken) headers.Authorization = `Bearer ${currentToken}`
+    return fetch(`${API_BASE}${endpoint}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body ?? {}),
+      signal,
+    })
+  }
+
+  let res = await attempt(token)
+
+  // Single token-refresh retry on 401 (skip auth endpoints)
+  if (res.status === 401 && !endpoint.includes('/auth/')) {
+    try {
+      const newToken = await refreshAccessToken()
+      res = await attempt(newToken)
+    } catch {
+      clearAuthAndRedirect()
+      throw new ApiError(401, 'Session expired')
+    }
+  }
+
+  if (!res.ok || !res.body) {
+    let detail = res.statusText
+    try {
+      const body = await res.json()
+      detail = body.detail || body.message || detail
+    } catch {
+      // keep statusText
+    }
+    throw new ApiError(res.status, detail)
+  }
+
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+
+      // SSE events are delimited by \n\n
+      const parts = buffer.split('\n\n')
+      buffer = parts.pop() ?? ''
+      for (const part of parts) {
+        // Each event may have multiple lines; we only parse `data:` lines
+        for (const line of part.split('\n')) {
+          const trimmed = line.trim()
+          if (!trimmed.startsWith('data:')) continue
+          const payload = trimmed.slice(5).trim()
+          if (!payload || payload === '[DONE]') continue
+          try {
+            const event = JSON.parse(payload) as { type: string; [k: string]: unknown }
+            onEvent(event)
+          } catch {
+            // Skip malformed JSON lines — streaming best-effort
+          }
+        }
+      }
+    }
+  } finally {
+    try {
+      reader.releaseLock()
+    } catch {
+      // noop
+    }
+  }
+}
+
 export async function apiUpload(
   endpoint: string,
   file: File,

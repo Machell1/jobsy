@@ -1,0 +1,320 @@
+[
+  {
+    "businessName": "Orange Bay Health",
+    "phone": "+18769558337",
+    "parish": "Hanover",
+    "category": "Health & Medical"
+  },
+  {
+    "businessName": "Smart Depot Limited",
+    "phone": "+18767248650",
+    "parish": "Hanover",
+    "category": "Furniture & Hardware Store"
+  },
+  {
+    "businessName": "NK Customer Solutions, Ltd",
+    "phone": "+18765535516",
+    "parish": "St. Mary",
+    "category": "Financial Services / ATM"
+  },
+  {
+    "businessName": "Brooks Restaurant",
+    "phone": "+18764242786",
+    "parish": "St. Mary",
+    "category": "Restaurant"
+  },
+  {
+    "businessName": "St. Thomas Farm Store",
+    "phone": "+18767341109",
+    "parish": "St. Thomas",
+    "category": "Farm Store / Landscaping"
+  },
+  {
+    "businessName": "Sure Financial Services Ltd.",
+    "phone": "+18767347873",
+    "parish": "St. Thomas",
+    "category": "Financial Services / Loans"
+  },
+  {
+    "businessName": "TotalEnergies Yallahs",
+    "phone": "+18765977330",
+    "parish": "St. Thomas",
+    "category": "Gas Station"
+  },
+  {
+    "businessName": "Princess Margaret Hospital",
+    "phone": "+18767342323",
+    "parish": "St. Thomas",
+    "category": "Hospital"
+  },
+  {
+    "businessName": "National Commercial Bank - Morant Bay",
+    "phone": "+18767341000",
+    "parish": "St. Thomas",
+    "category": "Banking"
+  },
+  {
+    "businessName": "Impact Industrial Ltd",
+    "phone": "+18766243843",
+    "parish": "St. Elizabeth",
+    "category": "Hardware / Auto Parts"
+  },
+  {
+    "businessName": "Super Plus Trucking & Equipment Ltd.",
+    "phone": "+18769664365",
+    "parish": "St. Elizabeth",
+    "category": "Trucking & Equipment"
+  },
+  {
+    "businessName": "Sunlight Agricultural Supplies Ltd",
+    "phone": "+18764832580",
+    "parish": "St. Elizabeth",
+    "category": "Agricultural Supplies"
+  },
+  {
+    "businessName": "JAdeals.com",
+    "phone": "+18762770311",
+    "parish": "St. Elizabeth",
+    "category": "Shopping / Mail Order"
+  },
+  {
+    "businessName": "Highlife Medical Center",
+    "phone": "+18769544580",
+    "parish": "Trelawny",
+    "category": "Medical Center"
+  },
+  {
+    "businessName": "National Youth Service - Falmouth",
+    "phone": "+18766175578",
+    "parish": "Trelawny",
+    "category": "Government / Youth Services"
+  },
+  {
+    "businessName": "Waterproofing and Concrete Solutions",
+    "phone": "+18768592494",
+    "parish": "Trelawny",
+    "category": "Construction / Waterproofing"
+  },
+  {
+    "businessName": "The One Department Store",
+    "phone": "+18766171017",
+    "parish": "Trelawny",
+    "category": "Department Store / Retail"
+  },
+  {
+    "businessName": "Ministry of Labour and Social Security - Falmouth",
+    "phone": "+18769543312",
+    "parish": "Trelawny",
+    "category": "Government Services"
+  },
+  {
+    "businessName": "Insurance Company of the West Indies (ICWI) - Falmouth",
+    "phone": "+18766174051",
+    "parish": "Trelawny",
+    "category": "Insurance"
+  },
+  {
+    "businessName": "Sakura",
+    "phone": "+18769543000",
+    "parish": "Trelawny",
+    "category": "Restaurant"
+  },
+  {
+    "businessName": "Portland Co-operative Credit Union Limited",
+    "phone": "+18769932608",
+    "parish": "Portland",
+    "category": "Banking / Credit Union"
+  },
+  {
+    "businessName": "Ministry of Education - Region 2 Office",
+    "phone": "+18769935603",
+    "parish": "Portland",
+    "category": "Government / Education"
+  },
+  {
+    "businessName": "Singer Jamaica - Port Antonio",
+    "phone": "+18769939343",
+    "parish": "Portland",
+    "category": "Retail / Electronics"
+  },
+  {
+    "businessName": "Port Antonio High School",
+    "phone": "+18769933080",
+    "parish": "Portland",
+    "category": "Education"
+  },
+  {
+    "businessName": "Broadbent Vision Care - Port Antonio",
+    "phone": "+18769933618",
+    "parish": "Portland",
+    "category": "Optician / Vision Care"
+  },
+  {
+    "businessName": "Belinda's Riverside Restaurant",
+    "phone": "+18763898826",
+    "parish": "Portland",
+    "category": "Restaurant"
+  },
+  {
+    "businessName": "Buff Bay High School",
+    "phone": "+18769961586",
+    "parish": "Portland",
+    "category": "Education"
+  },
+  {
+    "businessName": "THZ BBQ Spot Restaurant & Bar",
+    "phone": "+18763943975",
+    "parish": "Clarendon",
+    "category": "Restaurant & Bar"
+  },
+  {
+    "businessName": "Patmore's Hardware",
+    "phone": "+18769878055",
+    "parish": "Clarendon",
+    "category": "Hardware Store"
+  },
+  {
+    "businessName": "St. Augustine Place of Safety",
+    "phone": "+18769872102",
+    "parish": "Clarendon",
+    "category": "Social Services / Childcare"
+  },
+  {
+    "businessName": "Clarendon Parish Library",
+    "phone": "+18769862376",
+    "parish": "Clarendon",
+    "category": "Library"
+  },
+  {
+    "businessName": "Shiptosureja Shipping - May Pen",
+    "phone": "+18764629527",
+    "parish": "Clarendon",
+    "category": "Freight / Shipping"
+  },
+  {
+    "businessName": "Trafalgar Travel Ltd - May Pen",
+    "phone": "+18769864946",
+    "parish": "Clarendon",
+    "category": "Travel Agency"
+  },
+  {
+    "businessName": "May Pen Post Office",
+    "phone": "+18769862302",
+    "parish": "Clarendon",
+    "category": "Post Office"
+  },
+  {
+    "businessName": "National Works Agency - May Pen",
+    "phone": "+18767545069",
+    "parish": "Clarendon",
+    "category": "Government / Infrastructure"
+  },
+  {
+    "businessName": "May Pen Health Center",
+    "phone": "+18769864548",
+    "parish": "Clarendon",
+    "category": "Health Center"
+  },
+  {
+    "businessName": "Lucky Dollar Furniture & Appliance - Spalding",
+    "phone": "+18769645012",
+    "parish": "Clarendon",
+    "category": "Furniture & Appliance Store"
+  },
+  {
+    "businessName": "Chapelton Community Hospital",
+    "phone": "+18769872215",
+    "parish": "Clarendon",
+    "category": "Hospital"
+  },
+  {
+    "businessName": "Domino's - May Pen",
+    "phone": "+18767860555",
+    "parish": "Clarendon",
+    "category": "Restaurant / Fast Food"
+  },
+  {
+    "businessName": "Darliston Health Center",
+    "phone": "+18769550204",
+    "parish": "Westmoreland",
+    "category": "Health Center"
+  },
+  {
+    "businessName": "Petersfield Texaco Service Station",
+    "phone": "+18769555221",
+    "parish": "Westmoreland",
+    "category": "Gas Station"
+  },
+  {
+    "businessName": "Nacana Motors Ltd",
+    "phone": "+18769180417",
+    "parish": "Westmoreland",
+    "category": "Auto Dealer / Motors"
+  },
+  {
+    "businessName": "New Hope Primary & Junior High",
+    "phone": "+18769635143",
+    "parish": "Westmoreland",
+    "category": "Education"
+  },
+  {
+    "businessName": "DR Reddy's Medical Centre",
+    "phone": "+18769552133",
+    "parish": "Westmoreland",
+    "category": "Medical Center"
+  },
+  {
+    "businessName": "Westmoreland Health Department",
+    "phone": "+18765077387",
+    "parish": "Westmoreland",
+    "category": "Government / Health"
+  },
+  {
+    "businessName": "JDM Express It Freight Services",
+    "phone": "+18766312676",
+    "parish": "Westmoreland",
+    "category": "Freight / Shipping"
+  },
+  {
+    "businessName": "Savanna-La-Mar Post Office",
+    "phone": "+18768579397",
+    "parish": "Westmoreland",
+    "category": "Post Office"
+  },
+  {
+    "businessName": "SSMC Xpress International",
+    "phone": "+18764339379",
+    "parish": "Westmoreland",
+    "category": "Shipping / Freight"
+  },
+  {
+    "businessName": "Westmoreland Family Court",
+    "phone": "+18769181934",
+    "parish": "Westmoreland",
+    "category": "Government / Court"
+  },
+  {
+    "businessName": "Brumahlia Hardware",
+    "phone": "+18769552651",
+    "parish": "Westmoreland",
+    "category": "Hardware Store"
+  },
+  {
+    "businessName": "Bashco Trading Co Ltd",
+    "phone": "+18769181174",
+    "parish": "Westmoreland",
+    "category": "Trading / Retail"
+  },
+  {
+    "businessName": "Richard's Auto Repairs and Service",
+    "phone": "+18769635000",
+    "parish": "Westmoreland",
+    "category": "Auto Repair"
+  },
+  {
+    "businessName": "Samuel's Hardware - Little London",
+    "phone": "+18769554000",
+    "parish": "Westmoreland",
+    "category": "Hardware Store"
+  }
+]
